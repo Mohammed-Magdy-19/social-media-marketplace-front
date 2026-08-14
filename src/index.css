@@ -1,113 +1,185 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================================
+   NexMarket Engine — design tokens (PSD §3, stack §7)
+   Every color, radius, and font traces back to a variable here.
+   No hardcoded hex / font-family / radius in components.
+   ============================================================ */
 
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  --radius: 0.625rem;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  /* Core semantic palette (light) — mapped to Vendo PSD §3 */
+  --background: #f1f5f9; /* PSD bg */
+  --foreground: #0b1220; /* PSD ink */
+  --card: #ffffff; /* PSD card */
+  --card-foreground: #0b1220;
+  --popover: #ffffff;
+  --popover-foreground: #0b1220;
+  --primary: #00c853; /* PSD brand */
+  --primary-foreground: #ffffff;
+  --secondary: #f8fafc;
+  --secondary-foreground: #0b1220;
+  --muted: #f8fafc;
+  --muted-foreground: #64748b; /* PSD mut */
+  --accent: #f8fafc;
+  --accent-foreground: #0b1220;
+  --destructive: #ef4444;
+  --border: #e2e8f0; /* PSD line */
+  --input: #e2e8f0;
+  --ring: #00c853;
+  --chart-1: #00c853;
+  --chart-2: #009e42;
+  --chart-3: #3b82f6;
+  --chart-4: #f59e0b;
+  --chart-5: #7c3aed;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0b1220;
+  --sidebar-primary: #00c853;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e9f9f0; /* PSD brand-soft */
+  --sidebar-accent-foreground: #009e42;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #00c853;
+}
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+.dark {
+  --background: #0b1220;
+  --foreground: #f1f5f9;
+  --card: #131b2e;
+  --card-foreground: #f1f5f9;
+  --popover: #131b2e;
+  --popover-foreground: #f1f5f9;
+  --primary: #00c853;
+  --primary-foreground: #05240f;
+  --secondary: #1a2338;
+  --secondary-foreground: #f1f5f9;
+  --muted: #1a2338;
+  --muted-foreground: #94a3b8;
+  --accent: #1a2338;
+  --accent-foreground: #f1f5f9;
+  --destructive: #f87171;
+  --border: #223048;
+  --input: #223048;
+  --ring: #2be77e;
+  --chart-1: #2be77e;
+  --chart-2: #009e42;
+  --chart-3: #60a5fa;
+  --chart-4: #fbbf24;
+  --chart-5: #a78bfa;
+  --sidebar: #101827;
+  --sidebar-foreground: #e2e8f0;
+  --sidebar-primary: #00c853;
+  --sidebar-primary-foreground: #05240f;
+  --sidebar-accent: #16263c;
+  --sidebar-accent-foreground: #2be77e;
+  --sidebar-border: #223048;
+  --sidebar-ring: #2be77e;
+}
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@theme {
+  /* Vendo brand + admin Control Center token set (PSD §3, stack §7) */
+  --color-brand: #00c853;
+  --color-brand-hover: #00a343;
+  --color-brand-2: #009e42;
+  --color-brand-3: #2be77e;
+  --color-brand-soft: #e9f9f0;
+  --color-ink: #0b1220;
+  --color-mut: #64748b;
+  --color-line-2: #eef2f6;
+  --color-bg: #f1f5f9;
+  --color-soft: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #f8fafc;
+  --color-ok: #16a34a;
+  --color-ok-soft: #ecfdf3;
+  --color-warn: #f59e0b;
+  --color-warn-soft: #fff8eb;
+  --color-err: #ef4444;
+  --color-err-soft: #fef2f2;
+  --color-info: #3b82f6;
+  --color-info-soft: #eff6ff;
+  --color-violet: #7c3aed;
+  --color-violet-soft: #f3eeff;
+
+  /* Shape tokens */
+  --radius-card: 13px;
+  --radius-input: 9px;
+  --radius-button: 9px;
+  --radius-pill: 999px;
+  --radius-icon-btn: 7px;
+
+  /* Typography */
+  --font-display: "Plus Jakarta Sans", "Inter Tight", ui-sans-serif, system-ui,
+    sans-serif;
+  --font-card: "Satoshi", "General Sans", "Inter", ui-sans-serif, system-ui,
+    sans-serif;
+  --font-body: "Inter", "SF Pro Display", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", monospace;
+}
+
+.dark {
+  --color-line-2: #1e2a40;
+  --color-surface-subtle: #16203a;
+  --color-bg: #0b1220;
+  --color-soft: #141d33;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply font-sans antialiased;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body;
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
   }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-}
-
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
-}
-
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
-
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
 }
