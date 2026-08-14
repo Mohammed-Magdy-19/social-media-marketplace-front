@@ -36,6 +36,14 @@ export function formatCurrency(amount: number, currency = "USD"): string {
   }).format(amount)
 }
 
+export function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  })
+}
+
 export function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 B"
   const units = ["B", "KB", "MB", "GB"]

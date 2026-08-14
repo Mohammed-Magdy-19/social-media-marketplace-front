@@ -13,6 +13,17 @@ export default defineConfig({
   },
   server: {
     allowedHosts: ['.monkeycode-ai.live'],
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+      '/socket.io': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        ws: true,
+      },
+    },
   },
   build: {
     chunkSizeWarningLimit: 900,

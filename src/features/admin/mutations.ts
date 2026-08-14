@@ -171,3 +171,35 @@ export function useAddCategory() {
     },
   })
 }
+
+export function useDeleteCategory() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => apiDelete<{ ok: true }>(`/categories/${id}`),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["categories"] })
+    },
+  })
+}
+
+export function useDeleteNotification() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiDelete<{ ok: true }>(`/notifications/${id}`),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["notifications"] })
+    },
+  })
+}
+
+export function useDeleteConversation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiDelete<{ ok: true }>(`/admin/conversations/${id}`),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["admin", "conversations"] })
+    },
+  })
+}

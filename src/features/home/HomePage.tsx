@@ -18,14 +18,7 @@ import { PostCard } from "@/features/posts/components/PostCard"
 import { ProductCard } from "@/features/posts/components/ProductCard"
 import { AvatarWithFallback } from "@/components/shared/AvatarWithFallback"
 import { Button } from "@/components/ui/button"
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"

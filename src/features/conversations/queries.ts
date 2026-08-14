@@ -4,6 +4,15 @@ import type { Conversation, CursorPage, Message } from "@/types"
 
 export const MESSAGES_PAGE_SIZE = 25
 
+export function useConversations() {
+  return useQuery({
+    queryKey: ["conversations"],
+    queryFn: ({ signal }) =>
+      apiGet<Conversation[]>("/conversations", { signal }),
+    staleTime: 15_000,
+  })
+}
+
 export function useConversationMeta(conversationId: string) {
   return useQuery({
     queryKey: ["conversations", conversationId],

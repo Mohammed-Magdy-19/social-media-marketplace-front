@@ -45,7 +45,7 @@ export function useSendMessage(conversationId: string) {
           }
         }
         const pages = old.pages.map((page, index) =>
-          index === old.pages.length - 1
+          index === 0
             ? { ...page, items: [...page.items, optimistic] }
             : page
         )

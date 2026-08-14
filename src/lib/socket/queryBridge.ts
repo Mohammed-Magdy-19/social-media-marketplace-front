@@ -71,7 +71,7 @@ function flushMessages() {
     }>(entry.queryKey, (old) => {
       if (!old || old.pages.length === 0) return old
       const pages = old.pages.map((page, index) => {
-        if (index !== old.pages.length - 1) return page
+        if (index !== 0) return page
         const seen = new Set(page.items.map((m) => m.messageId))
         const added = matching.filter((m) => !seen.has(m.messageId))
         return { ...page, items: [...page.items, ...added] }
