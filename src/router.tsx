@@ -39,52 +39,66 @@ const AdminUploadsPage = lazy(() => import("@/features/admin/AdminUploadsPage"))
 
 export const router = createBrowserRouter([
   {
-    path: "/",
+    path: "/login",
     element: (
       <Boundary>
-        <ShellLayout />
+        <LoginPage />
       </Boundary>
     ),
+  },
+  {
+    path: "/register",
+    element: (
+      <Boundary>
+        <RegisterPage />
+      </Boundary>
+    ),
+  },
+  {
+    path: "/",
+    element: <RequireAuth />,
     children: [
-      { index: true, element: <HomePage /> },
-      { path: "posts/:postId", element: <PostDetailPage /> },
       {
-        element: <RequireAuth />,
+        element: (
+          <Boundary>
+            <ShellLayout />
+          </Boundary>
+        ),
         children: [
+          { index: true, element: <HomePage /> },
+          { path: "posts/:postId", element: <PostDetailPage /> },
           { path: "messages/:conversationId?", element: <MessagesPage /> },
           { path: "checkout/:intentId", element: <CheckoutPage /> },
           { path: "saved", element: <SavedPage /> },
           { path: "profile", element: <ProfilePage /> },
-        ],
-      },
-      { path: "login", element: <LoginPage /> },
-      { path: "register", element: <RegisterPage /> },
-      {
-        path: "admin",
-        element: <RequireRole role="Admin" />,
-        children: [
           {
-            element: (
-              <Boundary>
-                <AdminRoot />
-              </Boundary>
-            ),
+            path: "admin",
+            element: <RequireRole role="Admin" />,
             children: [
-              { index: true, element: <AdminOverviewPage /> },
-              { path: "posts", element: <AdminPostsPage /> },
-              { path: "categories", element: <AdminCategoriesPage /> },
-              { path: "users", element: <AdminUsersPage /> },
-              { path: "reports", element: <AdminReportsPage /> },
-              { path: "notifications", element: <AdminNotificationsPage /> },
-              { path: "conversations", element: <AdminConversationsPage /> },
-              { path: "payments", element: <AdminPaymentsPage /> },
-              { path: "audit-logs", element: <AdminAuditLogsPage /> },
-              { path: "uploads", element: <AdminUploadsPage /> },
+              {
+                element: (
+                  <Boundary>
+                    <AdminRoot />
+                  </Boundary>
+                ),
+                children: [
+                  { index: true, element: <AdminOverviewPage /> },
+                  { path: "posts", element: <AdminPostsPage /> },
+                  { path: "categories", element: <AdminCategoriesPage /> },
+                  { path: "users", element: <AdminUsersPage /> },
+                  { path: "reports", element: <AdminReportsPage /> },
+                  { path: "notifications", element: <AdminNotificationsPage /> },
+                  { path: "conversations", element: <AdminConversationsPage /> },
+                  { path: "payments", element: <AdminPaymentsPage /> },
+                  { path: "audit-logs", element: <AdminAuditLogsPage /> },
+                  { path: "uploads", element: <AdminUploadsPage /> },
+                ],
+              },
             ],
           },
         ],
       },
-      { path: "*", element: <Navigate to="/" replace /> },
     ],
   },
+  { path: "*", element: <Navigate to="/" replace /> },
 ])

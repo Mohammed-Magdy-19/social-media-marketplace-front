@@ -12,25 +12,31 @@ function useAuthGate() {
   return { isHydrated, accessToken, user: resolvedUser }
 }
 
+function AuthRedirect() {
+  const hasAccount = useAuthStore((s) => s.hasAccount)
+  const location = useLocation()
+  return (
+    <Navigate
+      to={hasAccount ? "/login" : "/register"}
+      replace
+      state={{ from: location.pathname }}
+    />
+  )
+}
+
 export function RequireAuth() {
   const { isHydrated, accessToken } = useAuthGate()
-  const location = useLocation()
 
   if (!isHydrated) return null
-  if (!accessToken) {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />
-  }
+  if (!accessToken) return <AuthRedirect />
   return <Outlet />
 }
 
 export function RequireRole({ role }: { role: UserRole }) {
   const { isHydrated, accessToken, user } = useAuthGate()
-  const location = useLocation()
 
   if (!isHydrated) return null
-  if (!accessToken) {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />
-  }
+  if (!accessToken) return <AuthRedirect />
   if (!user || user.role !== role) {
     return <Navigate to="/" replace />
   }

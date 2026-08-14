@@ -7,6 +7,7 @@ interface AuthState {
   user: PublicUser | null
   accessToken: string | null
   isHydrated: boolean
+  hasAccount: boolean
   setSession: (user: PublicUser | null, accessToken: string | null) => void
   setUser: (user: PublicUser | null) => void
   logout: () => void
@@ -18,8 +19,14 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       accessToken: null,
       isHydrated: false,
+      hasAccount: false,
       setSession: (user, accessToken) =>
-        set({ user, accessToken, isHydrated: true }),
+        set((state) => ({
+          user,
+          accessToken,
+          isHydrated: true,
+          hasAccount: state.hasAccount || !!user || !!accessToken,
+        })),
       setUser: (user) => set({ user }),
       logout: () => {
         set({ user: null, accessToken: null, isHydrated: true })
@@ -28,7 +35,10 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "vendo-session",
-      partialize: (state) => ({ accessToken: state.accessToken }),
+      partialize: (state) => ({
+        accessToken: state.accessToken,
+        hasAccount: state.hasAccount,
+      }),
       onRehydrateStorage: () => (state) => {
         state?.setSession(null, state.accessToken)
       },
