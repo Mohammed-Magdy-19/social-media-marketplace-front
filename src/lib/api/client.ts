@@ -42,13 +42,14 @@ const refreshClient = axios.create({
   withCredentials: true,
 })
 
-async function refreshAccessToken(): Promise<string> {
+export async function refreshAccessToken(): Promise<string> {
   if (refreshPromise) return refreshPromise
   refreshPromise = (async () => {
-    const res = await refreshClient.post<{ accessToken: string }>(
-      "/auth/refresh-token"
-    )
-    const accessToken = res.data.accessToken
+    const res = await refreshClient.post<{
+      status: string
+      data: { accessToken: string }
+    }>("/auth/refresh-token")
+    const accessToken = res.data.data.accessToken
     useAuthStore.getState().setSession(useAuthStore.getState().user, accessToken)
     return accessToken
   })().finally(() => {

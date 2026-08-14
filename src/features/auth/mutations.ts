@@ -9,12 +9,23 @@ import type { loginSchema, registerSchema } from "./schemas"
 type LoginInput = z.infer<typeof loginSchema>
 type RegisterInput = z.infer<typeof registerSchema>
 
+interface AuthSessionData {
+  user: PublicUser
+  accessToken?: string
+}
+
+interface AuthResponse {
+  status: string
+  data: AuthSessionData
+}
+
 export function useLoginMutation() {
   return useMutation({
     mutationFn: (input: LoginInput) =>
-      apiPost<{ accessToken: string; user: PublicUser }>("/auth/login", input),
+      apiPost<AuthResponse>("/auth/login", input),
     onSuccess: (data) => {
-      useAuthStore.getState().setSession(data.user, data.accessToken)
+      const { user, accessToken } = data.data
+      useAuthStore.getState().setSession(user, accessToken ?? null)
       void queryClient.invalidateQueries({ queryKey: ["auth", "me"] })
     },
   })
@@ -23,9 +34,10 @@ export function useLoginMutation() {
 export function useRegisterMutation() {
   return useMutation({
     mutationFn: (input: RegisterInput) =>
-      apiPost<{ accessToken: string; user: PublicUser }>("/auth/register", input),
+      apiPost<AuthResponse>("/auth/register", input),
     onSuccess: (data) => {
-      useAuthStore.getState().setSession(data.user, data.accessToken)
+      const { user, accessToken } = data.data
+      useAuthStore.getState().setSession(user, accessToken ?? null)
       void queryClient.invalidateQueries({ queryKey: ["auth", "me"] })
     },
   })
@@ -33,7 +45,7 @@ export function useRegisterMutation() {
 
 export function useLogoutMutation() {
   return useMutation({
-    mutationFn: () => apiPost<{ ok: true }>("/auth/logout"),
+    mutationFn: () => apiPost<{ status: string }>("/auth/logout"),
     onSettled: () => {
       useAuthStore.getState().logout()
     },

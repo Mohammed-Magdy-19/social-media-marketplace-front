@@ -8,8 +8,10 @@ interface AuthState {
   accessToken: string | null
   isHydrated: boolean
   hasAccount: boolean
+  restoringSession: boolean
   setSession: (user: PublicUser | null, accessToken: string | null) => void
   setUser: (user: PublicUser | null) => void
+  setRestoringSession: (restoring: boolean) => void
   logout: () => void
 }
 
@@ -20,6 +22,7 @@ export const useAuthStore = create<AuthState>()(
       accessToken: null,
       isHydrated: false,
       hasAccount: false,
+      restoringSession: false,
       setSession: (user, accessToken) =>
         set((state) => ({
           user,
@@ -28,6 +31,7 @@ export const useAuthStore = create<AuthState>()(
           hasAccount: state.hasAccount || !!user || !!accessToken,
         })),
       setUser: (user) => set({ user }),
+      setRestoringSession: (restoringSession) => set({ restoringSession }),
       logout: () => {
         set({ user: null, accessToken: null, isHydrated: true })
         queryClient.clear()
@@ -36,11 +40,10 @@ export const useAuthStore = create<AuthState>()(
     {
       name: "vendo-session",
       partialize: (state) => ({
-        accessToken: state.accessToken,
         hasAccount: state.hasAccount,
       }),
       onRehydrateStorage: () => (state) => {
-        state?.setSession(null, state.accessToken)
+        state?.setSession(null, null)
       },
     }
   )

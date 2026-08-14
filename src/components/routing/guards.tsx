@@ -26,16 +26,18 @@ function AuthRedirect() {
 
 export function RequireAuth() {
   const { isHydrated, accessToken } = useAuthGate()
+  const restoringSession = useAuthStore((s) => s.restoringSession)
 
-  if (!isHydrated) return null
+  if (!isHydrated || restoringSession) return null
   if (!accessToken) return <AuthRedirect />
   return <Outlet />
 }
 
 export function RequireRole({ role }: { role: UserRole }) {
   const { isHydrated, accessToken, user } = useAuthGate()
+  const restoringSession = useAuthStore((s) => s.restoringSession)
 
-  if (!isHydrated) return null
+  if (!isHydrated || restoringSession) return null
   if (!accessToken) return <AuthRedirect />
   if (!user || user.role !== role) {
     return <Navigate to="/" replace />

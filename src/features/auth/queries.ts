@@ -8,7 +8,10 @@ export function useCurrentUser() {
   const hasToken = useAuthStore((s) => !!s.accessToken)
   const result = useQuery({
     queryKey: ["auth", "me"],
-    queryFn: ({ signal }) => apiGet<PublicUser>("/auth/me", { signal }),
+    queryFn: ({ signal }) =>
+      apiGet<{ status: string; data: { user: PublicUser } }>("/auth/me", {
+        signal,
+      }).then((res) => res.data.user),
     enabled: hasToken,
     staleTime: Number.POSITIVE_INFINITY,
     retry: 1,

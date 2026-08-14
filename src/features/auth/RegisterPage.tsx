@@ -3,7 +3,10 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Link, useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 import type { z } from "zod"
-import { useRegisterMutation } from "@/features/auth/mutations"
+import {
+  useLoginMutation,
+  useRegisterMutation,
+} from "@/features/auth/mutations"
 import { registerSchema } from "@/features/auth/schemas"
 import { Logo } from "@/components/shared/Logo"
 import { Button } from "@/components/ui/button"
@@ -23,6 +26,7 @@ type RegisterValues = z.infer<typeof registerSchema>
 export default function RegisterPage() {
   const navigate = useNavigate()
   const register = useRegisterMutation()
+  const login = useLoginMutation()
 
   const form = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
@@ -39,7 +43,17 @@ export default function RegisterPage() {
     register.mutate(values, {
       onSuccess: () => {
         toast.success("POST /auth/register — account created")
-        void navigate("/", { replace: true })
+        login.mutate(
+          { email: values.email, password: values.password },
+          {
+            onSuccess: () => {
+              void navigate("/", { replace: true })
+            },
+            onError: () => {
+              void navigate("/login", { replace: true })
+            },
+          }
+        )
       },
       onError: () => toast.error("Registration failed"),
     })
