@@ -158,7 +158,6 @@ export default function AdminUsersPage() {
       <AdminPageHeader
         title="Users"
         subtitle="Manage accounts, roles, and moderation status"
-        endpoint="GET /admin/users"
       >
         <Input
           value={search}

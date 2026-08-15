@@ -36,7 +36,7 @@ export default function LoginPage() {
   const onSubmit = (values: LoginValues) => {
     login.mutate(values, {
       onSuccess: () => {
-        toast.success("POST /auth/login — welcome back")
+          toast.success("Welcome back")
         void navigate(from, { replace: true })
       },
       onError: (error) => {

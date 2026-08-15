@@ -161,7 +161,6 @@ export default function AdminReportsPage() {
       <AdminPageHeader
         title="Reports"
         subtitle="Triage community reports on posts, users, and messages"
-        endpoint="GET /reports"
       >
         <Input
           value={search}

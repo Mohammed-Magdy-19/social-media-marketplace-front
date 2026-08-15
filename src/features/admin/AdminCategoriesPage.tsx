@@ -68,7 +68,6 @@ export default function AdminCategoriesPage() {
       <AdminPageHeader
         title="Categories"
         subtitle="Manage marketplace categories and their slugs"
-        endpoint="GET /categories"
       />
 
       <Card className="rounded-card border-border">

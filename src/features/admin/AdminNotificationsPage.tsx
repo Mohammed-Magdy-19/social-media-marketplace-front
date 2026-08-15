@@ -110,7 +110,6 @@ export default function AdminNotificationsPage() {
       <AdminPageHeader
         title="Notifications"
         subtitle="All system and community notifications"
-        endpoint="GET /notifications"
       >
         <Badge variant="outline" className="border-transparent bg-soft font-mono text-[10px] text-mut">
           {unreadCount} unread

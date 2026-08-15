@@ -90,7 +90,6 @@ export default function AdminUploadsPage() {
       <AdminPageHeader
         title="Uploads"
         subtitle="Every asset in object storage"
-        endpoint="GET /uploads"
       >
         <Input
           value={search}

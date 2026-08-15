@@ -179,7 +179,7 @@ export default function AdminOverviewPage() {
   if (isLoading || !data) {
     return (
       <div>
-        <AdminPageHeader title="Overview" subtitle="Marketplace health at a glance" endpoint="GET /admin/dashboard" />
+        <AdminPageHeader title="Overview" subtitle="Marketplace health at a glance" />
         <OverviewSkeleton />
       </div>
     )
@@ -192,7 +192,6 @@ export default function AdminOverviewPage() {
       <AdminPageHeader
         title="Overview"
         subtitle="Marketplace health at a glance"
-        endpoint="GET /admin/dashboard"
       />
 
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">

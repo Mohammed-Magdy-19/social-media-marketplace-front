@@ -121,7 +121,6 @@ export default function AdminPaymentsPage() {
       <AdminPageHeader
         title="Payments"
         subtitle="Ledger of all marketplace transactions"
-        endpoint="GET /payments/me"
       >
         <Input
           value={search}

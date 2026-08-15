@@ -52,7 +52,7 @@ function Composer() {
       { ...values, tags: values.tags.filter(Boolean) },
       {
         onSuccess: () => {
-          toast.success("POST /posts — post created")
+          toast.success("Post created")
           form.reset({ caption: "", categoryId: "", tags: [] })
         },
         onError: (error) => toast.error(getErrorMessage(error)),

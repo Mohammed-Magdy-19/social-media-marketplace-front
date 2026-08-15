@@ -43,7 +43,7 @@ export default function RegisterPage() {
   const onSubmit = (values: RegisterValues) => {
     register.mutate(values, {
       onSuccess: () => {
-        toast.success("POST /auth/register — account created")
+          toast.success("Account created")
         login.mutate(
           { email: values.email, password: values.password },
           {

@@ -160,7 +160,6 @@ export default function AdminPostsPage() {
       <AdminPageHeader
         title="Posts"
         subtitle="Review and moderate every listing"
-        endpoint="GET /posts"
       >
         <Input
           value={search}

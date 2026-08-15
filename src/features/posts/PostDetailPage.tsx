@@ -68,7 +68,7 @@ export default function PostDetailPage() {
       { postId: post.id, text: values.text },
       {
         onSuccess: () => {
-          toast.success(`POST /posts/${post.id}/comments`)
+          toast.success("Comment posted")
           form.reset()
         },
         onError: (error) => toast.error(getErrorMessage(error)),
@@ -251,10 +251,6 @@ export default function PostDetailPage() {
         </CardContent>
       </Card>
       </ErrorBoundary>
-
-      <Badge variant="outline" className="font-mono text-[10px] text-muted-foreground">
-        GET /posts/{post.id}
-      </Badge>
 
       <ReportDialog
         open={reportOpen}

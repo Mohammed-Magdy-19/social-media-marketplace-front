@@ -125,7 +125,6 @@ export default function AdminConversationsPage() {
       <AdminPageHeader
         title="Conversations"
         subtitle="Monitor active negotiations and typing activity"
-        endpoint="GET /admin/conversations"
       />
 
       <Card className="rounded-card border-border">

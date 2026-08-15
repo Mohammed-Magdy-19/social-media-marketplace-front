@@ -77,7 +77,7 @@ export function ReportDialog({
       { ...values, targetType, targetId },
       {
         onSuccess: () => {
-          toast.success(`POST /reports — report submitted`)
+          toast.success("Report submitted")
           onOpenChange(false)
         },
         onError: (error) => {

@@ -65,7 +65,6 @@ export default function AdminAuditLogsPage() {
       <AdminPageHeader
         title="Audit logs"
         subtitle="Every administrative action, in order"
-        endpoint="GET /admin/audit-logs"
       />
 
       <Card className="rounded-card border-border">

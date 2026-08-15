@@ -7,7 +7,6 @@ import { useAdminDashboard } from "@/features/admin/queries"
 import { ReportDialog } from "@/features/reports/ReportDialog"
 import { ErrorBoundary, SectionFallback } from "@/components/shared/ErrorBoundary"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { MediaPlaceholder } from "@/components/shared/MediaPlaceholder"
 import { formatCurrency } from "@/lib/utils"
@@ -149,12 +148,6 @@ export function RightRail() {
       <ErrorBoundary fallback={<SectionFallback />}>
         <AdminDesk />
       </ErrorBoundary>
-      <Badge
-        variant="outline"
-        className="font-mono text-[10px] text-muted-foreground"
-      >
-        GET /posts · GET /admin/dashboard
-      </Badge>
     </aside>
   )
 }
