@@ -150,6 +150,19 @@ export interface Report {
   createdAt: string;
 }
 
+export interface File {
+  id: string;
+  url: string;
+  publicId: string;
+  mimeType: string;
+  fileSize: number;
+  owner: User | string;
+  resourceType: 'image' | 'video' | 'raw' | 'auto';
+  associatedPost?: string | null;
+  associatedEntity: 'avatar' | 'post' | 'message' | 'other';
+  createdAt: string;
+}
+
 // ==========================================
 // Response Envelopes
 // ==========================================
@@ -828,22 +841,50 @@ export const socket: Socket = io(import.meta.env.VITE_SOCKET_URL || import.meta.
 #### `POST /api/uploads/avatar`
 - **Auth**: Protected
 - **Content-Type**: `multipart/form-data`
-- **Form Field**: `file` (single image, max 2MB)
-- **Response `200 OK`**: `ApiResponse<{ url: string }>`
+- **Form Field**: `avatar` (single image, max 2MB) — *not* `file`; must match Multer's `.single("avatar")` config in `upload.middleware.js`.
+- **Response `201 Created`**: `ApiResponse<{ avatar: string; file: File }>`
+  ```json
+  {
+    "status": "success",
+    "data": {
+      "avatar": "https://res.cloudinary.com/utbxocbj/image/upload/social-marketplace/avatars/xyz.jpg",
+      "file": {
+        "id": "64d3f7b2e1a4c80012a11111",
+        "url": "https://res.cloudinary.com/utbxocbj/image/upload/social-marketplace/avatars/xyz.jpg",
+        "publicId": "social-marketplace/avatars/xyz",
+        "mimeType": "image/jpeg",
+        "fileSize": 48213,
+        "owner": "64d3f7b2e1a4c80012a34567",
+        "resourceType": "image",
+        "associatedEntity": "avatar",
+        "createdAt": "2026-08-15T00:00:00.000Z"
+      }
+    }
+  }
+  ```
 
 #### `POST /api/uploads/posts/:postId`
 - **Auth**: Protected (Post Owner / Admin)
 - **Content-Type**: `multipart/form-data`
-- **Form Field**: `files` (max 5 images, max 10MB per file)
-- **Response `200 OK`**: `ApiResponse<{ urls: string[] }>`
+- **Form Field**: `images` (max 5 images, max 10MB per file) — *not* `files`; must match Multer's `.array("images", 5)` config in `upload.middleware.js`.
+- **Response `201 Created`**: `ApiResponse<{ media: string[]; files: File[] }>`
+  ```json
+  {
+    "status": "success",
+    "data": {
+      "media": ["https://res.cloudinary.com/utbxocbj/image/upload/social-marketplace/posts/a.jpg"],
+      "files": [{ "id": "64d3f7b2e1a4c80012a22222", "url": "...", "publicId": "...", "mimeType": "image/jpeg", "fileSize": 102400, "owner": "...", "associatedPost": "...", "associatedEntity": "post" }]
+    }
+  }
+  ```
 
 #### `GET /api/uploads/:id`
-- **Auth**: Protected
-- **Response `200 OK`**: `ApiResponse<{ upload: object }>`
+- **Auth**: Protected (Owner / Admin)
+- **Response `200 OK`**: `ApiResponse<{ file: File }>` — *not* `{ upload: object }`; controller returns the key `file`.
 
 #### `DELETE /api/uploads/:id`
 - **Auth**: Protected (Uploader / Admin)
-- **Response `200 OK`**: `{ "status": "success", "message": "File deleted." }`
+- **Response `200 OK`**: `{ "status": "success", "data": null }`
 
 ---
 
