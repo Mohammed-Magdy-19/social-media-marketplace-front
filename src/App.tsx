@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes"
 import { queryClient } from "@/lib/queryClient"
 import { router } from "@/router"
 import { Toaster } from "@/components/ui/sonner"
+import { ErrorBoundary } from "@/components/shared/ErrorBoundary"
 import { useSocketLifecycle } from "@/lib/socket/lifecycle"
 import { useAuthStore } from "@/stores/authStore"
 import { refreshAccessToken } from "@/lib/api/client"
@@ -28,17 +29,19 @@ function App() {
   useSocketLifecycle()
 
   return (
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="light"
-      enableSystem={false}
-      disableTransitionOnChange
-    >
-      <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-        <Toaster position="bottom-right" richColors closeButton />
-      </QueryClientProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="light"
+        enableSystem={false}
+        disableTransitionOnChange
+      >
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+          <Toaster position="bottom-right" richColors closeButton />
+        </QueryClientProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   )
 }
 

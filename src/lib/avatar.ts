@@ -16,13 +16,13 @@ function hashString(value: string): number {
   return Math.abs(hash)
 }
 
-export function avatarGradient(seed: string): { from: string; to: string } {
-  const [from, to] = GRADIENTS[hashString(seed) % GRADIENTS.length]
+export function avatarGradient(seed: string | null | undefined): { from: string; to: string } {
+  const [from, to] = GRADIENTS[hashString(seed ?? "") % GRADIENTS.length]
   return { from, to }
 }
 
-export function initials(name: string): string {
-  return name
+export function initials(name: string | null | undefined): string {
+  return (name ?? "")
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
