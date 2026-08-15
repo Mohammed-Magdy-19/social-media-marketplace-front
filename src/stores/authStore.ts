@@ -6,10 +6,15 @@ import { queryClient } from "@/lib/queryClient"
 interface AuthState {
   user: PublicUser | null
   accessToken: string | null
+  refreshToken: string | null
   isHydrated: boolean
   hasAccount: boolean
   restoringSession: boolean
-  setSession: (user: PublicUser | null, accessToken: string | null) => void
+  setSession: (
+    user: PublicUser | null,
+    accessToken: string | null,
+    refreshToken?: string | null
+  ) => void
   setUser: (user: PublicUser | null) => void
   setRestoringSession: (restoring: boolean) => void
   logout: () => void
@@ -20,20 +25,28 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       accessToken: null,
+      refreshToken: null,
       isHydrated: false,
       hasAccount: false,
       restoringSession: false,
-      setSession: (user, accessToken) =>
+      setSession: (user, accessToken, refreshToken = null) =>
         set((state) => ({
           user,
           accessToken,
+          refreshToken,
           isHydrated: true,
           hasAccount: state.hasAccount || !!user || !!accessToken,
         })),
       setUser: (user) => set({ user }),
       setRestoringSession: (restoringSession) => set({ restoringSession }),
       logout: () => {
-        set({ user: null, accessToken: null, isHydrated: true })
+        set({
+          user: null,
+          accessToken: null,
+          refreshToken: null,
+          isHydrated: true,
+          hasAccount: false,
+        })
         queryClient.clear()
       },
     }),
@@ -41,9 +54,10 @@ export const useAuthStore = create<AuthState>()(
       name: "vendo-session",
       partialize: (state) => ({
         hasAccount: state.hasAccount,
+        refreshToken: state.refreshToken,
       }),
       onRehydrateStorage: () => (state) => {
-        state?.setSession(null, null)
+        state?.setSession(null, null, state.refreshToken ?? null)
         if (state?.hasAccount) {
           state.setRestoringSession(true)
         }

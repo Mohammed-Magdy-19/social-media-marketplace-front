@@ -13,6 +13,7 @@ type RegisterInput = z.infer<typeof registerSchema>
 interface AuthSessionData {
   user: PublicUser
   accessToken?: string
+  refreshToken?: string
 }
 
 export function useLoginMutation() {
@@ -20,8 +21,10 @@ export function useLoginMutation() {
     mutationFn: (input: LoginInput) =>
       apiPost<ApiResponse<AuthSessionData>>("/auth/login", input),
     onSuccess: (data) => {
-      const { user, accessToken } = data.data
-      useAuthStore.getState().setSession(user, accessToken ?? null)
+      const { user, accessToken, refreshToken } = data.data
+      useAuthStore
+        .getState()
+        .setSession(user, accessToken ?? null, refreshToken ?? null)
       void queryClient.invalidateQueries({ queryKey: queryKeys.auth.me() })
     },
   })
@@ -32,8 +35,10 @@ export function useRegisterMutation() {
     mutationFn: (input: RegisterInput) =>
       apiPost<ApiResponse<AuthSessionData>>("/auth/register", input),
     onSuccess: (data) => {
-      const { user, accessToken } = data.data
-      useAuthStore.getState().setSession(user, accessToken ?? null)
+      const { user, accessToken, refreshToken } = data.data
+      useAuthStore
+        .getState()
+        .setSession(user, accessToken ?? null, refreshToken ?? null)
       void queryClient.invalidateQueries({ queryKey: queryKeys.auth.me() })
     },
   })
@@ -41,7 +46,13 @@ export function useRegisterMutation() {
 
 export function useLogoutMutation() {
   return useMutation({
-    mutationFn: () => apiPost<{ status: string }>("/auth/logout"),
+    mutationFn: () => {
+      const refreshToken = useAuthStore.getState().refreshToken
+      return apiPost<{ status: string }>(
+        "/auth/logout",
+        refreshToken ? { refreshToken } : {}
+      )
+    },
     onSettled: () => {
       useAuthStore.getState().logout()
     },

@@ -45,12 +45,19 @@ const refreshClient = axios.create({
 export async function refreshAccessToken(): Promise<string> {
   if (refreshPromise) return refreshPromise
   refreshPromise = (async () => {
+    const refreshToken = useAuthStore.getState().refreshToken
     const res = await refreshClient.post<{
       status: string
-      data: { accessToken: string }
-    }>("/auth/refresh-token")
-    const accessToken = res.data.data.accessToken
-    useAuthStore.getState().setSession(useAuthStore.getState().user, accessToken)
+      data: { accessToken: string; refreshToken?: string }
+    }>("/auth/refresh-token", refreshToken ? { refreshToken } : {})
+    const { accessToken, refreshToken: nextRefreshToken } = res.data.data
+    useAuthStore
+      .getState()
+      .setSession(
+        useAuthStore.getState().user,
+        accessToken,
+        nextRefreshToken ?? refreshToken
+      )
     return accessToken
   })().finally(() => {
     refreshPromise = null
