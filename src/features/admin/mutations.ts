@@ -7,29 +7,25 @@ import {
   snapshotAdminLists,
   updateAdminListItem,
 } from "./adminCache"
-import type {
-  AppNotification,
-  Post,
-  PublicUser,
-  Report,
-} from "@/types"
+import { queryKeys } from "@/api/queryKeys"
+import type { AppNotification, Post, PublicUser, Report } from "@/types"
 
-const REPORTS_PREFIX = ["reports"]
-const ADMIN_USERS_PREFIX = ["admin", "users"]
-const ADMIN_POSTS_PREFIX = ["admin", "posts"]
-const NOTIFICATIONS_PREFIX = ["notifications"]
+const REPORTS_PREFIX = queryKeys.reports.all()
+const ADMIN_USERS_PREFIX = queryKeys.admin.users()
+const ADMIN_POSTS_PREFIX = queryKeys.admin.posts()
+const NOTIFICATIONS_PREFIX = queryKeys.notifications.all()
 
 export function useResolveReport() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) =>
-      apiPatch<Report>(`/reports/${id}`, { status: "Resolved" }),
+      apiPatch<Report>(`/reports/${id}`, { status: "resolved" }),
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: REPORTS_PREFIX })
       const snapshot = snapshotAdminLists(queryClient, REPORTS_PREFIX)
       updateAdminListItem<Report>(queryClient, REPORTS_PREFIX, id, (r) => ({
         ...r,
-        status: "Resolved",
+        status: "resolved",
       }))
       return snapshot
     },
@@ -37,7 +33,7 @@ export function useResolveReport() {
       if (snapshot) restoreAdminLists(queryClient, snapshot)
     },
     onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "dashboard"] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.admin.dashboard() })
     },
   })
 }
@@ -46,13 +42,13 @@ export function useDismissReport() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) =>
-      apiPatch<Report>(`/reports/${id}`, { status: "Dismissed" }),
+      apiPatch<Report>(`/reports/${id}`, { status: "dismissed" }),
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: REPORTS_PREFIX })
       const snapshot = snapshotAdminLists(queryClient, REPORTS_PREFIX)
       updateAdminListItem<Report>(queryClient, REPORTS_PREFIX, id, (r) => ({
         ...r,
-        status: "Dismissed",
+        status: "dismissed",
       }))
       return snapshot
     },
@@ -60,7 +56,7 @@ export function useDismissReport() {
       if (snapshot) restoreAdminLists(queryClient, snapshot)
     },
     onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "dashboard"] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.admin.dashboard() })
     },
   })
 }
@@ -85,7 +81,7 @@ export function useSetUserStatus() {
       if (snapshot) restoreAdminLists(queryClient, snapshot)
     },
     onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "dashboard"] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.admin.dashboard() })
     },
   })
 }
@@ -108,21 +104,21 @@ export function useTogglePostStatus() {
       if (snapshot) restoreAdminLists(queryClient, snapshot)
     },
     onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: ["posts"] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.posts.all })
     },
   })
 }
 
 const DEL_TABLE_KEY: Record<string, string[]> = {
-  posts: ["admin", "posts"],
-  users: ["admin", "users"],
-  reports: ["reports"],
-  payments: ["admin", "payments"],
-  notifications: ["notifications"],
-  conversations: ["admin", "conversations"],
-  categories: ["categories"],
-  uploads: ["uploads"],
-  "audit-logs": ["admin", "audit-logs"],
+  posts: queryKeys.admin.posts(),
+  users: queryKeys.admin.users(),
+  reports: queryKeys.reports.all(),
+  payments: queryKeys.admin.payments(),
+  notifications: queryKeys.notifications.all(),
+  conversations: queryKeys.admin.conversations(),
+  categories: queryKeys.categories.all(),
+  uploads: queryKeys.uploads.all(),
+  "audit-logs": queryKeys.admin.auditLogs(),
 }
 
 export function useDelRow() {
@@ -144,18 +140,20 @@ export function useMarkAllRead() {
     mutationFn: () => apiPost<{ ok: true }>("/notifications/read-all"),
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: NOTIFICATIONS_PREFIX })
-      const snapshot = queryClient.getQueryData<AppNotification[]>([
-        "notifications",
-      ])
+      const key = queryKeys.notifications.all()
+      const snapshot = queryClient.getQueryData<AppNotification[]>(key)
       queryClient.setQueryData<AppNotification[]>(
-        ["notifications"],
+        key,
         (old) => old?.map((n) => ({ ...n, read: true })) ?? []
       )
       return snapshot
     },
     onError: (_e, _v, snapshot) => {
       if (snapshot) {
-        queryClient.setQueryData<AppNotification[]>(["notifications"], snapshot)
+        queryClient.setQueryData<AppNotification[]>(
+          queryKeys.notifications.all(),
+          snapshot
+        )
       }
     },
   })
@@ -167,7 +165,7 @@ export function useAddCategory() {
     mutationFn: ({ name }: { name: string }) =>
       apiPost<{ id: string }>("/categories", { name }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["categories"] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.categories.all() })
     },
   })
 }
@@ -177,7 +175,7 @@ export function useDeleteCategory() {
   return useMutation({
     mutationFn: (id: string) => apiDelete<{ ok: true }>(`/categories/${id}`),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["categories"] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.categories.all() })
     },
   })
 }
@@ -188,7 +186,7 @@ export function useDeleteNotification() {
     mutationFn: (id: string) =>
       apiDelete<{ ok: true }>(`/notifications/${id}`),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["notifications"] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all() })
     },
   })
 }
@@ -199,7 +197,9 @@ export function useDeleteConversation() {
     mutationFn: (id: string) =>
       apiDelete<{ ok: true }>(`/admin/conversations/${id}`),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "conversations"] })
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.admin.conversations(),
+      })
     },
   })
 }

@@ -2,7 +2,8 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query"
 import { keepPreviousData } from "@tanstack/react-query"
 import { apiGet } from "@/lib/api/client"
 import { useFilterStore, type FeedSort } from "@/stores/filterStore"
-import type { CursorPage, Post } from "@/types"
+import { queryKeys } from "@/api/queryKeys"
+import type { ApiResponse, PaginatedResponse, Post } from "@/types"
 
 export const POSTS_PAGE_SIZE = 12
 
@@ -15,12 +16,12 @@ export interface PostFilters {
 
 export function usePostsInfinite(filters: PostFilters) {
   return useInfiniteQuery({
-    queryKey: ["posts", filters],
+    queryKey: queryKeys.posts.list(filters),
     queryFn: ({ pageParam, signal }) =>
-      apiGet<CursorPage<Post>>("/posts", {
+      apiGet<PaginatedResponse<Post>>("/posts", {
         params: {
+          page: pageParam ?? 1,
           limit: POSTS_PAGE_SIZE,
-          cursor: pageParam ?? undefined,
           category: filters.category ?? undefined,
           tag: filters.tag ?? undefined,
           author: filters.author ?? undefined,
@@ -28,8 +29,9 @@ export function usePostsInfinite(filters: PostFilters) {
         },
         signal,
       }),
-    initialPageParam: null as string | null,
-    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    initialPageParam: 1 as number,
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination.hasMore ? lastPage.pagination.nextPage : undefined,
     placeholderData: keepPreviousData,
   })
 }
@@ -44,15 +46,21 @@ export function useLivePostFilters() {
 
 export function usePost(postId: string) {
   return useQuery({
-    queryKey: ["posts", "detail", postId],
-    queryFn: ({ signal }) => apiGet<Post>(`/posts/${postId}`, { signal }),
+    queryKey: queryKeys.posts.detail(postId),
+    queryFn: async ({ signal }) => {
+      const res = await apiGet<ApiResponse<{ post: Post }>>(
+        `/posts/${postId}`,
+        { signal }
+      )
+      return res.data.post
+    },
   })
 }
 
 export function useSavedPosts() {
   return useQuery({
-    queryKey: ["users", "me", "saved-posts"],
+    queryKey: queryKeys.users.savedPosts(),
     queryFn: ({ signal }) =>
-      apiGet<CursorPage<Post>>("/users/me/saved-posts", { signal }),
+      apiGet<PaginatedResponse<Post>>("/users/me/saved-posts", { signal }),
   })
 }

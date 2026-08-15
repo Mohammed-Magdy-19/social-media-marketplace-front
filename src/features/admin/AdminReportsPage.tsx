@@ -50,11 +50,11 @@ export default function AdminReportsPage() {
   }, [search])
 
   const { data, isLoading } = useReports({
-    status: activePill === "All" ? undefined : activePill,
+    status: activePill === "All" ? undefined : activePill.toLowerCase(),
     search: debounced || undefined,
   })
 
-  const rows = data?.items ?? []
+  const rows = data?.data ?? []
 
   const columns = React.useMemo(
     () => [

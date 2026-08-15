@@ -6,11 +6,11 @@ export const adminCategoryCreateSchema = z.object({
 })
 
 export const adminUserStatusSchema = z.object({
-  status: z.enum(["Active", "Suspended", "Banned"]),
+  status: z.enum(["active", "suspended", "banned"]),
 })
 
 export const adminReportActionSchema = z.object({
-  action: z.enum(["Resolved", "Dismissed"]),
+  action: z.enum(["resolved", "dismissed"]),
   note: z.string().max(300).optional(),
 })
 

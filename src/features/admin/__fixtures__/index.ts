@@ -20,14 +20,14 @@ import type {
 } from "@/types"
 
 export const fixtureUsers: PublicUser[] = [
-  { id: "u1", name: "Amara Okafor", username: "amara", email: "amara@vendo.dev", role: "Admin", status: "Active", joinedAt: "2024-11-02T09:00:00Z", bio: "Marketplace ops lead" },
-  { id: "u2", name: "Lucas Meyer", username: "lucas", email: "lucas@vendo.dev", role: "User", status: "Active", joinedAt: "2025-01-14T10:00:00Z", bio: "Photography gear" },
-  { id: "u3", name: "Priya Nair", username: "priya", email: "priya@vendo.dev", role: "User", status: "Suspended", joinedAt: "2024-12-03T11:00:00Z" },
-  { id: "u4", name: "Diego Ramos", username: "diego", email: "diego@vendo.dev", role: "User", status: "Active", joinedAt: "2025-03-21T12:00:00Z", bio: "Vinyl collector" },
-  { id: "u5", name: "Sara Lindqvist", username: "sara", email: "sara@vendo.dev", role: "User", status: "Banned", joinedAt: "2024-10-19T13:00:00Z" },
-  { id: "u6", name: "Kenji Tanaka", username: "kenji", email: "kenji@vendo.dev", role: "User", status: "Active", joinedAt: "2025-02-11T14:00:00Z", bio: "Mechanical keyboards" },
-  { id: "u7", name: "Fatima El-Sayed", username: "fatima", email: "fatima@vendo.dev", role: "User", status: "Active", joinedAt: "2025-05-08T15:00:00Z" },
-  { id: "u8", name: "Oliver Grant", username: "oliver", email: "oliver@vendo.dev", role: "User", status: "Active", joinedAt: "2025-06-30T16:00:00Z" },
+  { id: "u1", name: "Amara Okafor", username: "amara", email: "amara@vendo.dev", role: "admin", status: "active", joinedAt: "2024-11-02T09:00:00Z", bio: "Marketplace ops lead" },
+  { id: "u2", name: "Lucas Meyer", username: "lucas", email: "lucas@vendo.dev", role: "user", status: "active", joinedAt: "2025-01-14T10:00:00Z", bio: "Photography gear" },
+  { id: "u3", name: "Priya Nair", username: "priya", email: "priya@vendo.dev", role: "user", status: "suspended", joinedAt: "2024-12-03T11:00:00Z" },
+  { id: "u4", name: "Diego Ramos", username: "diego", email: "diego@vendo.dev", role: "user", status: "active", joinedAt: "2025-03-21T12:00:00Z", bio: "Vinyl collector" },
+  { id: "u5", name: "Sara Lindqvist", username: "sara", email: "sara@vendo.dev", role: "user", status: "banned", joinedAt: "2024-10-19T13:00:00Z" },
+  { id: "u6", name: "Kenji Tanaka", username: "kenji", email: "kenji@vendo.dev", role: "user", status: "active", joinedAt: "2025-02-11T14:00:00Z", bio: "Mechanical keyboards" },
+  { id: "u7", name: "Fatima El-Sayed", username: "fatima", email: "fatima@vendo.dev", role: "user", status: "active", joinedAt: "2025-05-08T15:00:00Z" },
+  { id: "u8", name: "Oliver Grant", username: "oliver", email: "oliver@vendo.dev", role: "user", status: "active", joinedAt: "2025-06-30T16:00:00Z" },
 ]
 
 export const fixtureCategories: Category[] = [
@@ -39,31 +39,31 @@ export const fixtureCategories: Category[] = [
 ]
 
 export const fixturePosts: Post[] = [
-  { id: "p1", author: fixtureUsers[1], caption: "A7 III body only, shutter count 12k", media: [], category: fixtureCategories[1], tags: ["camera", "sony"], price: 1299, currency: "USD", status: "Published", createdAt: "2026-08-12T09:15:00Z", likeCount: 42, commentCount: 6, saveCount: 18, isLiked: false, isSaved: false },
-  { id: "p2", author: fixtureUsers[3], caption: "60s jazz records, mint condition", media: [], category: fixtureCategories[3], tags: ["vinyl", "jazz"], price: 240, currency: "USD", status: "Published", createdAt: "2026-08-11T18:40:00Z", likeCount: 31, commentCount: 4, saveCount: 9, isLiked: false, isSaved: false },
-  { id: "p3", author: fixtureUsers[5], caption: "Hand-wired split keyboard, GMK keycaps", media: [], category: fixtureCategories[1], tags: ["keyboard", "mechanical"], price: 185, currency: "USD", status: "Published", createdAt: "2026-08-10T12:00:00Z", likeCount: 57, commentCount: 11, saveCount: 26, isLiked: false, isSaved: false },
-  { id: "p4", author: fixtureUsers[2], caption: "Down jacket, size L — barely worn", media: [], category: fixtureCategories[0], tags: ["jacket", "winter"], price: 90, currency: "USD", status: "Pending", createdAt: "2026-08-09T08:30:00Z", likeCount: 3, commentCount: 0, saveCount: 1, isLiked: false, isSaved: false },
-  { id: "p5", author: fixtureUsers[6], caption: "Desk lamp + wireless charger bundle", media: [], category: fixtureCategories[2], tags: ["desk", "lamp"], price: 45, currency: "USD", status: "Flagged", createdAt: "2026-08-08T20:10:00Z", likeCount: 8, commentCount: 2, saveCount: 0, isLiked: false, isSaved: false },
-  { id: "p6", author: fixtureUsers[4], caption: "Software license — photo editing suite", media: [], category: fixtureCategories[4], tags: ["software", "license"], price: 60, currency: "USD", status: "Draft", createdAt: "2026-08-07T14:00:00Z", likeCount: 0, commentCount: 0, saveCount: 0, isLiked: false, isSaved: false },
-  { id: "p7", author: fixtureUsers[1], caption: "Tripod + gimbal kit", media: [], category: fixtureCategories[1], tags: ["tripod", "gimbal"], price: 210, currency: "USD", status: "Published", createdAt: "2026-08-06T11:45:00Z", likeCount: 22, commentCount: 3, saveCount: 7, isLiked: false, isSaved: false },
-  { id: "p8", author: fixtureUsers[3], caption: "Vintage amplifier, fully serviced", media: [], category: fixtureCategories[2], tags: ["audio", "vintage"], price: 320, currency: "USD", status: "Published", createdAt: "2026-08-05T17:20:00Z", likeCount: 19, commentCount: 5, saveCount: 12, isLiked: false, isSaved: false },
+  { id: "p1", author: fixtureUsers[1], caption: "A7 III body only, shutter count 12k", media: [], category: fixtureCategories[1], tags: ["camera", "sony"], price: 1299, currency: "USD", status: "published", createdAt: "2026-08-12T09:15:00Z", likeCount: 42, commentCount: 6, saveCount: 18, isLiked: false, isSaved: false },
+  { id: "p2", author: fixtureUsers[3], caption: "60s jazz records, mint condition", media: [], category: fixtureCategories[3], tags: ["vinyl", "jazz"], price: 240, currency: "USD", status: "published", createdAt: "2026-08-11T18:40:00Z", likeCount: 31, commentCount: 4, saveCount: 9, isLiked: false, isSaved: false },
+  { id: "p3", author: fixtureUsers[5], caption: "Hand-wired split keyboard, GMK keycaps", media: [], category: fixtureCategories[1], tags: ["keyboard", "mechanical"], price: 185, currency: "USD", status: "published", createdAt: "2026-08-10T12:00:00Z", likeCount: 57, commentCount: 11, saveCount: 26, isLiked: false, isSaved: false },
+  { id: "p4", author: fixtureUsers[2], caption: "Down jacket, size L — barely worn", media: [], category: fixtureCategories[0], tags: ["jacket", "winter"], price: 90, currency: "USD", status: "pending", createdAt: "2026-08-09T08:30:00Z", likeCount: 3, commentCount: 0, saveCount: 1, isLiked: false, isSaved: false },
+  { id: "p5", author: fixtureUsers[6], caption: "Desk lamp + wireless charger bundle", media: [], category: fixtureCategories[2], tags: ["desk", "lamp"], price: 45, currency: "USD", status: "flagged", createdAt: "2026-08-08T20:10:00Z", likeCount: 8, commentCount: 2, saveCount: 0, isLiked: false, isSaved: false },
+  { id: "p6", author: fixtureUsers[4], caption: "Software license — photo editing suite", media: [], category: fixtureCategories[4], tags: ["software", "license"], price: 60, currency: "USD", status: "draft", createdAt: "2026-08-07T14:00:00Z", likeCount: 0, commentCount: 0, saveCount: 0, isLiked: false, isSaved: false },
+  { id: "p7", author: fixtureUsers[1], caption: "Tripod + gimbal kit", media: [], category: fixtureCategories[1], tags: ["tripod", "gimbal"], price: 210, currency: "USD", status: "published", createdAt: "2026-08-06T11:45:00Z", likeCount: 22, commentCount: 3, saveCount: 7, isLiked: false, isSaved: false },
+  { id: "p8", author: fixtureUsers[3], caption: "Vintage amplifier, fully serviced", media: [], category: fixtureCategories[2], tags: ["audio", "vintage"], price: 320, currency: "USD", status: "published", createdAt: "2026-08-05T17:20:00Z", likeCount: 19, commentCount: 5, saveCount: 12, isLiked: false, isSaved: false },
 ]
 
 export const fixtureReports: Report[] = [
-  { id: "r1", targetType: "post", targetId: "p5", targetSummary: "Desk lamp + wireless charger bundle", reason: "Prohibited item", detail: "Claims to be authentic but looks like a replica.", status: "Pending", reporter: fixtureUsers[2], createdAt: "2026-08-12T07:00:00Z" },
-  { id: "r2", targetType: "user", targetId: "u5", targetSummary: "Sara Lindqvist", reason: "Harassment", detail: "Repeated abusive messages.", status: "Pending", reporter: fixtureUsers[6], createdAt: "2026-08-12T06:30:00Z" },
-  { id: "r3", targetType: "post", targetId: "p3", targetSummary: "Hand-wired split keyboard", reason: "Misleading", detail: "Keycaps not included as described.", status: "Resolved", reporter: fixtureUsers[0], createdAt: "2026-08-11T15:00:00Z" },
-  { id: "r4", targetType: "message", targetId: "m9", targetSummary: "Negotiation message", reason: "Spam", status: "Dismissed", reporter: fixtureUsers[3], createdAt: "2026-08-10T10:00:00Z" },
-  { id: "r5", targetType: "post", targetId: "p6", targetSummary: "Software license — photo editing suite", reason: "Counterfeit", status: "Pending", reporter: fixtureUsers[1], createdAt: "2026-08-12T09:45:00Z" },
+  { id: "r1", targetType: "post", targetId: "p5", targetSummary: "Desk lamp + wireless charger bundle", reason: "Prohibited item", detail: "Claims to be authentic but looks like a replica.", status: "pending", reporter: fixtureUsers[2], createdAt: "2026-08-12T07:00:00Z" },
+  { id: "r2", targetType: "user", targetId: "u5", targetSummary: "Sara Lindqvist", reason: "Harassment", detail: "Repeated abusive messages.", status: "pending", reporter: fixtureUsers[6], createdAt: "2026-08-12T06:30:00Z" },
+  { id: "r3", targetType: "post", targetId: "p3", targetSummary: "Hand-wired split keyboard", reason: "Misleading", detail: "Keycaps not included as described.", status: "resolved", reporter: fixtureUsers[0], createdAt: "2026-08-11T15:00:00Z" },
+  { id: "r4", targetType: "message", targetId: "m9", targetSummary: "Negotiation message", reason: "Spam", status: "dismissed", reporter: fixtureUsers[3], createdAt: "2026-08-10T10:00:00Z" },
+  { id: "r5", targetType: "post", targetId: "p6", targetSummary: "Software license — photo editing suite", reason: "Counterfeit", status: "pending", reporter: fixtureUsers[1], createdAt: "2026-08-12T09:45:00Z" },
 ]
 
 export const fixturePayments: Payment[] = [
-  { id: "pay1", userId: "u2", postId: "p1", amount: 1299, currency: "USD", status: "Succeeded", method: "card", createdAt: "2026-08-12T10:00:00Z" },
-  { id: "pay2", userId: "u4", postId: "p2", amount: 240, currency: "USD", status: "Succeeded", method: "card", createdAt: "2026-08-11T19:00:00Z" },
-  { id: "pay3", userId: "u6", postId: "p3", amount: 185, currency: "USD", status: "Pending", method: "bank", createdAt: "2026-08-10T13:00:00Z" },
-  { id: "pay4", userId: "u7", postId: "p7", amount: 210, currency: "USD", status: "Failed", method: "card", createdAt: "2026-08-09T15:00:00Z" },
-  { id: "pay5", userId: "u2", postId: "p8", amount: 320, currency: "USD", status: "Succeeded", method: "card", createdAt: "2026-08-08T18:00:00Z" },
-  { id: "pay6", userId: "u3", postId: "p4", amount: 90, currency: "USD", status: "Refunded", method: "card", createdAt: "2026-08-07T09:00:00Z" },
+  { id: "pay1", userId: "u2", postId: "p1", amount: 1299, currency: "USD", status: "succeeded", method: "card", createdAt: "2026-08-12T10:00:00Z" },
+  { id: "pay2", userId: "u4", postId: "p2", amount: 240, currency: "USD", status: "succeeded", method: "card", createdAt: "2026-08-11T19:00:00Z" },
+  { id: "pay3", userId: "u6", postId: "p3", amount: 185, currency: "USD", status: "pending", method: "bank", createdAt: "2026-08-10T13:00:00Z" },
+  { id: "pay4", userId: "u7", postId: "p7", amount: 210, currency: "USD", status: "failed", method: "card", createdAt: "2026-08-09T15:00:00Z" },
+  { id: "pay5", userId: "u2", postId: "p8", amount: 320, currency: "USD", status: "succeeded", method: "card", createdAt: "2026-08-08T18:00:00Z" },
+  { id: "pay6", userId: "u3", postId: "p4", amount: 90, currency: "USD", status: "refunded", method: "card", createdAt: "2026-08-07T09:00:00Z" },
 ]
 
 export const fixtureNotifications: AppNotification[] = [

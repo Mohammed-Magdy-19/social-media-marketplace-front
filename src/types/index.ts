@@ -4,8 +4,9 @@
  * consumed everywhere; form value types come from `z.infer` instead.
  */
 
-export type UserRole = "User" | "Admin"
-export type UserStatus = "Active" | "Suspended" | "Banned"
+export type UserRole = "user" | "moderator" | "admin"
+export type UserStatus = "active" | "suspended" | "banned"
+export type PostSortOption = "newest" | "oldest" | "most_liked" | "most_commented"
 
 export interface PublicUser {
   id: string
@@ -28,7 +29,7 @@ export interface Category {
   postCount?: number
 }
 
-export type PostStatus = "Published" | "Draft" | "Pending" | "Flagged"
+export type PostStatus = "published" | "draft" | "pending" | "flagged"
 
 export interface MediaAsset {
   id: string
@@ -61,8 +62,9 @@ export interface Post {
 export interface PostComment {
   id: string
   postId: string
+  parentId?: string
   author: PublicUser
-  body: string
+  text: string
   createdAt: string
   likeCount: number
   isLiked: boolean
@@ -96,11 +98,17 @@ export interface Message {
   clientMessageId?: string
 }
 
+/** Cursor-paginated page of messages (handbook §5.6 — `data.messages` + `nextCursor`). */
+export interface MessageCursorPage {
+  messages: Message[]
+  nextCursor: string | null
+}
+
 export type PaymentStatus =
-  | "Succeeded"
-  | "Pending"
-  | "Failed"
-  | "Refunded"
+  | "succeeded"
+  | "pending"
+  | "failed"
+  | "refunded"
 
 export interface Payment {
   id: string
@@ -121,7 +129,7 @@ export interface PaymentIntent {
 }
 
 export type ReportTargetType = "post" | "user" | "message"
-export type ReportStatus = "Pending" | "Resolved" | "Dismissed"
+export type ReportStatus = "pending" | "reviewed" | "resolved" | "dismissed"
 
 export interface Report {
   id: string
@@ -211,6 +219,30 @@ export interface AdminDashboard {
 export interface CursorPage<T> {
   items: T[]
   nextCursor: string | null
+}
+
+/** Generic envelope returned by every non-list endpoint. */
+export interface ApiResponse<T> {
+  status: "success" | "fail" | "error"
+  message?: string
+  results?: number
+  data: T
+}
+
+/** Pagination metadata returned by list endpoints. */
+export interface PaginationMeta {
+  page: number
+  limit: number
+  hasMore: boolean
+  nextPage: string | number | null
+}
+
+/** Envelope returned by every paginated list endpoint. */
+export interface PaginatedResponse<T> {
+  status: "success"
+  results: number
+  data: T[]
+  pagination: PaginationMeta
 }
 
 export interface ApiErrorBody {

@@ -1,10 +1,8 @@
 import type { QueryClient, QueryKey } from "@tanstack/react-query"
-import type { CursorPage } from "@/types"
-
-type PageEnvelope = { pages: CursorPage<unknown>[]; pageParams: unknown[] }
+import type { PaginatedResponse } from "@/types"
 
 /**
- * Generic helpers for optimistically editing cursor-paginated list cache
+ * Generic helpers for optimistically editing page-paginated list cache
  * entries (used by admin mutations across every admin table). Key prefix
  * is an array, e.g. `["admin", "posts"]`, `["reports"]`.
  */
@@ -33,18 +31,15 @@ export function updateAdminListItem<T>(
   updater: (item: T) => T
 ) {
   for (const key of adminListKeys(queryClient, keyPrefix)) {
-    queryClient.setQueryData<PageEnvelope>(key, (old) => {
+    queryClient.setQueryData<PaginatedResponse<T>>(key, (old) => {
       if (!old) return old
       let changed = false
-      const pages = old.pages.map((page) => ({
-        ...page,
-        items: page.items.map((item) => {
-          if ((item as { id?: string }).id !== id) return item
-          changed = true
-          return updater(item as T)
-        }),
-      }))
-      return changed ? { ...old, pages } : old
+      const data = old.data.map((item) => {
+        if ((item as { id?: string }).id !== id) return item
+        changed = true
+        return updater(item)
+      })
+      return changed ? { ...old, data } : old
     })
   }
 }
@@ -55,15 +50,10 @@ export function removeAdminListItem(
   id: string
 ) {
   for (const key of adminListKeys(queryClient, keyPrefix)) {
-    queryClient.setQueryData<PageEnvelope>(key, (old) => {
+    queryClient.setQueryData<PaginatedResponse<unknown>>(key, (old) => {
       if (!old) return old
-      const pages = old.pages.map((page) => ({
-        ...page,
-        items: page.items.filter(
-          (item) => (item as { id?: string }).id !== id
-        ),
-      }))
-      return { ...old, pages }
+      const data = old.data.filter((item) => (item as { id?: string }).id !== id)
+      return { ...old, data }
     })
   }
 }
@@ -72,9 +62,9 @@ export function snapshotAdminLists(
   queryClient: QueryClient,
   keyPrefix: string[]
 ) {
-  const snapshot = new Map<QueryKey, PageEnvelope>()
+  const snapshot = new Map<QueryKey, PaginatedResponse<unknown>>()
   for (const key of adminListKeys(queryClient, keyPrefix)) {
-    const data = queryClient.getQueryData<PageEnvelope>(key)
+    const data = queryClient.getQueryData<PaginatedResponse<unknown>>(key)
     if (data) snapshot.set(key, data)
   }
   return snapshot
@@ -82,7 +72,7 @@ export function snapshotAdminLists(
 
 export function restoreAdminLists(
   queryClient: QueryClient,
-  snapshot: Map<QueryKey, PageEnvelope>
+  snapshot: Map<QueryKey, PaginatedResponse<unknown>>
 ) {
   for (const [key, data] of snapshot) {
     queryClient.setQueryData(key, data)

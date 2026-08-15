@@ -1,6 +1,6 @@
 import { create } from "zustand"
 
-export type FeedSort = "latest" | "popular" | "price_asc" | "price_desc"
+export type FeedSort = "newest" | "oldest" | "most_liked" | "most_commented"
 
 interface FilterState {
   category: string | null
@@ -18,10 +18,10 @@ export const useFilterStore = create<FilterState>()((set) => ({
   category: null,
   tag: null,
   author: null,
-  sort: "latest",
+  sort: "newest",
   setCategory: (category) => set({ category }),
   setTag: (tag) => set({ tag }),
   setAuthor: (author) => set({ author }),
   setSort: (sort) => set({ sort }),
-  reset: () => set({ category: null, tag: null, author: null, sort: "latest" }),
+  reset: () => set({ category: null, tag: null, author: null, sort: "newest" }),
 }))

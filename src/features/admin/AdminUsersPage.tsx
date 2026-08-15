@@ -51,11 +51,11 @@ export default function AdminUsersPage() {
   }, [search])
 
   const { data, isLoading } = useAdminUsers({
-    status: activePill === "All" ? undefined : activePill,
+    status: activePill === "All" ? undefined : activePill.toLowerCase(),
     search: debounced || undefined,
   })
 
-  const rows = data?.items ?? []
+  const rows = data?.data ?? []
 
   const columns = React.useMemo(
     () => [
@@ -116,14 +116,14 @@ export default function AdminUsersPage() {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
                   onSelect={() =>
-                    setStatus.mutate({ id: u.id, status: "Active" })
+                    setStatus.mutate({ id: u.id, status: "active" })
                   }
                 >
                   Set Active
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={() =>
-                    setStatus.mutate({ id: u.id, status: "Suspended" })
+                    setStatus.mutate({ id: u.id, status: "suspended" })
                   }
                 >
                   Set Suspended
@@ -213,7 +213,7 @@ export default function AdminUsersPage() {
               onClick={() => {
                 if (!banTarget) return
                 setStatus.mutate(
-                  { id: banTarget.id, status: "Banned" },
+                  { id: banTarget.id, status: "banned" },
                   { onError: () => toast.error("Failed to ban user") }
                 )
                 setBanTarget(null)

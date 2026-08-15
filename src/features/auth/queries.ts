@@ -2,14 +2,15 @@ import { useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { apiGet } from "@/lib/api/client"
 import { useAuthStore } from "@/stores/authStore"
-import type { PublicUser } from "@/types"
+import { queryKeys } from "@/api/queryKeys"
+import type { ApiResponse, PublicUser } from "@/types"
 
 export function useCurrentUser() {
   const hasToken = useAuthStore((s) => !!s.accessToken)
   const result = useQuery({
-    queryKey: ["auth", "me"],
+    queryKey: queryKeys.auth.me(),
     queryFn: ({ signal }) =>
-      apiGet<{ status: string; data: { user: PublicUser } }>("/auth/me", {
+      apiGet<ApiResponse<{ user: PublicUser }>>("/auth/me", {
         signal,
       }).then((res) => res.data.user),
     enabled: hasToken,

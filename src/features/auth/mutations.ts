@@ -2,7 +2,8 @@ import { useMutation } from "@tanstack/react-query"
 import { apiPost } from "@/lib/api/client"
 import { useAuthStore } from "@/stores/authStore"
 import { queryClient } from "@/lib/queryClient"
-import type { PublicUser } from "@/types"
+import { queryKeys } from "@/api/queryKeys"
+import type { ApiResponse, PublicUser } from "@/types"
 import type { z } from "zod"
 import type { loginSchema, registerSchema } from "./schemas"
 
@@ -14,19 +15,14 @@ interface AuthSessionData {
   accessToken?: string
 }
 
-interface AuthResponse {
-  status: string
-  data: AuthSessionData
-}
-
 export function useLoginMutation() {
   return useMutation({
     mutationFn: (input: LoginInput) =>
-      apiPost<AuthResponse>("/auth/login", input),
+      apiPost<ApiResponse<AuthSessionData>>("/auth/login", input),
     onSuccess: (data) => {
       const { user, accessToken } = data.data
       useAuthStore.getState().setSession(user, accessToken ?? null)
-      void queryClient.invalidateQueries({ queryKey: ["auth", "me"] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.auth.me() })
     },
   })
 }
@@ -34,11 +30,11 @@ export function useLoginMutation() {
 export function useRegisterMutation() {
   return useMutation({
     mutationFn: (input: RegisterInput) =>
-      apiPost<AuthResponse>("/auth/register", input),
+      apiPost<ApiResponse<AuthSessionData>>("/auth/register", input),
     onSuccess: (data) => {
       const { user, accessToken } = data.data
       useAuthStore.getState().setSession(user, accessToken ?? null)
-      void queryClient.invalidateQueries({ queryKey: ["auth", "me"] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.auth.me() })
     },
   })
 }

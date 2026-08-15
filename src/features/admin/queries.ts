@@ -1,11 +1,13 @@
 import { useQuery } from "@tanstack/react-query"
 import { keepPreviousData } from "@tanstack/react-query"
 import { apiGet } from "@/lib/api/client"
+import { queryKeys } from "@/api/queryKeys"
 import type {
   AdminDashboard,
+  ApiResponse,
   AuditLog,
   Conversation,
-  CursorPage,
+  PaginatedResponse,
   Payment,
   Post,
   PublicUser,
@@ -35,18 +37,23 @@ export interface ReportsFilters {
 
 export function useAdminDashboard() {
   return useQuery({
-    queryKey: ["admin", "dashboard"],
-    queryFn: ({ signal }) =>
-      apiGet<AdminDashboard>("/admin/dashboard", { signal }),
+    queryKey: queryKeys.admin.dashboard(),
+    queryFn: async ({ signal }) => {
+      const res = await apiGet<ApiResponse<AdminDashboard>>(
+        "/admin/dashboard",
+        { signal }
+      )
+      return res.data
+    },
     staleTime: 20_000,
   })
 }
 
 export function useAdminPosts(filters: AdminPostsFilters = {}) {
   return useQuery({
-    queryKey: ["admin", "posts", filters],
+    queryKey: queryKeys.admin.posts(filters),
     queryFn: ({ signal }) =>
-      apiGet<CursorPage<Post>>("/posts", {
+      apiGet<PaginatedResponse<Post>>("/posts", {
         params: {
           status: filters.status ?? undefined,
           search: filters.search ?? undefined,
@@ -60,9 +67,9 @@ export function useAdminPosts(filters: AdminPostsFilters = {}) {
 
 export function useAdminUsers(filters: AdminUsersFilters = {}) {
   return useQuery({
-    queryKey: ["admin", "users", filters],
+    queryKey: queryKeys.admin.users(filters),
     queryFn: ({ signal }) =>
-      apiGet<CursorPage<PublicUser>>("/admin/users", {
+      apiGet<PaginatedResponse<PublicUser>>("/admin/users", {
         params: {
           status: filters.status ?? undefined,
           search: filters.search ?? undefined,
@@ -75,9 +82,9 @@ export function useAdminUsers(filters: AdminUsersFilters = {}) {
 
 export function useReports(filters: ReportsFilters = {}) {
   return useQuery({
-    queryKey: ["reports", filters],
+    queryKey: queryKeys.reports.all(filters),
     queryFn: ({ signal }) =>
-      apiGet<CursorPage<Report>>("/reports", {
+      apiGet<PaginatedResponse<Report>>("/reports", {
         params: {
           status: filters.status ?? undefined,
           search: filters.search ?? undefined,
@@ -95,7 +102,7 @@ export function useReports(filters: ReportsFilters = {}) {
  */
 export function useAdminConversations() {
   return useQuery({
-    queryKey: ["admin", "conversations"],
+    queryKey: queryKeys.admin.conversations(),
     queryFn: ({ signal }) =>
       apiGet<Conversation[]>("/admin/conversations", { signal }),
     placeholderData: keepPreviousData,
@@ -104,9 +111,9 @@ export function useAdminConversations() {
 
 export function useAdminPayments(filters: AdminPaymentsFilters = {}) {
   return useQuery({
-    queryKey: ["admin", "payments", filters],
+    queryKey: queryKeys.admin.payments(filters),
     queryFn: ({ signal }) =>
-      apiGet<CursorPage<Payment>>("/payments/me", {
+      apiGet<PaginatedResponse<Payment>>("/payments/me", {
         params: {
           status: filters.status ?? undefined,
           search: filters.search ?? undefined,
@@ -124,7 +131,7 @@ export function useAdminPayments(filters: AdminPaymentsFilters = {}) {
  */
 export function useAuditLogs() {
   return useQuery({
-    queryKey: ["admin", "audit-logs"],
+    queryKey: queryKeys.admin.auditLogs(),
     queryFn: ({ signal }) =>
       apiGet<AuditLog[]>("/admin/audit-logs", { signal }),
     placeholderData: keepPreviousData,
@@ -133,9 +140,9 @@ export function useAuditLogs() {
 
 export function useAdminUploads(filters: { search?: string } = {}) {
   return useQuery({
-    queryKey: ["admin", "uploads", filters],
+    queryKey: queryKeys.admin.uploads(filters),
     queryFn: ({ signal }) =>
-      apiGet<CursorPage<Upload>>("/uploads", {
+      apiGet<PaginatedResponse<Upload>>("/uploads", {
         params: { search: filters.search ?? undefined },
         signal,
       }),

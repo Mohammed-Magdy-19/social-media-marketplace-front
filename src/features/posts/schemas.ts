@@ -7,7 +7,7 @@ export const postComposerSchema = z.object({
 })
 
 export const commentSchema = z.object({
-  body: z.string().min(1, "Write a comment").max(500),
+  text: z.string().min(1, "Write a comment").max(500),
 })
 
 export const replySchema = commentSchema

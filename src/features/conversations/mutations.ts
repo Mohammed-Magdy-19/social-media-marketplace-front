@@ -2,7 +2,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { apiPost } from "@/lib/api/client"
 import { socket } from "@/lib/socket/client"
 import { router } from "@/router"
-import type { CursorPage, Message } from "@/types"
+import { queryKeys } from "@/api/queryKeys"
+import type { Message, MessageCursorPage } from "@/types"
 
 export function useStartNegotiation() {
   return useMutation({
@@ -35,18 +36,18 @@ export function useSendMessage(conversationId: string) {
         clientMessageId,
       }
       queryClient.setQueryData<{
-        pages: CursorPage<Message>[]
+        pages: MessageCursorPage[]
         pageParams: (string | null)[]
-      }>(["conversations", conversationId, "messages"], (old) => {
+      }>(queryKeys.conversations.messages(conversationId), (old) => {
         if (!old || old.pages.length === 0) {
           return {
-            pages: [{ items: [optimistic], nextCursor: null }],
+            pages: [{ messages: [optimistic], nextCursor: null }],
             pageParams: [null],
           }
         }
         const pages = old.pages.map((page, index) =>
           index === 0
-            ? { ...page, items: [...page.items, optimistic] }
+            ? { ...page, messages: [...page.messages, optimistic] }
             : page
         )
         return { ...old, pages }

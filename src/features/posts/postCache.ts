@@ -1,16 +1,13 @@
-import type { QueryClient, QueryKey } from "@tanstack/react-query"
-import type { CursorPage, Post } from "@/types"
+import type { InfiniteData, QueryClient, QueryKey } from "@tanstack/react-query"
+import type { PaginatedResponse, Post } from "@/types"
 
-export type PostPageEnvelope = {
-  pages: CursorPage<Post>[]
-  pageParams: unknown[]
-}
+export type PostPageEnvelope = InfiniteData<PaginatedResponse<Post>>
 
 function isPostListKey(key: unknown): boolean {
   return (
     Array.isArray(key) &&
-    key.length > 0 &&
-    (key[0] === "posts" || (key[0] === "users" && key[1] === "me" && key[2] === "feed"))
+    ((key[0] === "posts" && key[1] === "list") ||
+      (key[0] === "users" && key[1] === "me" && key[2] === "feed"))
   )
 }
 
@@ -33,7 +30,7 @@ export function updatePostInCache(
       let changed = false
       const pages = old.pages.map((page) => ({
         ...page,
-        items: page.items.map((post) => {
+        data: page.data.map((post) => {
           if (post.id !== postId) return post
           changed = true
           return updater(post)

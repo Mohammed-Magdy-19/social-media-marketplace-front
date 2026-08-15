@@ -2,21 +2,22 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
 const STATUS_TONE: Record<string, string> = {
-  Success: "text-ok bg-ok-soft",
-  Published: "text-ok bg-ok-soft",
-  Resolved: "text-ok bg-ok-soft",
-  Active: "text-ok bg-ok-soft",
-  Pending: "text-warn bg-warn-soft",
-  Suspended: "text-warn bg-warn-soft",
-  Draft: "text-info bg-info-soft",
-  Flagged: "text-err bg-err-soft",
-  Banned: "text-err bg-err-soft",
-  Dismissed: "text-err bg-err-soft",
-  Failed: "text-err bg-err-soft",
-  Refunded: "text-info bg-info-soft",
-  User: "text-info bg-info-soft",
-  Admin: "text-violet bg-violet-soft",
-  System: "text-violet bg-violet-soft",
+  success: "text-ok bg-ok-soft",
+  published: "text-ok bg-ok-soft",
+  resolved: "text-ok bg-ok-soft",
+  active: "text-ok bg-ok-soft",
+  pending: "text-warn bg-warn-soft",
+  suspended: "text-warn bg-warn-soft",
+  draft: "text-info bg-info-soft",
+  flagged: "text-err bg-err-soft",
+  banned: "text-err bg-err-soft",
+  dismissed: "text-err bg-err-soft",
+  failed: "text-err bg-err-soft",
+  refunded: "text-info bg-info-soft",
+  user: "text-info bg-info-soft",
+  moderator: "text-info bg-info-soft",
+  admin: "text-violet bg-violet-soft",
+  system: "text-violet bg-violet-soft",
 }
 
 /**
