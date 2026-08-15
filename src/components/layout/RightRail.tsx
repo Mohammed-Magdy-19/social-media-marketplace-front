@@ -63,8 +63,8 @@ function TopDeals() {
 
 function AdminDesk() {
   const user = useAuthStore((s) => s.user)
-  const { data } = useAdminDashboard()
   const isAdmin = user?.role === "admin"
+  const { data } = useAdminDashboard(isAdmin)
 
   if (!isAdmin || !data) return null
 

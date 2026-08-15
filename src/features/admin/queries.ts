@@ -35,7 +35,7 @@ export interface ReportsFilters {
   search?: string
 }
 
-export function useAdminDashboard() {
+export function useAdminDashboard(enabled = true) {
   return useQuery({
     queryKey: queryKeys.admin.dashboard(),
     queryFn: async ({ signal }) => {
@@ -45,6 +45,7 @@ export function useAdminDashboard() {
       )
       return res.data
     },
+    enabled,
     staleTime: 20_000,
   })
 }

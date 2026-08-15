@@ -17,7 +17,7 @@ export function useConversations() {
         "/conversations",
         { signal }
       )
-      return res.data.conversations
+      return res.data.conversations ?? []
     },
     staleTime: 15_000,
   })

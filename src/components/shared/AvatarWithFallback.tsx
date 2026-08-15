@@ -1,3 +1,4 @@
+import * as React from "react"
 import {
   Avatar,
   AvatarFallback,
@@ -16,10 +17,17 @@ export function AvatarWithFallback({
   size?: "default" | "sm" | "lg"
   className?: string
 }) {
+  const [imgFailed, setImgFailed] = React.useState(false)
   const { from, to } = avatarGradient(name)
   return (
     <Avatar size={size} className={className}>
-      {src ? <AvatarImage src={src} alt={name} /> : null}
+      {src && !imgFailed ? (
+        <AvatarImage
+          src={src}
+          alt={name}
+          onError={() => setImgFailed(true)}
+        />
+      ) : null}
       <AvatarFallback>
         <span
           className="flex size-full items-center justify-center text-xs font-semibold text-white"
