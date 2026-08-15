@@ -4,7 +4,7 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from "axios"
 import { useAuthStore } from "@/stores/authStore"
-import { ApiError, type ApiErrorBody } from "@/types"
+import { ApiError, type ApiErrorBody, type ApiResponse } from "@/types"
 import { router } from "@/router"
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api"
@@ -15,11 +15,11 @@ function toApiError(error: unknown): ApiError {
     const data = error.response?.data as ApiErrorBody | undefined
     return new ApiError(
       error.response?.status ?? 0,
-      data?.message ?? error.message ?? "Request failed",
+      data?.message ?? "",
       data?.fieldErrors
     )
   }
-  return new ApiError(0, error instanceof Error ? error.message : "Request failed")
+  return new ApiError(0, error instanceof Error ? error.message : "")
 }
 
 function attachToken(config: InternalAxiosRequestConfig) {
@@ -135,10 +135,14 @@ export const AVATAR_MAX_BYTES = 2 * 1024 * 1024
 export const POST_MEDIA_MAX_FILES = 5
 export const POST_MEDIA_MAX_BYTES = 10 * 1024 * 1024
 
+/**
+ * Upload transport. The `Content-Type` header is intentionally left unset for
+ * multipart requests: browsers must generate the boundary themselves, so a
+ * hand-set `multipart/form-data` header would break request parsing (400s).
+ */
 export const uploadClient = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
-  headers: { "Content-Type": "multipart/form-data" },
 })
 
 uploadClient.interceptors.request.use(attachToken)
@@ -163,16 +167,14 @@ export async function uploadAvatar(
     throw new ApiError(400, "Avatar must be 2MB or smaller")
   }
   const form = new FormData()
-  form.append("file", file)
-  const res = await uploadClient.post<{ url: string }>(
-    "/uploads/avatar",
-    form,
-    {
-      signal,
-      onUploadProgress: onUploadProgress(onProgress),
-    }
-  )
-  return res.data
+  form.append("avatar", file)
+  const res = await uploadClient.post<
+    ApiResponse<{ avatar: string; file: unknown }>
+  >("/uploads/avatar", form, {
+    signal,
+    onUploadProgress: onUploadProgress(onProgress),
+  })
+  return { url: res.data.data.avatar }
 }
 
 export async function uploadPostMedia(
@@ -188,12 +190,18 @@ export async function uploadPostMedia(
     throw new ApiError(400, "Each file must be 10MB or smaller")
   }
   const form = new FormData()
-  files.forEach((f) => form.append("files", f))
-  const res = await uploadClient.post<{
-    assets: { id: string; url: string; kind: "image" | "video" }[]
-  }>(`/uploads/posts/${postId}`, form, {
+  files.forEach((f) => form.append("images", f))
+  const res = await uploadClient.post<
+    ApiResponse<{ media: string[]; files: unknown[] }>
+  >(`/uploads/posts/${postId}`, form, {
     signal,
     onUploadProgress: onUploadProgress(onProgress),
   })
-  return res.data
+  return {
+    assets: res.data.data.media.map((url) => ({
+      id: url,
+      url,
+      kind: "image",
+    })),
+  }
 }

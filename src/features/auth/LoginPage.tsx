@@ -5,6 +5,7 @@ import { toast } from "sonner"
 import type { z } from "zod"
 import { useLoginMutation } from "@/features/auth/mutations"
 import { loginSchema } from "@/features/auth/schemas"
+import { applyFieldErrors, getErrorMessage } from "@/lib/api/errors"
 import { Logo } from "@/components/shared/Logo"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -38,7 +39,14 @@ export default function LoginPage() {
         toast.success("POST /auth/login — welcome back")
         void navigate(from, { replace: true })
       },
-      onError: () => toast.error("Login failed"),
+      onError: (error) => {
+        const applied = applyFieldErrors(
+          form.setError,
+          error,
+          getErrorMessage(error)
+        )
+        if (!applied) toast.error(getErrorMessage(error))
+      },
     })
   }
 

@@ -5,6 +5,7 @@ import { useAuthStore } from "@/stores/authStore"
 import { usePostsInfinite } from "@/features/posts/queries"
 import { useAdminDashboard } from "@/features/admin/queries"
 import { ReportDialog } from "@/features/reports/ReportDialog"
+import { ErrorBoundary, SectionFallback } from "@/components/shared/ErrorBoundary"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -139,9 +140,15 @@ function ReportItem() {
 export function RightRail() {
   return (
     <aside className="sticky top-14 hidden h-[calc(100svh-3.5rem)] w-72 shrink-0 flex-col gap-4 overflow-y-auto border-l border-border p-3 xl:flex">
-      <TopDeals />
-      <ReportItem />
-      <AdminDesk />
+      <ErrorBoundary fallback={<SectionFallback />}>
+        <TopDeals />
+      </ErrorBoundary>
+      <ErrorBoundary fallback={<SectionFallback />}>
+        <ReportItem />
+      </ErrorBoundary>
+      <ErrorBoundary fallback={<SectionFallback />}>
+        <AdminDesk />
+      </ErrorBoundary>
       <Badge
         variant="outline"
         className="font-mono text-[10px] text-muted-foreground"

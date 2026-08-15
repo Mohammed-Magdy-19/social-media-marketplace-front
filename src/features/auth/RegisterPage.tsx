@@ -8,6 +8,7 @@ import {
   useRegisterMutation,
 } from "@/features/auth/mutations"
 import { registerSchema } from "@/features/auth/schemas"
+import { applyFieldErrors, getErrorMessage } from "@/lib/api/errors"
 import { Logo } from "@/components/shared/Logo"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -55,7 +56,14 @@ export default function RegisterPage() {
           }
         )
       },
-      onError: () => toast.error("Registration failed"),
+      onError: (error) => {
+        const applied = applyFieldErrors(
+          form.setError,
+          error,
+          getErrorMessage(error)
+        )
+        if (!applied) toast.error(getErrorMessage(error))
+      },
     })
   }
 

@@ -30,6 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { formatCurrency, formatRelativeTime } from "@/lib/utils"
+import { getErrorMessage } from "@/lib/api/errors"
 import type { Post } from "@/types"
 
 const POST_PILLS = ["All", "published", "draft", "pending", "flagged"] as const
@@ -127,7 +128,8 @@ export default function AdminPostsPage() {
                       toggleStatus.mutate(
                         { id: post.id, status: s },
                         {
-                          onError: () => toast.error("Failed to update status"),
+                          onError: (error) =>
+                            toast.error(getErrorMessage(error)),
                         }
                       )
                     }

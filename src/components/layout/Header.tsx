@@ -57,7 +57,7 @@ export function Header() {
 
   const onSearch = (values: SearchValues) => {
     const query = values.query.trim()
-    void navigate(query ? `/?q=${encodeURIComponent(query)}` : "/")
+    void navigate(query ? `/home?q=${encodeURIComponent(query)}` : "/home")
   }
 
   return (
@@ -74,7 +74,7 @@ export function Header() {
 
       <button
         type="button"
-        onClick={() => void navigate("/")}
+        onClick={() => void navigate("/home")}
         className="flex items-center gap-2 outline-none"
         aria-label="Vendo home"
       >

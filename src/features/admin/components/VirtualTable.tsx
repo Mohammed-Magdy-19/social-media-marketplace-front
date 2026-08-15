@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { ErrorBoundary, SectionFallback } from "@/components/shared/ErrorBoundary"
 import { cn } from "@/lib/utils"
 
 export interface VirtualColumn<T> {
@@ -57,42 +58,44 @@ export function VirtualTable<T>({
   }
 
   return (
-    <div
-      ref={parentRef}
-      className="relative overflow-auto rounded-card"
-      style={{ maxHeight }}
-    >
-      <Table>
-        <TableHeader className="sticky top-0 z-10 bg-card shadow-[0_1px_0_0_var(--line-2)]">
-          <TableRow>
-            {columns.map((col) => (
-              <TableHead key={col.key} className={cn("text-[11px] font-semibold uppercase tracking-wider", col.className)}>
-                {col.header}
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody className="relative">
-          {virtualizer.getVirtualItems().map((item) => {
-            const row = rows[item.index]
-            return (
-              <TableRow
-                key={rowKey(row)}
-                ref={virtualizer.measureElement}
-                data-index={item.index}
-                className="absolute top-0 left-0 w-full border-line-2 hover:bg-soft"
-                style={{ transform: `translateY(${item.start}px)` }}
-              >
-                {columns.map((col) => (
-                  <TableCell key={col.key} className={col.className}>
-                    {col.cell(row)}
-                  </TableCell>
-                ))}
-              </TableRow>
-            )
-          })}
-        </TableBody>
-      </Table>
-    </div>
+    <ErrorBoundary fallback={<SectionFallback />}>
+      <div
+        ref={parentRef}
+        className="relative overflow-auto rounded-card"
+        style={{ maxHeight }}
+      >
+        <Table>
+          <TableHeader className="sticky top-0 z-10 bg-card shadow-[0_1px_0_0_var(--line-2)]">
+            <TableRow>
+              {columns.map((col) => (
+                <TableHead key={col.key} className={cn("text-[11px] font-semibold uppercase tracking-wider", col.className)}>
+                  {col.header}
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody className="relative">
+            {virtualizer.getVirtualItems().map((item) => {
+              const row = rows[item.index]
+              return (
+                <TableRow
+                  key={rowKey(row)}
+                  ref={virtualizer.measureElement}
+                  data-index={item.index}
+                  className="absolute top-0 left-0 w-full border-line-2 hover:bg-soft"
+                  style={{ transform: `translateY(${item.start}px)` }}
+                >
+                  {columns.map((col) => (
+                    <TableCell key={col.key} className={col.className}>
+                      {col.cell(row)}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
+      </div>
+    </ErrorBoundary>
   )
 }

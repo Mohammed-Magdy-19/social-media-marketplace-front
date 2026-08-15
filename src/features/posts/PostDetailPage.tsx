@@ -13,6 +13,8 @@ import { useCreatePaymentIntent } from "@/features/payments/mutations"
 import { ReportDialog } from "@/features/reports/ReportDialog"
 import { useAuthStore } from "@/stores/authStore"
 import { socket } from "@/lib/socket/client"
+import { getErrorMessage } from "@/lib/api/errors"
+import { ErrorBoundary, SectionFallback } from "@/components/shared/ErrorBoundary"
 import { AvatarWithFallback } from "@/components/shared/AvatarWithFallback"
 import { MediaPlaceholder } from "@/components/shared/MediaPlaceholder"
 import { Badge } from "@/components/ui/badge"
@@ -69,7 +71,7 @@ export default function PostDetailPage() {
           toast.success(`POST /posts/${post.id}/comments`)
           form.reset()
         },
-        onError: () => toast.error("Failed to post comment"),
+        onError: (error) => toast.error(getErrorMessage(error)),
       }
     )
   }
@@ -86,6 +88,7 @@ export default function PostDetailPage() {
         Back
       </Link>
 
+      <ErrorBoundary fallback={<SectionFallback />}>
       <article className="flex flex-col gap-4 rounded-card bg-card p-4 ring-1 ring-foreground/10">
         <div className="flex items-center gap-3">
           <AvatarWithFallback name={post.author.name} src={post.author.avatar} />
@@ -189,7 +192,9 @@ export default function PostDetailPage() {
           </div>
         )}
       </article>
+      </ErrorBoundary>
 
+      <ErrorBoundary fallback={<SectionFallback />}>
       <Card className="rounded-card">
         <CardHeader>
           <CardTitle>Comments</CardTitle>
@@ -245,6 +250,7 @@ export default function PostDetailPage() {
           )}
         </CardContent>
       </Card>
+      </ErrorBoundary>
 
       <Badge variant="outline" className="font-mono text-[10px] text-muted-foreground">
         GET /posts/{post.id}

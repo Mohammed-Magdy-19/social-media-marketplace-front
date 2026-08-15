@@ -7,62 +7,20 @@ import { toast } from "sonner"
 import type { z } from "zod"
 import { Plus } from "lucide-react"
 import { useAuthStore } from "@/stores/authStore"
-import { useLayoutStore } from "@/stores/layoutStore"
-import { useFilterStore } from "@/stores/filterStore"
 import { useCategories } from "@/features/categories/queries"
 import { useFeedInfinite } from "@/features/feed/queries"
-import { usePostsInfinite } from "@/features/posts/queries"
 import { useCreatePost } from "@/features/posts/mutations"
 import { postComposerSchema } from "@/features/posts/schemas"
+import { getErrorMessage } from "@/lib/api/errors"
+import { ErrorBoundary, SectionFallback } from "@/components/shared/ErrorBoundary"
 import { PostCard } from "@/features/posts/components/PostCard"
-import { ProductCard } from "@/features/posts/components/ProductCard"
 import { AvatarWithFallback } from "@/components/shared/AvatarWithFallback"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { cn } from "@/lib/utils"
 
 type ComposerValues = z.infer<typeof postComposerSchema>
-
-function CategoryPills() {
-  const { data: categories } = useCategories()
-  const category = useFilterStore((s) => s.category)
-  const setCategory = useFilterStore((s) => s.setCategory)
-
-  return (
-    <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto py-2">
-      <button
-        type="button"
-        onClick={() => setCategory(null)}
-        className={cn(
-          "shrink-0 rounded-pill px-3 py-1.5 text-sm font-medium transition-colors",
-          category === null
-            ? "bg-brand text-white"
-            : "bg-soft text-mut hover:bg-muted"
-        )}
-      >
-        All
-      </button>
-      {(categories ?? []).map((c) => (
-        <button
-          key={c.id}
-          type="button"
-          onClick={() => setCategory(category === c.id ? null : c.id)}
-          className={cn(
-            "shrink-0 rounded-pill px-3 py-1.5 text-sm font-medium transition-colors",
-            category === c.id
-              ? "bg-brand text-white"
-              : "bg-soft text-mut hover:bg-muted"
-          )}
-        >
-          {c.name}
-        </button>
-      ))}
-    </div>
-  )
-}
 
 function Composer() {
   const user = useAuthStore((s) => s.user)
@@ -97,7 +55,7 @@ function Composer() {
           toast.success("POST /posts — post created")
           form.reset({ caption: "", categoryId: "", tags: [] })
         },
-        onError: () => toast.error("Failed to create post"),
+        onError: (error) => toast.error(getErrorMessage(error)),
       }
     )
   }
@@ -207,160 +165,57 @@ function FeedColumn() {
 
   return (
     <div className="flex flex-col gap-3">
-      <Composer />
-      <div ref={parentRef} className="max-h-[calc(100svh-8rem)] overflow-y-auto pr-1">
-        <div
-          className="relative flex flex-col gap-3"
-          style={{ height: virtualizer.getTotalSize() }}
-        >
-          {virtualizer.getVirtualItems().map((item) => {
-            const post = posts[item.index]
-            if (!post) {
+      <ErrorBoundary fallback={<SectionFallback />}>
+        <Composer />
+      </ErrorBoundary>
+      <ErrorBoundary fallback={<SectionFallback />}>
+        <div ref={parentRef} className="max-h-[calc(100svh-8rem)] overflow-y-auto pr-1">
+          <div
+            className="relative flex flex-col gap-3"
+            style={{ height: virtualizer.getTotalSize() }}
+          >
+            {virtualizer.getVirtualItems().map((item) => {
+              const post = posts[item.index]
+              if (!post) {
+                return (
+                  <div
+                    key={`load-${item.index}`}
+                    ref={virtualizer.measureElement}
+                    data-index={item.index}
+                    className="flex justify-center py-4"
+                  >
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void fetchNextPage()}
+                      disabled={isFetchingNextPage}
+                    >
+                      Load more
+                    </Button>
+                  </div>
+                )
+              }
               return (
                 <div
-                  key={`load-${item.index}`}
+                  key={post.id}
                   ref={virtualizer.measureElement}
                   data-index={item.index}
-                  className="flex justify-center py-4"
                 >
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => void fetchNextPage()}
-                    disabled={isFetchingNextPage}
-                  >
-                    Load more
-                  </Button>
+                  <PostCard post={post} />
                 </div>
               )
-            }
-            return (
-              <div
-                key={post.id}
-                ref={virtualizer.measureElement}
-                data-index={item.index}
-              >
-                <PostCard post={post} />
-              </div>
-            )
-          })}
+            })}
+          </div>
         </div>
-      </div>
+      </ErrorBoundary>
     </div>
-  )
-}
-
-function MarketplaceColumn() {
-  const category = useFilterStore((s) => s.category)
-  const sort = useFilterStore((s) => s.sort)
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    usePostsInfinite({ category, tag: null, author: null, sort })
-
-  const parentRef = useRef<HTMLDivElement>(null)
-
-  const posts = data?.pages.flatMap((p) => p.data) ?? []
-  const COLUMNS = 2
-  const rows = Math.ceil(posts.length / COLUMNS)
-
-  const virtualizer = useVirtualizer({
-    count: rows + (hasNextPage ? 1 : 0),
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 300,
-    overscan: 4,
-  })
-
-  useEffect(() => {
-    const last = virtualizer.getVirtualItems().at(-1)
-    if (last && last.index >= rows - 1 && hasNextPage && !isFetchingNextPage) {
-      void fetchNextPage()
-    }
-  }, [virtualizer, rows, hasNextPage, isFetchingNextPage, fetchNextPage])
-
-  return (
-    <div className="flex flex-col gap-3">
-      <div ref={parentRef} className="max-h-[calc(100svh-8rem)] overflow-y-auto pr-1">
-        <div className="relative" style={{ height: virtualizer.getTotalSize() }}>
-          {virtualizer.getVirtualItems().map((item) => {
-            const rowStart = item.index * COLUMNS
-            const rowPosts = posts.slice(rowStart, rowStart + COLUMNS)
-            if (rowPosts.length === 0) {
-              return (
-                <div
-                  key={`load-${item.index}`}
-                  ref={virtualizer.measureElement}
-                  data-index={item.index}
-                  className="flex justify-center py-4"
-                >
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => void fetchNextPage()}
-                    disabled={isFetchingNextPage}
-                  >
-                    Load more
-                  </Button>
-                </div>
-              )
-            }
-            return (
-              <div
-                key={`row-${item.index}`}
-                ref={virtualizer.measureElement}
-                data-index={item.index}
-                className="grid grid-cols-2 gap-3"
-              >
-                {rowPosts.map((post) => (
-                  <ProductCard key={post.id} post={post} />
-                ))}
-              </div>
-            )
-          })}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function MobileSegmented() {
-  const activeTab = useLayoutStore((s) => s.activeMobileTab)
-  const setActiveMobileTab = useLayoutStore((s) => s.setActiveMobileTab)
-
-  return (
-    <Tabs
-      value={activeTab}
-      onValueChange={(v) => setActiveMobileTab(v as "social" | "marketplace")}
-    >
-      <TabsList className="w-full">
-        <TabsTrigger value="social" className="flex-1">
-          Feed
-        </TabsTrigger>
-        <TabsTrigger value="marketplace" className="flex-1">
-          Shop
-        </TabsTrigger>
-      </TabsList>
-    </Tabs>
   )
 }
 
 export default function HomePage() {
-  const activeTab = useLayoutStore((s) => s.activeMobileTab)
-
   return (
     <div className="flex flex-col">
-      <div className="hidden md:block">
-        <CategoryPills />
-      </div>
-      <div className="md:hidden">
-        <MobileSegmented />
-      </div>
-      <div className="mt-2 grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div className={activeTab === "social" ? "" : "hidden md:block"}>
-          <FeedColumn />
-        </div>
-        <div className={activeTab === "marketplace" ? "" : "hidden md:block"}>
-          <MarketplaceColumn />
-        </div>
-      </div>
+      <FeedColumn />
     </div>
   )
 }

@@ -17,7 +17,7 @@ export interface PublicUser {
   role: UserRole
   status: UserStatus
   bio?: string
-  joinedAt: string
+  createdAt: string
   isFollowing?: boolean
 }
 

@@ -1,14 +1,25 @@
 import { lazy, Suspense, type ReactNode } from "react"
-import { createBrowserRouter, Navigate } from "react-router-dom"
+import { createBrowserRouter, Navigate, useLocation } from "react-router-dom"
 import { RouteSkeleton } from "@/components/shared/RouteSkeleton"
+import { ErrorBoundary } from "@/components/shared/ErrorBoundary"
 import { RequireAuth, RequireRole } from "@/components/routing/guards"
 
-function Boundary({ children }: { children: ReactNode }) {
-  return <Suspense fallback={<RouteSkeleton />}>{children}</Suspense>
+function PageBoundary({ children }: { children: ReactNode }) {
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<RouteSkeleton />}>{children}</Suspense>
+    </ErrorBoundary>
+  )
+}
+
+function HomeRedirect() {
+  const location = useLocation()
+  return <Navigate to={`/home${location.search}`} replace />
 }
 
 const ShellLayout = lazy(() => import("@/components/layout/ShellLayout"))
 const HomePage = lazy(() => import("@/features/home/HomePage"))
+const MarketPage = lazy(() => import("@/features/home/MarketPage"))
 const PostDetailPage = lazy(() => import("@/features/posts/PostDetailPage"))
 const SavedPage = lazy(() => import("@/features/posts/SavedPage"))
 const MessagesPage = lazy(() => import("@/features/conversations/MessagesPage"))
@@ -41,17 +52,17 @@ export const router = createBrowserRouter([
   {
     path: "/login",
     element: (
-      <Boundary>
+      <PageBoundary>
         <LoginPage />
-      </Boundary>
+      </PageBoundary>
     ),
   },
   {
     path: "/register",
     element: (
-      <Boundary>
+      <PageBoundary>
         <RegisterPage />
-      </Boundary>
+      </PageBoundary>
     ),
   },
   {
@@ -60,38 +71,159 @@ export const router = createBrowserRouter([
     children: [
       {
         element: (
-          <Boundary>
+          <PageBoundary>
             <ShellLayout />
-          </Boundary>
+          </PageBoundary>
         ),
         children: [
-          { index: true, element: <HomePage /> },
-          { path: "posts/:postId", element: <PostDetailPage /> },
-          { path: "messages/:conversationId?", element: <MessagesPage /> },
-          { path: "checkout/:intentId", element: <CheckoutPage /> },
-          { path: "saved", element: <SavedPage /> },
-          { path: "profile", element: <ProfilePage /> },
+          { index: true, element: <HomeRedirect /> },
+          {
+            path: "home",
+            element: (
+              <PageBoundary>
+                <HomePage />
+              </PageBoundary>
+            ),
+          },
+          {
+            path: "market",
+            element: (
+              <PageBoundary>
+                <MarketPage />
+              </PageBoundary>
+            ),
+          },
+          {
+            path: "posts/:postId",
+            element: (
+              <PageBoundary>
+                <PostDetailPage />
+              </PageBoundary>
+            ),
+          },
+          {
+            path: "messages/:conversationId?",
+            element: (
+              <PageBoundary>
+                <MessagesPage />
+              </PageBoundary>
+            ),
+          },
+          {
+            path: "checkout/:intentId",
+            element: (
+              <PageBoundary>
+                <CheckoutPage />
+              </PageBoundary>
+            ),
+          },
+          {
+            path: "saved",
+            element: (
+              <PageBoundary>
+                <SavedPage />
+              </PageBoundary>
+            ),
+          },
+          {
+            path: "profile",
+            element: (
+              <PageBoundary>
+                <ProfilePage />
+              </PageBoundary>
+            ),
+          },
           {
             path: "admin",
             element: <RequireRole role="admin" />,
             children: [
               {
                 element: (
-                  <Boundary>
+                  <PageBoundary>
                     <AdminRoot />
-                  </Boundary>
+                  </PageBoundary>
                 ),
                 children: [
-                  { index: true, element: <AdminOverviewPage /> },
-                  { path: "posts", element: <AdminPostsPage /> },
-                  { path: "categories", element: <AdminCategoriesPage /> },
-                  { path: "users", element: <AdminUsersPage /> },
-                  { path: "reports", element: <AdminReportsPage /> },
-                  { path: "notifications", element: <AdminNotificationsPage /> },
-                  { path: "conversations", element: <AdminConversationsPage /> },
-                  { path: "payments", element: <AdminPaymentsPage /> },
-                  { path: "audit-logs", element: <AdminAuditLogsPage /> },
-                  { path: "uploads", element: <AdminUploadsPage /> },
+                  {
+                    index: true,
+                    element: (
+                      <PageBoundary>
+                        <AdminOverviewPage />
+                      </PageBoundary>
+                    ),
+                  },
+                  {
+                    path: "posts",
+                    element: (
+                      <PageBoundary>
+                        <AdminPostsPage />
+                      </PageBoundary>
+                    ),
+                  },
+                  {
+                    path: "categories",
+                    element: (
+                      <PageBoundary>
+                        <AdminCategoriesPage />
+                      </PageBoundary>
+                    ),
+                  },
+                  {
+                    path: "users",
+                    element: (
+                      <PageBoundary>
+                        <AdminUsersPage />
+                      </PageBoundary>
+                    ),
+                  },
+                  {
+                    path: "reports",
+                    element: (
+                      <PageBoundary>
+                        <AdminReportsPage />
+                      </PageBoundary>
+                    ),
+                  },
+                  {
+                    path: "notifications",
+                    element: (
+                      <PageBoundary>
+                        <AdminNotificationsPage />
+                      </PageBoundary>
+                    ),
+                  },
+                  {
+                    path: "conversations",
+                    element: (
+                      <PageBoundary>
+                        <AdminConversationsPage />
+                      </PageBoundary>
+                    ),
+                  },
+                  {
+                    path: "payments",
+                    element: (
+                      <PageBoundary>
+                        <AdminPaymentsPage />
+                      </PageBoundary>
+                    ),
+                  },
+                  {
+                    path: "audit-logs",
+                    element: (
+                      <PageBoundary>
+                        <AdminAuditLogsPage />
+                      </PageBoundary>
+                    ),
+                  },
+                  {
+                    path: "uploads",
+                    element: (
+                      <PageBoundary>
+                        <AdminUploadsPage />
+                      </PageBoundary>
+                    ),
+                  },
                 ],
               },
             ],

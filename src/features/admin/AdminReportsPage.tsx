@@ -29,6 +29,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatRelativeTime } from "@/lib/utils"
+import { getErrorMessage } from "@/lib/api/errors"
 import type { Report } from "@/types"
 
 const REPORT_PILLS = ["All", "pending", "resolved", "dismissed"] as const
@@ -117,7 +118,8 @@ export default function AdminReportsPage() {
               disabled={r.status === "resolved"}
               onClick={() =>
                 resolveReport.mutate(r.id, {
-                  onError: () => toast.error("Failed to resolve report"),
+                  onError: (error) =>
+                    toast.error(getErrorMessage(error)),
                 })
               }
             >
@@ -131,7 +133,8 @@ export default function AdminReportsPage() {
               disabled={r.status === "dismissed"}
               onClick={() =>
                 dismissReport.mutate(r.id, {
-                  onError: () => toast.error("Failed to dismiss report"),
+                  onError: (error) =>
+                    toast.error(getErrorMessage(error)),
                 })
               }
             >

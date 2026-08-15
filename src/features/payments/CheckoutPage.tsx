@@ -21,6 +21,8 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn, formatCurrency } from "@/lib/utils"
+import { getErrorMessage } from "@/lib/api/errors"
+import { ErrorBoundary, SectionFallback } from "@/components/shared/ErrorBoundary"
 import type { PaymentStatus } from "@/types"
 
 function statusPill(status: PaymentStatus) {
@@ -118,6 +120,7 @@ export default function CheckoutPage() {
         </p>
       </div>
 
+      <ErrorBoundary fallback={<SectionFallback />}>
       <Card className="rounded-card">
         <CardContent className="flex flex-col gap-4 p-6">
           <div className="flex items-center gap-3">
@@ -171,9 +174,9 @@ export default function CheckoutPage() {
                     onSuccess: () => {
                       form.reset({ termsAccepted: false as never })
                     },
-                    onError: () => {
+                    onError: (error) => {
                       form.setError("termsAccepted", {
-                        message: "Payment failed. Try again.",
+                        message: getErrorMessage(error),
                       })
                     },
                   }
@@ -216,6 +219,7 @@ export default function CheckoutPage() {
           </div>
         </CardContent>
       </Card>
+      </ErrorBoundary>
 
       <Card className="rounded-card">
         <CardHeader>
@@ -224,7 +228,9 @@ export default function CheckoutPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Ledger />
+          <ErrorBoundary fallback={<SectionFallback />}>
+            <Ledger />
+          </ErrorBoundary>
         </CardContent>
       </Card>
     </div>

@@ -20,14 +20,14 @@ import type {
 } from "@/types"
 
 export const fixtureUsers: PublicUser[] = [
-  { id: "u1", name: "Amara Okafor", username: "amara", email: "amara@vendo.dev", role: "admin", status: "active", joinedAt: "2024-11-02T09:00:00Z", bio: "Marketplace ops lead" },
-  { id: "u2", name: "Lucas Meyer", username: "lucas", email: "lucas@vendo.dev", role: "user", status: "active", joinedAt: "2025-01-14T10:00:00Z", bio: "Photography gear" },
-  { id: "u3", name: "Priya Nair", username: "priya", email: "priya@vendo.dev", role: "user", status: "suspended", joinedAt: "2024-12-03T11:00:00Z" },
-  { id: "u4", name: "Diego Ramos", username: "diego", email: "diego@vendo.dev", role: "user", status: "active", joinedAt: "2025-03-21T12:00:00Z", bio: "Vinyl collector" },
-  { id: "u5", name: "Sara Lindqvist", username: "sara", email: "sara@vendo.dev", role: "user", status: "banned", joinedAt: "2024-10-19T13:00:00Z" },
-  { id: "u6", name: "Kenji Tanaka", username: "kenji", email: "kenji@vendo.dev", role: "user", status: "active", joinedAt: "2025-02-11T14:00:00Z", bio: "Mechanical keyboards" },
-  { id: "u7", name: "Fatima El-Sayed", username: "fatima", email: "fatima@vendo.dev", role: "user", status: "active", joinedAt: "2025-05-08T15:00:00Z" },
-  { id: "u8", name: "Oliver Grant", username: "oliver", email: "oliver@vendo.dev", role: "user", status: "active", joinedAt: "2025-06-30T16:00:00Z" },
+  { id: "u1", name: "Amara Okafor", username: "amara", email: "amara@vendo.dev", role: "admin", status: "active", createdAt: "2024-11-02T09:00:00Z", bio: "Marketplace ops lead" },
+  { id: "u2", name: "Lucas Meyer", username: "lucas", email: "lucas@vendo.dev", role: "user", status: "active", createdAt: "2025-01-14T10:00:00Z", bio: "Photography gear" },
+  { id: "u3", name: "Priya Nair", username: "priya", email: "priya@vendo.dev", role: "user", status: "suspended", createdAt: "2024-12-03T11:00:00Z" },
+  { id: "u4", name: "Diego Ramos", username: "diego", email: "diego@vendo.dev", role: "user", status: "active", createdAt: "2025-03-21T12:00:00Z", bio: "Vinyl collector" },
+  { id: "u5", name: "Sara Lindqvist", username: "sara", email: "sara@vendo.dev", role: "user", status: "banned", createdAt: "2024-10-19T13:00:00Z" },
+  { id: "u6", name: "Kenji Tanaka", username: "kenji", email: "kenji@vendo.dev", role: "user", status: "active", createdAt: "2025-02-11T14:00:00Z", bio: "Mechanical keyboards" },
+  { id: "u7", name: "Fatima El-Sayed", username: "fatima", email: "fatima@vendo.dev", role: "user", status: "active", createdAt: "2025-05-08T15:00:00Z" },
+  { id: "u8", name: "Oliver Grant", username: "oliver", email: "oliver@vendo.dev", role: "user", status: "active", createdAt: "2025-06-30T16:00:00Z" },
 ]
 
 export const fixtureCategories: Category[] = [

@@ -20,6 +20,8 @@ import { useSendMessage } from "@/features/conversations/mutations"
 import { negotiationOfferSchema } from "@/features/conversations/schemas"
 import { useNegotiationUiStore } from "@/stores/negotiationUiStore"
 import { socket } from "@/lib/socket/client"
+import { getErrorMessage } from "@/lib/api/errors"
+import { ErrorBoundary, SectionFallback } from "@/components/shared/ErrorBoundary"
 import { AvatarWithFallback } from "@/components/shared/AvatarWithFallback"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -269,7 +271,7 @@ function Thread({ conversationId }: { conversationId: string }) {
     sendMessage.mutate(
       { body },
       {
-        onError: () => toast.error("Failed to send message"),
+        onError: (error) => toast.error(getErrorMessage(error)),
       }
     )
     setDraft("")
@@ -283,7 +285,7 @@ function Thread({ conversationId }: { conversationId: string }) {
           toast.success(`Offer ${formatCurrency(values.price)} sent`)
           setOfferOpen(false)
         },
-        onError: () => toast.error("Failed to send offer"),
+        onError: (error) => toast.error(getErrorMessage(error)),
       }
     )
   }
@@ -428,8 +430,8 @@ function ConversationList({
 
   const sorted = [...data].sort(
     (a, b) =>
-      new Date(b.lastMessageAt ?? b.participants[0]?.joinedAt ?? 0).getTime() -
-      new Date(a.lastMessageAt ?? a.participants[0]?.joinedAt ?? 0).getTime()
+      new Date(b.lastMessageAt ?? b.participants[0]?.createdAt ?? 0).getTime() -
+      new Date(a.lastMessageAt ?? a.participants[0]?.createdAt ?? 0).getTime()
   )
 
   return (
@@ -500,7 +502,9 @@ export default function MessagesPage() {
         </div>
         <Card className="rounded-card">
           <CardContent className="p-2">
-            <ConversationList />
+            <ErrorBoundary fallback={<SectionFallback />}>
+              <ConversationList />
+            </ErrorBoundary>
           </CardContent>
         </Card>
       </div>
@@ -511,10 +515,14 @@ export default function MessagesPage() {
     <div className="grid grid-cols-1 gap-4 md:grid-cols-[18rem_1fr]">
       <Card className="hidden max-h-[calc(100svh-6rem)] overflow-y-auto rounded-card md:block">
         <CardContent className="p-2">
-          <ConversationList activeId={conversationId} />
+          <ErrorBoundary fallback={<SectionFallback />}>
+            <ConversationList activeId={conversationId} />
+          </ErrorBoundary>
         </CardContent>
       </Card>
-      <Thread conversationId={conversationId} />
+      <ErrorBoundary fallback={<SectionFallback />}>
+        <Thread conversationId={conversationId} />
+      </ErrorBoundary>
     </div>
   )
 }

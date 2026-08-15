@@ -30,6 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn, formatRelativeTime } from "@/lib/utils"
+import { getErrorMessage } from "@/lib/api/errors"
 import type { PublicUser } from "@/types"
 
 const USER_PILLS = ["All", "active", "suspended", "banned"] as const
@@ -96,7 +97,7 @@ export default function AdminUsersPage() {
         header: "Joined",
         className: "min-w-24",
         cell: (u: PublicUser) => (
-          <span className="text-xs text-mut">{formatRelativeTime(u.joinedAt)}</span>
+          <span className="text-xs text-mut">{formatRelativeTime(u.createdAt)}</span>
         ),
       },
       {
@@ -214,7 +215,10 @@ export default function AdminUsersPage() {
                 if (!banTarget) return
                 setStatus.mutate(
                   { id: banTarget.id, status: "banned" },
-                  { onError: () => toast.error("Failed to ban user") }
+                  {
+                    onError: (error) =>
+                      toast.error(getErrorMessage(error)),
+                  }
                 )
                 setBanTarget(null)
               }}

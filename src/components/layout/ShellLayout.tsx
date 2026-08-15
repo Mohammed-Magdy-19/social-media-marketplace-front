@@ -5,6 +5,7 @@ import { NavRail, NavLinks, VipProfileCard } from "./NavRail"
 import { RightRail } from "./RightRail"
 import { MobileTabBar } from "./MobileTabBar"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
+import { ErrorBoundary, SectionFallback } from "@/components/shared/ErrorBoundary"
 import { useLayoutStore } from "@/stores/layoutStore"
 import { useAuthStore } from "@/stores/authStore"
 
@@ -45,15 +46,23 @@ export default function ShellLayout() {
 
   return (
     <div className="flex min-h-svh flex-col bg-background">
-      <Header />
+      <ErrorBoundary fallback={<SectionFallback />}>
+        <Header />
+      </ErrorBoundary>
       <div className="mx-auto flex w-full max-w-7xl flex-1 items-start">
-        <NavRail />
+        <ErrorBoundary fallback={<SectionFallback />}>
+          <NavRail />
+        </ErrorBoundary>
         <main className="min-w-0 flex-1 px-3 pb-16 md:pb-6">
           <Outlet />
         </main>
-        <RightRail />
+        <ErrorBoundary fallback={<SectionFallback />}>
+          <RightRail />
+        </ErrorBoundary>
       </div>
-      <MobileTabBar />
+      <ErrorBoundary fallback={<SectionFallback />}>
+        <MobileTabBar />
+      </ErrorBoundary>
       <NavDrawer />
     </div>
   )

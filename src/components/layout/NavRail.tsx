@@ -14,7 +14,6 @@ import { Separator } from "@/components/ui/separator"
 import { AvatarWithFallback } from "@/components/shared/AvatarWithFallback"
 import { Badge } from "@/components/ui/badge"
 import { useAuthStore } from "@/stores/authStore"
-import { useLayoutStore } from "@/stores/layoutStore"
 import type { PublicUser } from "@/types"
 
 export function VipProfileCard({ user }: { user: PublicUser | null }) {
@@ -76,10 +75,9 @@ const navItems: Array<{
   to: string
   icon: typeof Home
   end: boolean
-  tab?: "social" | "marketplace"
 }> = [
-  { label: "Home", to: "/", icon: Home, end: true, tab: "social" },
-  { label: "Market", to: "/", icon: Store, end: false, tab: "marketplace" },
+  { label: "Home", to: "/home", icon: Home, end: true },
+  { label: "Market", to: "/market", icon: Store, end: true },
   { label: "Messages", to: "/messages", icon: MessageCircle, end: false },
   { label: "Saved", to: "/saved", icon: Bookmark, end: false },
   { label: "Profile", to: "/profile", icon: User, end: false },
@@ -87,7 +85,6 @@ const navItems: Array<{
 
 export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const user = useAuthStore((s) => s.user)
-  const setActiveMobileTab = useLayoutStore((s) => s.setActiveMobileTab)
   const isAdmin = user?.role === "admin"
 
   return (
@@ -97,12 +94,7 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
           key={item.label}
           to={item.to}
           end={item.end}
-          onClick={() => {
-            if (item.tab) {
-              setActiveMobileTab(item.tab)
-            }
-            onNavigate?.()
-          }}
+          onClick={onNavigate}
           className={({ isActive }) =>
             cn(
               "flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-sm font-medium text-muted-foreground transition-colors",

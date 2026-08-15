@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { apiDelete, apiPatch, apiPost } from "@/lib/api/client"
 import { toast } from "sonner"
+import { getErrorMessage } from "@/lib/api/errors"
 import {
   removeAdminListItem,
   restoreAdminLists,
@@ -29,8 +30,9 @@ export function useResolveReport() {
       }))
       return snapshot
     },
-    onError: (_e, _v, snapshot) => {
+    onError: (error, _v, snapshot) => {
       if (snapshot) restoreAdminLists(queryClient, snapshot)
+      toast.error(getErrorMessage(error))
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.admin.dashboard() })
@@ -52,8 +54,9 @@ export function useDismissReport() {
       }))
       return snapshot
     },
-    onError: (_e, _v, snapshot) => {
+    onError: (error, _v, snapshot) => {
       if (snapshot) restoreAdminLists(queryClient, snapshot)
+      toast.error(getErrorMessage(error))
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.admin.dashboard() })
@@ -77,8 +80,9 @@ export function useSetUserStatus() {
       )
       return snapshot
     },
-    onError: (_e, _v, snapshot) => {
+    onError: (error, _v, snapshot) => {
       if (snapshot) restoreAdminLists(queryClient, snapshot)
+      toast.error(getErrorMessage(error))
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.admin.dashboard() })
@@ -100,8 +104,9 @@ export function useTogglePostStatus() {
       }))
       return snapshot
     },
-    onError: (_e, _v, snapshot) => {
+    onError: (error, _v, snapshot) => {
       if (snapshot) restoreAdminLists(queryClient, snapshot)
+      toast.error(getErrorMessage(error))
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.posts.all })
@@ -131,6 +136,7 @@ export function useDelRow() {
       removeAdminListItem(queryClient, keyPrefix, id)
       toast.success(`Deleted row ${id.slice(0, 8)}`)
     },
+    onError: (error) => toast.error(getErrorMessage(error)),
   })
 }
 
@@ -148,13 +154,14 @@ export function useMarkAllRead() {
       )
       return snapshot
     },
-    onError: (_e, _v, snapshot) => {
+    onError: (error, _v, snapshot) => {
       if (snapshot) {
         queryClient.setQueryData<AppNotification[]>(
           queryKeys.notifications.all(),
           snapshot
         )
       }
+      toast.error(getErrorMessage(error))
     },
   })
 }

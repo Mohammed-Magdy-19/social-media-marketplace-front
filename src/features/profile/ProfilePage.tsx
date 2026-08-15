@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { uploadAvatar } from "@/lib/api/client"
+import { getErrorMessage } from "@/lib/api/errors"
+import { ErrorBoundary, SectionFallback } from "@/components/shared/ErrorBoundary"
 import { queryClient } from "@/lib/queryClient"
 import { queryKeys } from "@/api/queryKeys"
 import { formatDate } from "@/lib/utils"
@@ -108,7 +110,7 @@ export default function ProfilePage() {
       await queryClient.invalidateQueries({ queryKey: queryKeys.auth.me() })
       toast.success("Avatar updated")
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Upload failed")
+      toast.error(getErrorMessage(err))
     } finally {
       setUploading(false)
     }
@@ -125,8 +127,9 @@ export default function ProfilePage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <Card className="rounded-card">
-        <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center">
+      <ErrorBoundary fallback={<SectionFallback />}>
+        <Card className="rounded-card">
+          <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center">
           <div className="relative">
             <AvatarWithFallback
               name={profile.name}
@@ -173,7 +176,7 @@ export default function ProfilePage() {
             <p className="text-sm text-muted-foreground">@{profile.username}</p>
             {profile.bio && <p className="mt-1 text-sm">{profile.bio}</p>}
             <p className="mt-1 text-xs text-muted-foreground">
-              Joined {formatDate(profile.joinedAt)} · {profile.email}
+              Joined {formatDate(profile.createdAt)} · {profile.email}
             </p>
           </div>
           <Button variant="outline" onClick={() => logout.mutate()}>
@@ -181,21 +184,24 @@ export default function ProfilePage() {
           </Button>
         </CardContent>
       </Card>
+      </ErrorBoundary>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <StatTile label="Listings" value="0" />
         <StatTile label="Saved" value="0" />
-        <StatTile label="Member since" value={formatDate(profile.joinedAt)} />
+        <StatTile label="Member since" value={formatDate(profile.createdAt)} />
       </div>
 
-      <Card className="rounded-card">
-        <CardHeader>
-          <CardTitle className="font-display text-base">My listings</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <MyPostsGrid author={profile.id} />
-        </CardContent>
-      </Card>
+      <ErrorBoundary fallback={<SectionFallback />}>
+        <Card className="rounded-card">
+          <CardHeader>
+            <CardTitle className="font-display text-base">My listings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <MyPostsGrid author={profile.id} />
+          </CardContent>
+        </Card>
+      </ErrorBoundary>
     </div>
   )
 }

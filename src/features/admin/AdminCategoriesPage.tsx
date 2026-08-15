@@ -34,6 +34,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { slugify } from "@/lib/utils"
+import { getErrorMessage } from "@/lib/api/errors"
 import type { Category } from "@/types"
 
 type AddCategoryValues = z.infer<typeof adminCategoryCreateSchema>
@@ -58,7 +59,7 @@ export default function AdminCategoriesPage() {
         toast.success("Category created")
         form.reset({ name: "" })
       },
-      onError: () => toast.error("Failed to create category"),
+      onError: (error) => toast.error(getErrorMessage(error)),
     })
   }
 

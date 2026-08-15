@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn, formatRelativeTime } from "@/lib/utils"
+import { getErrorMessage } from "@/lib/api/errors"
 import type { AppNotification } from "@/types"
 
 function NotificationRow({
@@ -120,7 +121,8 @@ export default function AdminNotificationsPage() {
           disabled={unreadCount === 0 || markAllRead.isPending}
           onClick={() =>
             markAllRead.mutate(undefined, {
-              onError: () => toast.error("Failed to mark as read"),
+              onError: (error) =>
+                toast.error(getErrorMessage(error)),
             })
           }
         >

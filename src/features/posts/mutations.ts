@@ -1,5 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { apiDelete, apiPost } from "@/lib/api/client"
+import { toast } from "sonner"
+import { getErrorMessage } from "@/lib/api/errors"
 import {
   restorePostsInCache,
   snapshotPostsInCache,
@@ -26,8 +28,9 @@ export function useToggleLike() {
       }))
       return snapshot
     },
-    onError: (_error, _vars, snapshot) => {
+    onError: (error, _vars, snapshot) => {
       if (snapshot) restorePostsInCache(queryClient, snapshot)
+      toast.error(getErrorMessage(error))
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.posts.all })
@@ -53,8 +56,9 @@ export function useSavePost() {
       }))
       return snapshot
     },
-    onError: (_error, _vars, snapshot) => {
+    onError: (error, _vars, snapshot) => {
       if (snapshot) restorePostsInCache(queryClient, snapshot)
+      toast.error(getErrorMessage(error))
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.posts.all })

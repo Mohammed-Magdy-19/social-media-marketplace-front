@@ -4,6 +4,7 @@ import { Bookmark } from "lucide-react"
 import { useSavedPosts } from "@/features/posts/queries"
 import { ProductCard } from "@/features/posts/components/ProductCard"
 import { Badge } from "@/components/ui/badge"
+import { ErrorBoundary, SectionFallback } from "@/components/shared/ErrorBoundary"
 import { Skeleton } from "@/components/ui/skeleton"
 
 function SavedGrid() {
@@ -86,7 +87,9 @@ export default function SavedPage() {
           GET /users/me/saved-posts
         </Badge>
       </div>
-      <SavedGrid />
+      <ErrorBoundary fallback={<SectionFallback />}>
+        <SavedGrid />
+      </ErrorBoundary>
     </div>
   )
 }

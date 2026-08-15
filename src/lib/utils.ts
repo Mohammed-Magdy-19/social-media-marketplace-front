@@ -14,8 +14,14 @@ export function slugify(value: string): string {
     .replace(/^-+|-+$/g, "")
 }
 
-export function formatRelativeTime(iso: string, now: number = Date.now()): string {
-  const then = new Date(iso).getTime()
+const INVALID_DATE_FALLBACK = "—"
+
+export function formatRelativeTime(
+  iso: string | null | undefined,
+  now: number = Date.now()
+): string {
+  const then = new Date(iso ?? "").getTime()
+  if (Number.isNaN(then)) return INVALID_DATE_FALLBACK
   const diff = Math.max(0, now - then)
   const minutes = Math.floor(diff / 60_000)
   if (minutes < 1) return "just now"
@@ -24,7 +30,7 @@ export function formatRelativeTime(iso: string, now: number = Date.now()): strin
   if (hours < 24) return `${hours}h`
   const days = Math.floor(hours / 24)
   if (days < 7) return `${days}d`
-  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+  return new Date(iso!).toLocaleDateString(undefined, { month: "short", day: "numeric" })
 }
 
 export function formatCurrency(amount: number, currency = "USD"): string {
@@ -36,8 +42,10 @@ export function formatCurrency(amount: number, currency = "USD"): string {
   }).format(amount)
 }
 
-export function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
+export function formatDate(iso: string | null | undefined): string {
+  const date = new Date(iso ?? "")
+  if (Number.isNaN(date.getTime())) return INVALID_DATE_FALLBACK
+  return date.toLocaleDateString(undefined, {
     year: "numeric",
     month: "short",
     day: "numeric",

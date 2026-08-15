@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { useCreateReport } from "@/features/reports/mutations"
 import { reportSchema } from "@/features/reports/schemas"
+import { getErrorMessage } from "@/lib/api/errors"
 import { usePostsInfinite } from "@/features/posts/queries"
 import type { ReportTargetType } from "@/types"
 
@@ -79,8 +80,8 @@ export function ReportDialog({
           toast.success(`POST /reports — report submitted`)
           onOpenChange(false)
         },
-        onError: () => {
-          toast.error("Failed to submit report")
+        onError: (error) => {
+          toast.error(getErrorMessage(error))
         },
       }
     )
