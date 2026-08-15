@@ -32,7 +32,7 @@ import {
 import { cn, formatRelativeTime } from "@/lib/utils"
 import type { PublicUser } from "@/types"
 
-const USER_PILLS = ["All", "Active", "Suspended", "Banned"] as const
+const USER_PILLS = ["All", "active", "suspended", "banned"] as const
 
 export default function AdminUsersPage() {
   const [search, setSearch] = React.useState("")
@@ -51,7 +51,7 @@ export default function AdminUsersPage() {
   }, [search])
 
   const { data, isLoading } = useAdminUsers({
-    status: activePill === "All" ? undefined : activePill.toLowerCase(),
+    status: activePill === "All" ? undefined : activePill,
     search: debounced || undefined,
   })
 

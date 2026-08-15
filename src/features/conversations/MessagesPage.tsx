@@ -216,7 +216,7 @@ function Thread({ conversationId }: { conversationId: string }) {
 
   // pages[0] is the newest batch; reverse to chronological (oldest → newest).
   const messages = React.useMemo(
-    () => (data?.pages ? [...data.pages].reverse().flatMap((p) => p.items) : []),
+    () => (data?.pages ? [...data.pages].reverse().flatMap((p) => p.messages) : []),
     [data]
   )
 

@@ -6,7 +6,7 @@ import {
   updatePostInCache,
 } from "./postCache"
 import { queryKeys } from "@/api/queryKeys"
-import type { ApiResponse, Post } from "@/types"
+import type { ApiResponse, Post, PostComment } from "@/types"
 
 export function useToggleLike() {
   const queryClient = useQueryClient()
@@ -69,7 +69,7 @@ export function useCreateComment() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ postId, text }: { postId: string; text: string }) =>
-      apiPost<ApiResponse<{ comment: Post }>>(`/posts/${postId}/comments`, {
+      apiPost<ApiResponse<{ comment: PostComment }>>(`/posts/${postId}/comments`, {
         text,
       }),
     onSettled: (_data, _error, vars) => {
@@ -87,7 +87,7 @@ export function useCreateReply() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ commentId, text }: { commentId: string; text: string }) =>
-      apiPost<ApiResponse<{ comment: Post }>>(`/comments/${commentId}/replies`, {
+      apiPost<ApiResponse<{ reply: PostComment }>>(`/comments/${commentId}/replies`, {
         text,
       }),
     onSettled: (_data, _error, vars) => {

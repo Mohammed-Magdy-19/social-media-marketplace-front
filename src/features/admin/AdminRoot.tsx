@@ -109,7 +109,7 @@ const VIEW_ROUTE: Record<string, string> = {
 
 function ReportsBadge() {
   const { data } = useReports()
-  const pending = data?.items.filter((r) => r.status === "Pending").length ?? 0
+  const pending = data?.data.filter((r) => r.status === "pending").length ?? 0
   if (pending === 0) return null
   return (
     <Badge

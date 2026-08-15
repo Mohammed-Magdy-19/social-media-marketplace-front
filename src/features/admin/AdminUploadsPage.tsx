@@ -72,7 +72,7 @@ export default function AdminUploadsPage() {
     search: debounced || undefined,
   })
 
-  const uploads = data?.items ?? []
+  const uploads = data?.data ?? []
   const totalBytes = uploads.reduce((sum, u) => sum + u.size, 0)
 
   const COLUMNS = 4

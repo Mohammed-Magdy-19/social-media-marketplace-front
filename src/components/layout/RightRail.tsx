@@ -16,11 +16,11 @@ function TopDeals() {
     category: null,
     tag: null,
     author: null,
-    sort: "price_desc",
+    sort: "newest",
   })
 
   const deals = useMemo(
-    () => (data?.pages.flatMap((p) => p.items) ?? []).slice(0, 3),
+    () => (data?.pages.flatMap((p) => p.data) ?? []).slice(0, 3),
     [data]
   )
 
@@ -64,7 +64,7 @@ function TopDeals() {
 function AdminDesk() {
   const user = useAuthStore((s) => s.user)
   const { data } = useAdminDashboard()
-  const isAdmin = user?.role === "Admin"
+  const isAdmin = user?.role === "admin"
 
   if (!isAdmin || !data) return null
 

@@ -70,3 +70,25 @@ export const queryKeys = {
         uploads: (filters?: object) => ["admin", "uploads", filters] as const,
     },
 }
+
+/**
+ * Prefix-only variants of the factory keys above. TanStack Query partial
+ * matching ignores trailing segments, so cache-wide invalidations and the
+ * admin list helpers must target these bare prefixes rather than the full
+ * key (which carries an optional `filters`/`page` tail).
+ */
+export const queryKeyPrefixes = {
+    posts: ["posts"] as const,
+    feed: ["users", "me", "feed"] as const,
+    savedPosts: ["users", "me", "saved-posts"] as const,
+    reports: ["reports"] as const,
+    notificationsList: ["notifications", "list"] as const,
+    paymentsMe: ["payments", "me"] as const,
+    categories: ["categories"] as const,
+    adminUsers: ["admin", "users"] as const,
+    adminPosts: ["admin", "posts"] as const,
+    adminPayments: ["admin", "payments"] as const,
+    adminConversations: ["admin", "conversations"] as const,
+    adminAuditLogs: ["admin", "audit-logs"] as const,
+    adminUploads: ["admin", "uploads"] as const,
+} as const

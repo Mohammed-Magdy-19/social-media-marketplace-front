@@ -50,11 +50,11 @@ export function ReportDialog({
     category: null,
     tag: null,
     author: null,
-    sort: "latest",
+    sort: "newest",
   })
 
   const posts = useMemo(
-    () => postsData?.pages.flatMap((p) => p.items) ?? [],
+    () => postsData?.pages.flatMap((p) => p.data) ?? [],
     [postsData]
   )
 

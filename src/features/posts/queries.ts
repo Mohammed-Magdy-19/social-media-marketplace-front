@@ -31,7 +31,10 @@ export function usePostsInfinite(filters: PostFilters) {
       }),
     initialPageParam: 1 as number,
     getNextPageParam: (lastPage) =>
-      lastPage.pagination.hasMore ? lastPage.pagination.nextPage : undefined,
+      lastPage.pagination.hasMore &&
+      typeof lastPage.pagination.nextPage === "number"
+        ? lastPage.pagination.nextPage
+        : undefined,
     placeholderData: keepPreviousData,
   })
 }

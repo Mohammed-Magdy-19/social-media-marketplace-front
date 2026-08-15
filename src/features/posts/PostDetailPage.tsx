@@ -12,6 +12,7 @@ import { useStartNegotiation } from "@/features/conversations/mutations"
 import { useCreatePaymentIntent } from "@/features/payments/mutations"
 import { ReportDialog } from "@/features/reports/ReportDialog"
 import { useAuthStore } from "@/stores/authStore"
+import { socket } from "@/lib/socket/client"
 import { AvatarWithFallback } from "@/components/shared/AvatarWithFallback"
 import { MediaPlaceholder } from "@/components/shared/MediaPlaceholder"
 import { Badge } from "@/components/ui/badge"
@@ -41,8 +42,16 @@ export default function PostDetailPage() {
 
   const form = useForm<CommentValues>({
     resolver: zodResolver(commentSchema),
-    defaultValues: { body: "" },
+    defaultValues: { text: "" },
   })
+
+  React.useEffect(() => {
+    if (!postId) return
+    socket.emit("join_post_room", postId)
+    return () => {
+      socket.emit("leave_post_room", postId)
+    }
+  }, [postId])
 
   if (isLoading || !post) {
     return (
@@ -54,7 +63,7 @@ export default function PostDetailPage() {
 
   const onSubmitComment = (values: CommentValues) => {
     createComment.mutate(
-      { postId: post.id, body: values.body },
+      { postId: post.id, text: values.text },
       {
         onSuccess: () => {
           toast.success(`POST /posts/${post.id}/comments`)
@@ -208,7 +217,7 @@ export default function PostDetailPage() {
               >
                 <FormField
                   control={form.control}
-                  name="body"
+                  name="text"
                   render={({ field }) => (
                     <FormItem className="grid flex-1">
                       <FormControl>

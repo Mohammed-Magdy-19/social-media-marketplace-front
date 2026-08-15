@@ -14,16 +14,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { uploadAvatar } from "@/lib/api/client"
 import { queryClient } from "@/lib/queryClient"
+import { queryKeys } from "@/api/queryKeys"
 import { formatDate } from "@/lib/utils"
 import { useAuthStore } from "@/stores/authStore"
 import { cn } from "@/lib/utils"
 
 function MyPostsGrid({ author }: { author: string }) {
-  const { data, isLoading } = usePostsInfinite({ category: null, tag: null, author, sort: "latest" })
+  const { data, isLoading } = usePostsInfinite({ category: null, tag: null, author, sort: "newest" })
   const parentRef = useRef<HTMLDivElement>(null)
 
   const posts = React.useMemo(
-    () => data?.pages.flatMap((p) => p.items) ?? [],
+    () => data?.pages.flatMap((p) => p.data) ?? [],
     [data]
   )
   const COLUMNS = 3
@@ -104,7 +105,7 @@ export default function ProfilePage() {
     try {
       const { url } = await uploadAvatar(file)
       useAuthStore.getState().setUser({ ...profile, avatar: url })
-      await queryClient.invalidateQueries({ queryKey: ["auth", "me"] })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.auth.me() })
       toast.success("Avatar updated")
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Upload failed")
@@ -155,13 +156,13 @@ export default function ProfilePage() {
               <h1 className="font-display text-xl font-bold tracking-[-0.02em]">
                 {profile.name}
               </h1>
-              <Badge variant={profile.role === "Admin" ? "destructive" : "secondary"}>
+              <Badge variant={profile.role === "admin" ? "destructive" : "secondary"}>
                 {profile.role}
               </Badge>
               <Badge
                 variant="outline"
                 className={cn(
-                  profile.status === "Active"
+                  profile.status === "active"
                     ? "bg-emerald-500/10 text-emerald-500"
                     : "bg-red-500/10 text-red-500"
                 )}

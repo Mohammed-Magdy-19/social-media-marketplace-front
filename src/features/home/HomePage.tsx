@@ -189,7 +189,7 @@ function FeedColumn() {
     useFeedInfinite()
   const parentRef = useRef<HTMLDivElement>(null)
 
-  const posts = data?.pages.flatMap((p) => p.items) ?? []
+  const posts = data?.pages.flatMap((p) => p.data) ?? []
 
   const virtualizer = useVirtualizer({
     count: posts.length + (hasNextPage ? 1 : 0),
@@ -258,7 +258,7 @@ function MarketplaceColumn() {
 
   const parentRef = useRef<HTMLDivElement>(null)
 
-  const posts = data?.pages.flatMap((p) => p.items) ?? []
+  const posts = data?.pages.flatMap((p) => p.data) ?? []
   const COLUMNS = 2
   const rows = Math.ceil(posts.length / COLUMNS)
 

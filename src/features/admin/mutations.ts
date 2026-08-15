@@ -7,13 +7,13 @@ import {
   snapshotAdminLists,
   updateAdminListItem,
 } from "./adminCache"
-import { queryKeys } from "@/api/queryKeys"
+import { queryKeys, queryKeyPrefixes } from "@/api/queryKeys"
 import type { AppNotification, Post, PublicUser, Report } from "@/types"
 
-const REPORTS_PREFIX = queryKeys.reports.all()
-const ADMIN_USERS_PREFIX = queryKeys.admin.users()
-const ADMIN_POSTS_PREFIX = queryKeys.admin.posts()
-const NOTIFICATIONS_PREFIX = queryKeys.notifications.all()
+const REPORTS_PREFIX = queryKeyPrefixes.reports
+const ADMIN_USERS_PREFIX = queryKeyPrefixes.adminUsers
+const ADMIN_POSTS_PREFIX = queryKeyPrefixes.adminPosts
+const NOTIFICATIONS_PREFIX = queryKeyPrefixes.notificationsList
 
 export function useResolveReport() {
   const queryClient = useQueryClient()
@@ -109,16 +109,16 @@ export function useTogglePostStatus() {
   })
 }
 
-const DEL_TABLE_KEY: Record<string, string[]> = {
-  posts: queryKeys.admin.posts(),
-  users: queryKeys.admin.users(),
-  reports: queryKeys.reports.all(),
-  payments: queryKeys.admin.payments(),
-  notifications: queryKeys.notifications.all(),
-  conversations: queryKeys.admin.conversations(),
-  categories: queryKeys.categories.all(),
-  uploads: queryKeys.uploads.all(),
-  "audit-logs": queryKeys.admin.auditLogs(),
+const DEL_TABLE_KEY: Record<string, readonly string[]> = {
+  posts: queryKeyPrefixes.adminPosts,
+  users: queryKeyPrefixes.adminUsers,
+  reports: queryKeyPrefixes.reports,
+  payments: queryKeyPrefixes.adminPayments,
+  notifications: queryKeyPrefixes.notificationsList,
+  conversations: queryKeyPrefixes.adminConversations,
+  categories: queryKeyPrefixes.categories,
+  uploads: queryKeyPrefixes.adminUploads,
+  "audit-logs": queryKeyPrefixes.adminAuditLogs,
 }
 
 export function useDelRow() {

@@ -10,7 +10,7 @@ function SavedGrid() {
   const { data, isLoading } = useSavedPosts()
   const parentRef = useRef<HTMLDivElement>(null)
 
-  const posts = useMemo(() => data?.items ?? [], [data])
+  const posts = useMemo(() => data?.data ?? [], [data])
   const COLUMNS = 3
   const rows = Math.ceil(posts.length / COLUMNS)
 

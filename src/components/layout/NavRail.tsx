@@ -41,7 +41,7 @@ export function VipProfileCard({ user }: { user: PublicUser | null }) {
         {user ? (
           <div className="flex items-center gap-1.5">
             <Badge className="bg-white/15 text-white ring-1 ring-white/20">
-              {user.role === "Admin" ? "Admin" : "Member"}
+              {user.role === "admin" ? "Admin" : "Member"}
             </Badge>
             <Badge className="bg-ink/30 text-brand-3 ring-1 ring-brand-3/30">
               VIP
@@ -88,7 +88,7 @@ const navItems: Array<{
 export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const user = useAuthStore((s) => s.user)
   const setActiveMobileTab = useLayoutStore((s) => s.setActiveMobileTab)
-  const isAdmin = user?.role === "Admin"
+  const isAdmin = user?.role === "admin"
 
   return (
     <nav className="flex flex-col gap-1" aria-label="Primary">

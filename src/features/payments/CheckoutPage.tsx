@@ -25,14 +25,16 @@ import type { PaymentStatus } from "@/types"
 
 function statusPill(status: PaymentStatus) {
   switch (status) {
-    case "Succeeded":
+    case "succeeded":
       return { label: "Succeeded", className: "bg-emerald-500/10 text-emerald-500" }
-    case "Pending":
+    case "pending":
       return { label: "Pending", className: "bg-amber-500/10 text-amber-500" }
-    case "Failed":
+    case "failed":
       return { label: "Failed", className: "bg-red-500/10 text-red-500" }
-    case "Refunded":
+    case "refunded":
       return { label: "Refunded", className: "bg-muted text-muted-foreground" }
+    default:
+      return { label: status, className: "bg-muted text-muted-foreground" }
   }
 }
 

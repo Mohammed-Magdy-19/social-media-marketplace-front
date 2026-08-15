@@ -7,7 +7,8 @@ function isPostListKey(key: unknown): boolean {
   return (
     Array.isArray(key) &&
     ((key[0] === "posts" && key[1] === "list") ||
-      (key[0] === "users" && key[1] === "me" && key[2] === "feed"))
+      (key[0] === "users" && key[1] === "me" && key[2] === "feed") ||
+      (key[0] === "users" && key[1] === "me" && key[2] === "saved-posts"))
   )
 }
 

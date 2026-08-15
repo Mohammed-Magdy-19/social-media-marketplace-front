@@ -25,7 +25,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { formatCurrency, formatRelativeTime } from "@/lib/utils"
 import type { Payment } from "@/types"
 
-const PAYMENT_PILLS = ["All", "Succeeded", "Pending", "Failed", "Refunded"] as const
+const PAYMENT_PILLS = ["All", "succeeded", "pending", "failed", "refunded"] as const
 
 export default function AdminPaymentsPage() {
   const [search, setSearch] = React.useState("")
@@ -46,7 +46,7 @@ export default function AdminPaymentsPage() {
     search: debounced || undefined,
   })
 
-  const rows = data?.items ?? []
+  const rows = data?.data ?? []
 
   const columns = React.useMemo(
     () => [

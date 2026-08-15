@@ -185,7 +185,7 @@ export function Header() {
                   <DropdownMenuItem
                     onClick={() =>
                       void navigate(
-                        user.role === "Admin" ? "/admin/notifications" : "/profile"
+                        user.role === "admin" ? "/admin/notifications" : "/profile"
                       )
                     }
                   >
@@ -228,7 +228,7 @@ export function Header() {
               <DropdownMenuItem onClick={() => void navigate("/messages")}>
                 Messages
               </DropdownMenuItem>
-              {user.role === "Admin" && (
+              {user.role === "admin" && (
                 <DropdownMenuItem onClick={() => void navigate("/admin")}>
                   <LayoutDashboard />
                   Admin console

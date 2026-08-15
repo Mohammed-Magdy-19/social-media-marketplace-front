@@ -31,7 +31,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { formatRelativeTime } from "@/lib/utils"
 import type { Report } from "@/types"
 
-const REPORT_PILLS = ["All", "Pending", "Resolved", "Dismissed"] as const
+const REPORT_PILLS = ["All", "pending", "resolved", "dismissed"] as const
 
 export default function AdminReportsPage() {
   const [search, setSearch] = React.useState("")
@@ -50,7 +50,7 @@ export default function AdminReportsPage() {
   }, [search])
 
   const { data, isLoading } = useReports({
-    status: activePill === "All" ? undefined : activePill.toLowerCase(),
+    status: activePill === "All" ? undefined : activePill,
     search: debounced || undefined,
   })
 
@@ -114,7 +114,7 @@ export default function AdminReportsPage() {
               size="icon-xs"
               aria-label="Resolve report"
               className="text-ok hover:bg-ok-soft"
-              disabled={r.status === "Resolved"}
+              disabled={r.status === "resolved"}
               onClick={() =>
                 resolveReport.mutate(r.id, {
                   onError: () => toast.error("Failed to resolve report"),
@@ -128,7 +128,7 @@ export default function AdminReportsPage() {
               size="icon-xs"
               aria-label="Dismiss report"
               className="text-mut hover:bg-soft"
-              disabled={r.status === "Dismissed"}
+              disabled={r.status === "dismissed"}
               onClick={() =>
                 dismissReport.mutate(r.id, {
                   onError: () => toast.error("Failed to dismiss report"),

@@ -32,7 +32,7 @@ import {
 import { formatCurrency, formatRelativeTime } from "@/lib/utils"
 import type { Post } from "@/types"
 
-const POST_PILLS = ["All", "Published", "Draft", "Pending", "Flagged"] as const
+const POST_PILLS = ["All", "published", "draft", "pending", "flagged"] as const
 
 export default function AdminPostsPage() {
   const [search, setSearch] = React.useState("")
@@ -54,7 +54,7 @@ export default function AdminPostsPage() {
     search: debounced || undefined,
   })
 
-  const rows = data?.items ?? []
+  const rows = data?.data ?? []
 
   const columns = React.useMemo(
     () => [
@@ -120,7 +120,7 @@ export default function AdminPostsPage() {
                 }
               />
               <DropdownMenuContent align="end">
-                {(["Published", "Draft", "Pending", "Flagged"] as const).map((s) => (
+                {(["published", "draft", "pending", "flagged"] as const).map((s) => (
                   <DropdownMenuItem
                     key={s}
                     onSelect={() =>
@@ -132,7 +132,7 @@ export default function AdminPostsPage() {
                       )
                     }
                   >
-                    Mark {s}
+                    Mark {s.charAt(0).toUpperCase() + s.slice(1)}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>

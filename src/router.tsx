@@ -73,7 +73,7 @@ export const router = createBrowserRouter([
           { path: "profile", element: <ProfilePage /> },
           {
             path: "admin",
-            element: <RequireRole role="Admin" />,
+            element: <RequireRole role="admin" />,
             children: [
               {
                 element: (

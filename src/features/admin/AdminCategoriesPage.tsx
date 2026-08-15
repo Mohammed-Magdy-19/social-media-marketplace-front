@@ -138,7 +138,7 @@ export default function AdminCategoriesPage() {
                     <Badge variant="outline" className="border-transparent bg-soft font-mono text-[10px] text-mut">
                       {c.postCount ?? 0} posts
                     </Badge>
-                    <StatusPill status={c.slug === "digital" ? "Draft" : "Published"} />
+                    <StatusPill status={c.slug === "digital" ? "draft" : "published"} />
                     <Button
                       variant="ghost"
                       size="icon-xs"

@@ -4,9 +4,9 @@ import type { PaginatedResponse } from "@/types"
 /**
  * Generic helpers for optimistically editing page-paginated list cache
  * entries (used by admin mutations across every admin table). Key prefix
- * is an array, e.g. `["admin", "posts"]`, `["reports"]`.
+ * is a readonly array, e.g. `["admin", "posts"]`, `["reports"]`.
  */
-function isPrefixMatch(key: unknown, prefix: string[]): boolean {
+function isPrefixMatch(key: unknown, prefix: readonly string[]): boolean {
   return (
     Array.isArray(key) &&
     prefix.every((part, index) => key[index] === part)
@@ -15,7 +15,7 @@ function isPrefixMatch(key: unknown, prefix: string[]): boolean {
 
 export function adminListKeys(
   queryClient: QueryClient,
-  keyPrefix: string[]
+  keyPrefix: readonly string[]
 ): QueryKey[] {
   return queryClient
     .getQueryCache()
@@ -26,7 +26,7 @@ export function adminListKeys(
 
 export function updateAdminListItem<T>(
   queryClient: QueryClient,
-  keyPrefix: string[],
+  keyPrefix: readonly string[],
   id: string,
   updater: (item: T) => T
 ) {
@@ -46,7 +46,7 @@ export function updateAdminListItem<T>(
 
 export function removeAdminListItem(
   queryClient: QueryClient,
-  keyPrefix: string[],
+  keyPrefix: readonly string[],
   id: string
 ) {
   for (const key of adminListKeys(queryClient, keyPrefix)) {
@@ -60,7 +60,7 @@ export function removeAdminListItem(
 
 export function snapshotAdminLists(
   queryClient: QueryClient,
-  keyPrefix: string[]
+  keyPrefix: readonly string[]
 ) {
   const snapshot = new Map<QueryKey, PaginatedResponse<unknown>>()
   for (const key of adminListKeys(queryClient, keyPrefix)) {
