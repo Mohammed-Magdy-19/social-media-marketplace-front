@@ -29,3 +29,8 @@ export function initials(name: string | null | undefined): string {
     .map((part) => part[0]?.toUpperCase() ?? "")
     .join("")
 }
+
+export function isDefaultAvatar(url: string | null | undefined): boolean {
+  if (!url) return true
+  return url.includes("/default/avatar")
+}

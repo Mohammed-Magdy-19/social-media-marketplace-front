@@ -109,7 +109,7 @@ export function ReportDialog({
                   <FormLabel>Reason</FormLabel>
                   <FormControl>
                     <Select
-                      value={field.value}
+                      value={field.value ?? ""}
                       onValueChange={(value) => {
                         if (value) field.onChange(value)
                       }}

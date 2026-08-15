@@ -4,7 +4,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/avatar"
-import { avatarGradient, initials } from "@/lib/avatar"
+import { avatarGradient, initials, isDefaultAvatar } from "@/lib/avatar"
 
 export function AvatarWithFallback({
   name,
@@ -19,9 +19,10 @@ export function AvatarWithFallback({
 }) {
   const [imgFailed, setImgFailed] = React.useState(false)
   const { from, to } = avatarGradient(name)
+  const showImage = !!src && !isDefaultAvatar(src) && !imgFailed
   return (
     <Avatar size={size} className={className}>
-      {src && !imgFailed ? (
+      {showImage ? (
         <AvatarImage
           src={src}
           alt={name}
