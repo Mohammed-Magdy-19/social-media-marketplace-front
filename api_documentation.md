@@ -421,6 +421,7 @@ export const socket: Socket = io(import.meta.env.VITE_SOCKET_URL || import.meta.
 | `reply_created` | `Comment` object | Append reply under parent comment in UI tree. |
 | `like_updated` | `{ postId: string, likesCount: number }` | Invalidate/update post like count state. |
 | `feed_update_available` | `{ authorId: string, postId: string }` | Show top floating alert: *"New posts available. Click to refresh."* |
+| `payment_updated` | `{ paymentId: string, status: PaymentStatus }` | Emitted to the buyer's `user_<buyerId>` room after a Stripe webhook confirms/fails a charge, or after an admin refund. Invalidate/refetch `usePaymentLedger` so the checkout/ledger UI reflects the real status without polling. |
 | `typing_message` | `{ userId: string }` | Render typing indicator in active chat window. |
 | `stop_typing_message` | `{ userId: string }` | Clear typing indicator in active chat window. |
 
@@ -638,7 +639,7 @@ export const socket: Socket = io(import.meta.env.VITE_SOCKET_URL || import.meta.
 - **Response `200 OK`**: `ApiResponse<{ post: Post }>`
 
 #### `PATCH /api/posts/:id`
-- **Auth**: Protected (Author only)
+- **Auth**: Protected (Author **or** Admin) — admin override added so the admin dashboard's post moderation actions can act on posts they don't own, matching the same ownership pattern `DELETE /api/posts/:id` already used.
 - **Request Body**: Partial `createPostSchema`
 - **Response `200 OK`**: `ApiResponse<{ post: Post }>`
 
@@ -838,6 +839,12 @@ export const socket: Socket = io(import.meta.env.VITE_SOCKET_URL || import.meta.
 
 ### 5.9. Uploads & Media (`/api/uploads`)
 
+#### `GET /api/uploads`
+- **Auth**: Protected
+- **Query Params**: `owner?: string` (admin-only — ignored for non-admins, who are always pinned to their own files), `resourceType?: 'image' | 'video' | 'raw' | 'auto'`, `associatedEntity?: 'avatar' | 'post' | 'message' | 'other'`, `page?: number`, `limit?: number`
+- **Response `200 OK`**: `PaginatedResponse<File>`
+- Backs both a personal "my uploads" view and the admin Uploads asset grid — non-admins can never widen the query to another user's files, even by passing `owner`.
+
 #### `POST /api/uploads/avatar`
 - **Auth**: Protected
 - **Content-Type**: `multipart/form-data`
@@ -960,6 +967,27 @@ export const socket: Socket = io(import.meta.env.VITE_SOCKET_URL || import.meta.
 - **Auth**: Protected (Admin)
 - **Query Params**: `actor?: string`, `action?: string`, `page?: number`, `limit?: number`
 - **Response `200 OK`**: `PaginatedResponse<object>`
+
+Payments (global scope)
+
+#### `GET /api/admin/payments` [Admin]
+- **Auth**: Protected (Admin)
+- **Query Params**: `status?: PaymentStatus`, `page?: number`, `limit?: number`
+- **Response `200 OK`**: `PaginatedResponse<Payment>`
+- Global transaction listing across every buyer — unlike `GET /api/payments/me`, this is **not** scoped to the requester; access is gated entirely by `restrictTo('admin')` at the route level.
+
+#### `POST /api/admin/payments/:id/refund` [Admin]
+- **Auth**: Protected (Admin)
+- **Response `200 OK`**: `ApiResponse<{ payment: Payment }>`
+- Calls Stripe directly (never trusts a client-supplied "refunded" flag) and updates the ledger. Only completed payments can be refunded — a `400` is returned otherwise.
+
+Conversations (global scope)
+
+#### `GET /api/admin/conversations` [Admin]
+- **Auth**: Protected (Admin)
+- **Query Params**: `page?: number`, `limit?: number`
+- **Response `200 OK`**: `PaginatedResponse<Conversation>`
+- Lists every conversation on the platform (moderation visibility), sorted by `lastMessage` activity — unlike `GET /api/conversations`, which is scoped to the requester's own threads.
 
 ---
 
