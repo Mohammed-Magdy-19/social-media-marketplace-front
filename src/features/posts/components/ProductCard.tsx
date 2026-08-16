@@ -26,8 +26,8 @@ export function ProductCard({ post }: { post: Post }) {
   }
 
   const onNegotiate = () => {
-    if (!hasToken) return
-    startNegotiation.mutate({ postId: post.id })
+    if (!hasToken || price == null || post.status !== "active") return
+    startNegotiation.mutate({ sellerId: post.author.id })
   }
 
   return (
@@ -104,7 +104,7 @@ export function ProductCard({ post }: { post: Post }) {
             variant="outline"
             className="flex-1"
             onClick={onNegotiate}
-            disabled={!hasToken}
+            disabled={!hasToken || price == null || post.status !== "active"}
           >
             Negotiate
           </Button>

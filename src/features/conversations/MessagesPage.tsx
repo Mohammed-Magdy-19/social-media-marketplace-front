@@ -1,5 +1,6 @@
 import * as React from "react"
 import { useRef } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -15,12 +16,20 @@ import {
   useConversations,
   useConversationMeta,
   useMessagesInfinite,
+  useOffers,
+  offerProposerId,
 } from "@/features/conversations/queries"
-import { useSendMessage } from "@/features/conversations/mutations"
-import { negotiationOfferSchema } from "@/features/conversations/schemas"
+import {
+  useCreateOffer,
+  useMarkMessagesRead,
+  useRespondToOffer,
+  useSendMessage,
+} from "@/features/conversations/mutations"
+import { createOfferFormSchema } from "@/features/conversations/schemas"
 import { useNegotiationUiStore } from "@/stores/negotiationUiStore"
 import { socket } from "@/lib/socket/client"
 import { getErrorMessage } from "@/lib/api/errors"
+import { queryKeys } from "@/api/queryKeys"
 import { ErrorBoundary, SectionFallback } from "@/components/shared/ErrorBoundary"
 import { AvatarWithFallback } from "@/components/shared/AvatarWithFallback"
 import { Badge } from "@/components/ui/badge"
@@ -45,17 +54,40 @@ import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn, formatCurrency, formatRelativeTime } from "@/lib/utils"
 import { useAuthStore } from "@/stores/authStore"
-import type { Message } from "@/types"
+import type {
+  Message,
+  MessageCursorPage,
+  Offer,
+  OfferAction,
+  OfferStatus,
+} from "@/types"
 
-type OfferValues = z.infer<typeof negotiationOfferSchema>
+type OfferValues = z.infer<typeof createOfferFormSchema>
+
+const OFFER_STATUS_TONE: Record<OfferStatus, string> = {
+  pending: "text-warn bg-warn-soft",
+  accepted: "text-ok bg-ok-soft",
+  rejected: "text-err bg-err-soft",
+  countered: "text-info bg-info-soft",
+}
+
+const OFFER_STATUS_LABEL: Record<OfferStatus, string> = {
+  pending: "Pending",
+  accepted: "Accepted",
+  rejected: "Rejected",
+  countered: "Countered",
+}
 
 const MessageBubble = React.memo(function MessageBubble({
   message,
   isMine,
+  onRetry,
 }: {
   message: Message
   isMine: boolean
+  onRetry?: (message: Message) => void
 }) {
+  const failed = message.status === "failed"
   return (
     <div className={cn("flex w-full", isMine ? "justify-end" : "justify-start")}>
       <div
@@ -69,11 +101,26 @@ const MessageBubble = React.memo(function MessageBubble({
         </p>
         <p
           className={cn(
-            "mt-0.5 text-[10px]",
+            "mt-0.5 flex items-center gap-1.5 text-[10px]",
             isMine ? "text-white/70" : "text-muted-foreground"
           )}
         >
-          {formatRelativeTime(message.createdAt)}
+          {failed ? (
+            <>
+              <span className="text-destructive">Not delivered</span>
+              {onRetry && (
+                <button
+                  type="button"
+                  onClick={() => onRetry(message)}
+                  className="underline underline-offset-2"
+                >
+                  Retry
+                </button>
+              )}
+            </>
+          ) : (
+            formatRelativeTime(message.createdAt)
+          )}
         </p>
       </div>
     </div>
@@ -98,7 +145,131 @@ function TypingBadge() {
   )
 }
 
-function OfferDialog({
+function CounterOfferForm({
+  pending,
+  onCounter,
+}: {
+  pending: boolean
+  onCounter: (amountCents: number) => void
+}) {
+  const form = useForm<OfferValues>({
+    resolver: zodResolver(createOfferFormSchema),
+    defaultValues: { amount: undefined },
+  })
+
+  return (
+    <form
+      onSubmit={form.handleSubmit((v) => onCounter(v.amount))}
+      className="flex items-center gap-2"
+    >
+      <Form {...form}>
+        <FormField
+          control={form.control}
+          name="amount"
+          render={({ field }) => (
+            <FormItem className="grid flex-1">
+              <FormControl>
+                <Input
+                  {...field}
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  inputMode="decimal"
+                  placeholder="Counter amount (USD)"
+                  autoFocus
+                  value={field.value ?? ""}
+                  onChange={(e) =>
+                    field.onChange(
+                      e.target.value === "" ? undefined : Number(e.target.value)
+                    )
+                  }
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </Form>
+      <Button type="submit" size="sm" disabled={pending}>
+        Send counter
+      </Button>
+    </form>
+  )
+}
+
+function OfferCard({
+  offer,
+  meId,
+  onAction,
+}: {
+  offer: Offer
+  meId: string
+  onAction: (offerId: string, action: OfferAction, amount?: number) => void
+}) {
+  const [counterOpen, setCounterOpen] = React.useState(false)
+  const isMine = offerProposerId(offer) === meId
+  const proposerName =
+    typeof offer.proposedBy === "object" && offer.proposedBy
+      ? offer.proposedBy.name
+      : "They"
+  const actionable = offer.status === "pending" && !isMine
+
+  return (
+    <div className="flex flex-col gap-2 rounded-lg border border-border bg-soft p-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <p className="font-mono text-sm font-semibold">
+            {formatCurrency(offer.amount / 100)}
+          </p>
+          <p className="truncate text-xs text-muted-foreground">
+            {isMine ? "You" : proposerName} · {formatRelativeTime(offer.createdAt)}
+          </p>
+        </div>
+        <Badge
+          variant="outline"
+          className={cn("border-transparent", OFFER_STATUS_TONE[offer.status])}
+        >
+          {OFFER_STATUS_LABEL[offer.status]}
+        </Badge>
+      </div>
+
+      {offer.status === "pending" && isMine && (
+        <p className="text-xs text-muted-foreground">Waiting for a response…</p>
+      )}
+
+      {actionable && !counterOpen && (
+        <div className="flex flex-wrap gap-1.5">
+          <Button size="sm" onClick={() => onAction(offer.id, "accept")}>
+            Accept
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onAction(offer.id, "reject")}
+          >
+            Reject
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setCounterOpen(true)}
+          >
+            Counter
+          </Button>
+        </div>
+      )}
+
+      {actionable && counterOpen && (
+        <CounterOfferForm
+          pending={false}
+          onCounter={(amount) => onAction(offer.id, "counter", amount)}
+        />
+      )}
+    </div>
+  )
+}
+
+function MakeOfferDialog({
   open,
   onOpenChange,
   onOffer,
@@ -110,12 +281,12 @@ function OfferDialog({
   pending: boolean
 }) {
   const form = useForm<OfferValues>({
-    resolver: zodResolver(negotiationOfferSchema),
-    defaultValues: { price: undefined, message: "" },
+    resolver: zodResolver(createOfferFormSchema),
+    defaultValues: { amount: undefined },
   })
 
   React.useEffect(() => {
-    if (open) form.reset({ price: undefined, message: "" })
+    if (open) form.reset({ amount: undefined })
   }, [open, form])
 
   return (
@@ -124,7 +295,7 @@ function OfferDialog({
         <DialogHeader>
           <DialogTitle>Make an offer</DialogTitle>
           <DialogDescription>
-            Propose a price and message to the seller.
+            Propose a price for this listing. Amounts are in dollars.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -135,7 +306,7 @@ function OfferDialog({
           >
             <FormField
               control={form.control}
-              name="price"
+              name="amount"
               render={({ field }) => (
                 <FormItem className="grid">
                   <FormLabel>Offer price (USD)</FormLabel>
@@ -159,19 +330,6 @@ function OfferDialog({
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="message"
-              render={({ field }) => (
-                <FormItem className="grid">
-                  <FormLabel>Message</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Add a short message" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </form>
         </Form>
         <div className="flex justify-end gap-2">
@@ -190,11 +348,16 @@ function OfferDialog({
 
 function Thread({ conversationId }: { conversationId: string }) {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const me = useAuthStore((s) => s.user)
   const { data: meta } = useConversationMeta(conversationId)
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useMessagesInfinite(conversationId)
+  const { data: offers } = useOffers(conversationId)
   const sendMessage = useSendMessage(conversationId)
+  const createOffer = useCreateOffer(conversationId)
+  const respondToOffer = useRespondToOffer(conversationId)
+  const markRead = useMarkMessagesRead(conversationId)
   const [offerOpen, setOfferOpen] = React.useState(false)
   const [draft, setDraft] = React.useState("")
   const stopTypingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -204,6 +367,20 @@ function Thread({ conversationId }: { conversationId: string }) {
   const setActiveConversation = useNegotiationUiStore(
     (s) => s.setActiveConversation
   )
+
+  // Mark inbound messages read once on chat open, and again when the tab
+  // regains focus (spec §5.9) — never on every scroll or incoming message.
+  React.useEffect(() => {
+    markRead.mutate()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId])
+
+  React.useEffect(() => {
+    const onFocus = () => markRead.mutate()
+    window.addEventListener("focus", onFocus)
+    return () => window.removeEventListener("focus", onFocus)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId])
 
   React.useEffect(() => {
     setActiveConversation(conversationId)
@@ -216,9 +393,13 @@ function Thread({ conversationId }: { conversationId: string }) {
     }
   }, [conversationId, setActiveConversation])
 
-  // pages[0] is the newest batch; reverse to chronological (oldest → newest).
+  // pages[0] is the newest batch (newest-first per page); reverse the page
+  // order AND each page's array to get chronological oldest → newest.
   const messages = React.useMemo(
-    () => (data?.pages ? [...data.pages].reverse().flatMap((p) => p.messages) : []),
+    () =>
+      data?.pages
+        ? [...data.pages].reverse().flatMap((p) => [...p.messages].reverse())
+        : [],
     [data]
   )
 
@@ -277,13 +458,52 @@ function Thread({ conversationId }: { conversationId: string }) {
     setDraft("")
   }
 
-  const onOffer = (values: OfferValues) => {
+  const retryMessage = (failed: Message) => {
+    queryClient.setQueryData<
+      { pages: MessageCursorPage[]; pageParams: (string | null)[] } | undefined
+    >(queryKeys.conversations.messages(conversationId), (old) => {
+      if (!old || old.pages.length === 0) return old
+      const pages = old.pages.map((page, index) =>
+        index === 0
+          ? { ...page, messages: page.messages.filter((m) => m.id !== failed.id) }
+          : page
+      )
+      return { ...old, pages }
+    })
     sendMessage.mutate(
-      { body: values.message, offerAmount: values.price },
+      { body: failed.body },
+      {
+        onError: (error) => toast.error(getErrorMessage(error)),
+      }
+    )
+  }
+
+  const onOffer = (values: OfferValues) => {
+    if (!meta?.post) return
+    createOffer.mutate(
+      { postId: meta.post.id, amount: values.amount },
       {
         onSuccess: () => {
-          toast.success(`Offer ${formatCurrency(values.price)} sent`)
+          toast.success("Offer sent")
           setOfferOpen(false)
+        },
+        onError: (error) => toast.error(getErrorMessage(error)),
+      }
+    )
+  }
+
+  const onRespond = (offerId: string, action: OfferAction, amount?: number) => {
+    respondToOffer.mutate(
+      { offerId, action, amount },
+      {
+        onSuccess: () => {
+          toast.success(
+            action === "accept"
+              ? "Offer accepted"
+              : action === "reject"
+                ? "Offer rejected"
+                : "Counter offer sent"
+          )
         },
         onError: (error) => toast.error(getErrorMessage(error)),
       }
@@ -293,6 +513,11 @@ function Thread({ conversationId }: { conversationId: string }) {
   const other =
     meta?.participants.find((p) => p.id !== me?.id) ??
     meta?.participants[0]
+
+  // Negotiation affordances live only in 1:1 conversations anchored to a
+  // priced listing (spec §5.2/§5.8); hide them in group/plain chats.
+  const isNegotiation = !!meta?.post && meta?.isGroup !== true
+  const hasPendingOffer = (offers ?? []).some((o) => o.status === "pending")
 
   return (
     <div className="flex h-[calc(100svh-8.5rem)] flex-col overflow-hidden rounded-card bg-card ring-1 ring-foreground/10 md:h-[calc(100svh-6rem)]">
@@ -321,10 +546,30 @@ function Thread({ conversationId }: { conversationId: string }) {
             {formatCurrency(meta.post.price, meta.post.currency)}
           </Badge>
         )}
-        <Button size="sm" variant="outline" onClick={() => setOfferOpen(true)}>
-          Make offer
-        </Button>
+        {isNegotiation && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setOfferOpen(true)}
+            disabled={hasPendingOffer}
+          >
+            {hasPendingOffer ? "Offer pending" : "Make offer"}
+          </Button>
+        )}
       </div>
+
+      {(offers?.length ?? 0) > 0 && (
+        <div className="flex max-h-48 flex-col gap-2 overflow-y-auto border-b border-border p-3">
+          {offers!.map((offer) => (
+            <OfferCard
+              key={offer.id}
+              offer={offer}
+              meId={me?.id ?? ""}
+              onAction={onRespond}
+            />
+          ))}
+        </div>
+      )}
 
       <div
         ref={parentRef}
@@ -352,7 +597,11 @@ function Thread({ conversationId }: { conversationId: string }) {
                   className="absolute top-0 left-0 w-full px-1 py-1"
                   style={{ transform: `translateY(${item.start}px)` }}
                 >
-                  <MessageBubble message={message} isMine={isMine} />
+                  <MessageBubble
+                    message={message}
+                    isMine={isMine}
+                    onRetry={isMine ? retryMessage : undefined}
+                  />
                 </div>
               )
             })}
@@ -389,11 +638,11 @@ function Thread({ conversationId }: { conversationId: string }) {
         </Button>
       </div>
 
-      <OfferDialog
+      <MakeOfferDialog
         open={offerOpen}
         onOpenChange={setOfferOpen}
         onOffer={onOffer}
-        pending={sendMessage.isPending}
+        pending={createOffer.isPending}
       />
     </div>
   )

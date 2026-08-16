@@ -78,6 +78,8 @@ export interface Conversation {
   lastMessage?: MessageSummary
   lastMessageAt?: string
   unreadCount: number
+  /** Absent on old rows; only negotiation conversations are ever 1:1-anchored to a listing. */
+  isGroup?: boolean
 }
 
 export interface MessageSummary {
@@ -96,12 +98,34 @@ export interface Message {
   createdAt: string
   /** Echoed back by the server on the receive_message broadcast to reconcile optimistic inserts. */
   clientMessageId?: string
+  /** Delivery state for locally-created (optimistic) messages only. */
+  status?: "pending" | "failed"
 }
 
 /** Cursor-paginated page of messages (handbook §5.6 — `data.messages` + `nextCursor`). */
 export interface MessageCursorPage {
   messages: Message[]
   nextCursor: string | null
+}
+
+export type OfferStatus = "pending" | "accepted" | "rejected" | "countered"
+export type OfferAction = "accept" | "reject" | "counter"
+
+export interface Offer {
+  id: string
+  /** Backend shape: `conversation`/`post`/`proposedBy` may be id strings or populated objects. */
+  conversation: string | Conversation
+  post: Post | string
+  buyer: string
+  seller: string
+  /** The participant who created THIS offer — string id or populated user. */
+  proposedBy: PublicUser | string
+  /** Integer cents, matching Post.price / Payment.amount. */
+  amount: number
+  status: OfferStatus
+  previousOffer?: string | null
+  createdAt: string
+  updatedAt?: string
 }
 
 export type PaymentStatus =

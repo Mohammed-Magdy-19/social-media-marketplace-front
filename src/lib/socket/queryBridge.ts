@@ -3,8 +3,11 @@ import { queryClient } from "@/lib/queryClient"
 import { queryKeys } from "@/api/queryKeys"
 import type {
   AppNotification,
+  Conversation,
   Message,
   MessageCursorPage,
+  MessageSummary,
+  Offer,
   PaginatedResponse,
   Post,
   PostComment,
@@ -31,6 +34,8 @@ const pendingNotifications = new Map<string, AppNotification>()
 const pendingLikeDeltas = new Map<string, { likesCount: number; isLiked: boolean }>()
 const pendingCommentDeltas = new Map<string, number>()
 const pendingCommentEvents: CommentEvent[] = []
+const pendingOffers: Offer[] = []
+const pendingOfferUpdates: { offer: Offer; newOffer?: Offer }[] = []
 
 let rafScheduled = false
 
@@ -45,6 +50,16 @@ function scheduleFlush() {
 
 export function bridgeReceiveMessage(message: Message) {
   pendingMessages.set(message.messageId, message)
+  scheduleFlush()
+}
+
+export function bridgeOfferCreated(offer: Offer) {
+  pendingOffers.push(offer)
+  scheduleFlush()
+}
+
+export function bridgeOfferUpdated(payload: { offer: Offer; newOffer?: Offer }) {
+  pendingOfferUpdates.push(payload)
   scheduleFlush()
 }
 
@@ -150,8 +165,9 @@ function flushMessages() {
   if (pendingMessages.size === 0) return
   const cache = queryClient.getQueryCache()
   const entries = cache.getAll().filter((q) => isMessagesKey(q.queryKey))
+  const touchedConversations = new Set<string>()
   for (const entry of entries) {
-    const conversationId = entry.queryKey[1]
+    const conversationId = entry.queryKey[1] as string
     const matching = [...pendingMessages.values()].filter(
       (m) => m.conversationId === conversationId
     )
@@ -162,14 +178,62 @@ function flushMessages() {
         if (!old || old.pages.length === 0) return old
         const pages = old.pages.map((page, index) => {
           if (index !== 0) return page
-          const seen = new Set(page.messages.map((m) => m.messageId))
+          // Reconcile optimistic inserts: drop the locally-created temp message
+          // once the authoritative echo (same clientMessageId) arrives.
+          const optimisticIds = new Set(
+            matching
+              .filter((m) => m.clientMessageId)
+              .map((m) => `client:${m.clientMessageId}`)
+          )
+          let messages = page.messages.filter(
+            (m) => !(optimisticIds.has(m.id) && m.id.startsWith("client:"))
+          )
+          const seen = new Set(messages.map((m) => m.messageId))
           const added = matching.filter((m) => !seen.has(m.messageId))
-          return { ...page, messages: [...page.messages, ...added] }
+          if (added.length > 0) messages = [...messages, ...added]
+          return { ...page, messages }
         })
         return { ...old, pages }
       }
     )
+    touchedConversations.add(conversationId)
   }
+
+  if (touchedConversations.size > 0) {
+    patchConversationList([...touchedConversations])
+  }
+}
+
+/** Keep the conversation list live: bump lastMessage/lastMessageAt and re-sort. */
+function patchConversationList(conversationIds: string[]) {
+  const list = queryClient.getQueryData<Conversation[]>(queryKeys.conversations.all())
+  if (!list || list.length === 0) return
+  let changed = false
+  const next = list.map((c) => {
+    if (!conversationIds.includes(c.id)) return c
+    const latest = [...pendingMessages.values()]
+      .filter((m) => m.conversationId === c.id)
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      )[0]
+    if (!latest) return c
+    changed = true
+    const summary: MessageSummary = {
+      id: latest.messageId,
+      senderId: latest.senderId,
+      body: latest.body,
+      createdAt: latest.createdAt,
+    }
+    return { ...c, lastMessage: summary, lastMessageAt: latest.createdAt }
+  })
+  if (!changed) return
+  const sorted = next.slice().sort(
+    (a, b) =>
+      new Date(b.lastMessageAt ?? 0).getTime() -
+      new Date(a.lastMessageAt ?? 0).getTime()
+  )
+  queryClient.setQueryData(queryKeys.conversations.all(), sorted)
 }
 
 function flushNotifications() {
@@ -355,15 +419,62 @@ function flushCommentEvents() {
   }
 }
 
+function isOffersKey(key: unknown): boolean {
+  return (
+    Array.isArray(key) &&
+    key.length === 3 &&
+    key[0] === "conversations" &&
+    key[2] === "offers"
+  )
+}
+
+function offerConversationId(offer: Offer): string {
+  return typeof offer.conversation === "string" ? offer.conversation : offer.conversation.id
+}
+
+/** Patch the offers cache in place (append / replace / counter-chain), oldest first. */
+function flushOffers() {
+  if (pendingOffers.length === 0 && pendingOfferUpdates.length === 0) return
+  const cache = queryClient.getQueryCache()
+  const entries = cache.getAll().filter((q) => isOffersKey(q.queryKey))
+  for (const entry of entries) {
+    const conversationId = entry.queryKey[1] as string
+    const created = pendingOffers.filter((o) => offerConversationId(o) === conversationId)
+    const updated = pendingOfferUpdates.filter(
+      (p) => offerConversationId(p.offer) === conversationId
+    )
+    if (created.length === 0 && updated.length === 0) continue
+    queryClient.setQueryData<Offer[]>(entry.queryKey, (old) => {
+      const list = old ? [...old] : []
+      for (const offer of created) {
+        if (!list.some((o) => o.id === offer.id)) list.push(offer)
+      }
+      for (const { offer, newOffer } of updated) {
+        const idx = list.findIndex((o) => o.id === offer.id)
+        if (idx >= 0) list[idx] = offer
+        else list.push(offer)
+        if (newOffer && !list.some((o) => o.id === newOffer.id)) list.push(newOffer)
+      }
+      return list.sort(
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      )
+    })
+  }
+}
+
 function flush() {
   flushMessages()
   flushNotifications()
   flushLikeDeltas()
   flushCommentDeltas()
   flushCommentEvents()
+  flushOffers()
   pendingMessages.clear()
   pendingNotifications.clear()
   pendingLikeDeltas.clear()
   pendingCommentDeltas.clear()
   pendingCommentEvents.length = 0
+  pendingOffers.length = 0
+  pendingOfferUpdates.length = 0
 }

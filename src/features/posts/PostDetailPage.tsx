@@ -188,7 +188,8 @@ export default function PostDetailPage() {
                 size="sm"
                 variant="outline"
                 onClick={() => {
-                  if (hasToken) startNegotiation.mutate({ postId: post.id })
+                  if (hasToken)
+                    startNegotiation.mutate({ sellerId: post.author.id })
                 }}
                 disabled={!hasToken}
               >

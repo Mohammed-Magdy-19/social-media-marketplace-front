@@ -11,11 +11,13 @@ import {
   bridgeLikeDelta,
   bridgeNewComment,
   bridgeNotification,
+  bridgeOfferCreated,
+  bridgeOfferUpdated,
   bridgeReceiveMessage,
   bridgeReplyCreated,
   type SocketComment,
 } from "@/lib/socket/queryBridge"
-import type { AppNotification, Message } from "@/types"
+import type { AppNotification, Message, Offer } from "@/types"
 
 /**
  * Connects the singleton socket once a valid session exists and wires the
@@ -57,6 +59,9 @@ export function useSocketLifecycle() {
       replyIds: string[]
     }) => bridgeCommentDeleted(payload)
     const onReplyCreated = (comment: SocketComment) => bridgeReplyCreated(comment)
+    const onOfferCreated = (offer: Offer) => bridgeOfferCreated(offer)
+    const onOfferUpdated = (payload: { offer: Offer; newOffer?: Offer }) =>
+      bridgeOfferUpdated(payload)
     const onPaymentSucceeded = () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.payments.my() })
     }
@@ -90,6 +95,8 @@ export function useSocketLifecycle() {
     socket.on("comment_updated", onCommentUpdated)
     socket.on("comment_deleted", onCommentDeleted)
     socket.on("reply_created", onReplyCreated)
+    socket.on("offer_created", onOfferCreated)
+    socket.on("offer_updated", onOfferUpdated)
     socket.on("payment_succeeded", onPaymentSucceeded)
     socket.on("connect", onConnect)
 
@@ -104,6 +111,8 @@ export function useSocketLifecycle() {
       socket.off("comment_updated", onCommentUpdated)
       socket.off("comment_deleted", onCommentDeleted)
       socket.off("reply_created", onReplyCreated)
+      socket.off("offer_created", onOfferCreated)
+      socket.off("offer_updated", onOfferUpdated)
       socket.off("payment_succeeded", onPaymentSucceeded)
       socket.off("connect", onConnect)
       if (socket.connected) socket.disconnect()

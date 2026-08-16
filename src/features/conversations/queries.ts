@@ -5,6 +5,9 @@ import type {
   ApiResponse,
   Conversation,
   MessageCursorPage,
+  Offer,
+  PaginatedResponse,
+  PublicUser,
 } from "@/types"
 
 export const MESSAGES_PAGE_SIZE = 25
@@ -13,11 +16,11 @@ export function useConversations() {
   return useQuery({
     queryKey: queryKeys.conversations.all(),
     queryFn: async ({ signal }) => {
-      const res = await apiGet<ApiResponse<{ conversations: Conversation[] }>>(
+      const res = await apiGet<PaginatedResponse<Conversation>>(
         "/conversations",
         { signal }
       )
-      return res.data.conversations ?? []
+      return res.data ?? []
     },
     staleTime: 15_000,
   })
@@ -51,6 +54,41 @@ export function useMessagesInfinite(conversationId: string) {
     },
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
+    enabled: !!conversationId,
+  })
+}
+
+/** Offer field accessors — `conversation`/`post`/`proposedBy` can be id strings or populated objects. */
+export function offerConversationId(offer: Offer): string {
+  return typeof offer.conversation === "string"
+    ? offer.conversation
+    : offer.conversation.id
+}
+
+export function offerPostId(offer: Offer): string {
+  return typeof offer.post === "string" ? offer.post : offer.post.id
+}
+
+export function offerProposer(offer: Offer): PublicUser | string {
+  return offer.proposedBy
+}
+
+export function offerProposerId(offer: Offer): string {
+  return typeof offer.proposedBy === "string"
+    ? offer.proposedBy
+    : offer.proposedBy.id
+}
+
+export function useOffers(conversationId: string) {
+  return useQuery({
+    queryKey: queryKeys.conversations.offers(conversationId),
+    queryFn: async ({ signal }) => {
+      const res = await apiGet<ApiResponse<{ offers: Offer[] }>>(
+        `/conversations/${conversationId}/offers`,
+        { signal }
+      )
+      return res.data.offers ?? []
+    },
     enabled: !!conversationId,
   })
 }

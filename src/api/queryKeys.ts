@@ -44,6 +44,8 @@ export const queryKeys = {
         detail: (id: string) => ["conversations", id] as const,
         messages: (conversationId: string, cursor?: string) =>
             ["conversations", conversationId, "messages", cursor] as const,
+        offers: (conversationId: string) =>
+            ["conversations", conversationId, "offers"] as const,
     },
     notifications: {
         all: (page?: number) => ["notifications", "list", page] as const,
