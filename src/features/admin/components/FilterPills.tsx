@@ -14,20 +14,22 @@ export function FilterPills({
   onChange: (value: string) => void
 }) {
   return (
-    <ToggleGroup
-      value={value ? [value] : []}
-      onValueChange={(next) => {
-        onChange(next[0] ?? "")
-      }}
-      size="sm"
-      variant="outline"
-      spacing={2}
-    >
-      {pills.map((pill) => (
-        <ToggleGroupItem key={pill} value={pill}>
-          {pill}
-        </ToggleGroupItem>
-      ))}
-    </ToggleGroup>
+    <div className="no-scrollbar -mx-1 overflow-x-auto px-1">
+      <ToggleGroup
+        value={value ? [value] : []}
+        onValueChange={(next) => {
+          onChange(next[0] ?? "")
+        }}
+        size="sm"
+        variant="outline"
+        spacing={2}
+      >
+        {pills.map((pill) => (
+          <ToggleGroupItem key={pill} value={pill}>
+            {pill}
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
+    </div>
   )
 }

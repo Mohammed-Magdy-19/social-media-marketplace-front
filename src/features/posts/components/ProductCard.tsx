@@ -90,7 +90,7 @@ export function ProductCard({ post }: { post: Post }) {
             </span>
           )}
         </div>
-        <div className="mt-auto flex gap-1.5 pt-1">
+        <div className="mt-auto flex flex-col gap-1.5 pt-1 sm:flex-row">
           <Button
             size="sm"
             className="flex-1"

@@ -19,6 +19,7 @@ import { queryClient } from "@/lib/queryClient"
 import { queryKeys } from "@/api/queryKeys"
 import { cn, formatDate } from "@/lib/utils"
 import { useAuthStore } from "@/stores/authStore"
+import { useResponsiveColumns } from "@/hooks/use-responsive-columns"
 
 function MyPostsGrid({ author }: { author: string }) {
   const { data, isLoading } = usePostsInfinite({ category: null, tag: null, author, sort: "newest" })
@@ -28,7 +29,7 @@ function MyPostsGrid({ author }: { author: string }) {
     () => data?.pages.flatMap((p) => p.data) ?? [],
     [data]
   )
-  const COLUMNS = 3
+  const COLUMNS = useResponsiveColumns()
   const rows = Math.ceil(posts.length / COLUMNS)
 
   const virtualizer = useVirtualizer({

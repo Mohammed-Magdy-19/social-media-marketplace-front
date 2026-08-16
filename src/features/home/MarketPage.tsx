@@ -4,6 +4,7 @@ import { useFilterStore } from "@/stores/filterStore"
 import { useCategories } from "@/features/categories/queries"
 import { usePostsInfinite } from "@/features/posts/queries"
 import { ProductCard } from "@/features/posts/components/ProductCard"
+import { useResponsiveColumns } from "@/hooks/use-responsive-columns"
 import { Button } from "@/components/ui/button"
 import { ErrorBoundary, SectionFallback } from "@/components/shared/ErrorBoundary"
 import { cn } from "@/lib/utils"
@@ -55,7 +56,7 @@ function MarketplaceColumn() {
   const parentRef = useRef<HTMLDivElement>(null)
 
   const posts = data?.pages.flatMap((p) => p.data) ?? []
-  const COLUMNS = 2
+  const COLUMNS = useResponsiveColumns()
   const rows = Math.ceil(posts.length / COLUMNS)
 
   const virtualizer = useVirtualizer({
@@ -103,7 +104,7 @@ function MarketplaceColumn() {
                 key={`row-${item.index}`}
                 ref={virtualizer.measureElement}
                 data-index={item.index}
-                className="grid grid-cols-2 gap-3"
+                className="grid grid-cols-2 gap-3 sm:grid-cols-2 xl:grid-cols-3"
               >
                 {rowPosts.map((post) => (
                   <ProductCard key={post.id} post={post} />

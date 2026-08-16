@@ -3,6 +3,7 @@ import { useVirtualizer } from "@tanstack/react-virtual"
 import { Bookmark } from "lucide-react"
 import { useSavedPosts } from "@/features/posts/queries"
 import { ProductCard } from "@/features/posts/components/ProductCard"
+import { useResponsiveColumns } from "@/hooks/use-responsive-columns"
 import { ErrorBoundary, SectionFallback } from "@/components/shared/ErrorBoundary"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -11,7 +12,7 @@ function SavedGrid() {
   const parentRef = useRef<HTMLDivElement>(null)
 
   const posts = useMemo(() => data?.data ?? [], [data])
-  const COLUMNS = 3
+  const COLUMNS = useResponsiveColumns()
   const rows = Math.ceil(posts.length / COLUMNS)
 
   const virtualizer = useVirtualizer({

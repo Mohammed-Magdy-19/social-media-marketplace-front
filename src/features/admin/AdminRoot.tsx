@@ -245,12 +245,12 @@ function GlobalSearch() {
       <Button
         variant="outline"
         size="sm"
-        className="w-56 justify-start gap-2 text-muted-foreground"
+        className="min-w-0 flex-1 justify-start gap-2 text-muted-foreground sm:w-56 sm:flex-none"
         onClick={() => setOpen(true)}
       >
-        <CommandIcon className="size-3.5" />
-        <span className="text-xs">Search views…</span>
-        <Badge variant="outline" className="ml-auto font-mono text-[10px]">
+        <CommandIcon className="size-3.5 shrink-0" />
+        <span className="hidden truncate text-xs min-[480px]:inline">Search views…</span>
+        <Badge variant="outline" className="ml-auto hidden shrink-0 font-mono text-[10px] sm:inline-flex">
           ⌘K
         </Badge>
       </Button>

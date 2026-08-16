@@ -85,7 +85,7 @@ export function Header() {
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSearch)}
-          className="mx-auto w-full max-w-xl px-2"
+          className="mx-auto min-w-0 max-w-xl flex-1 px-2"
           role="search"
         >
           <FormField
@@ -131,6 +131,7 @@ export function Header() {
               <Button
                 variant="ghost"
                 size="icon-sm"
+                className="hidden md:inline-flex"
                 onClick={() => void navigate("/messages")}
               />
             }
