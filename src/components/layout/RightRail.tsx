@@ -68,6 +68,8 @@ function AdminDesk() {
 
   if (!isAdmin || !data) return null
 
+  const totalSales = data.sales.reduce((sum, s) => sum + s.count, 0)
+
   return (
     <Card className="rounded-card">
       <CardHeader>
@@ -76,8 +78,7 @@ function AdminDesk() {
       <CardContent className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted-foreground">
-            Total volume ·{" "}
-            {formatCurrency(data.totalVolumeCents / 100)}
+            Completed sales · {totalSales.toLocaleString()}
           </span>
           <Button size="sm" variant="outline" render={<Link to="/admin" />}>
             Open console

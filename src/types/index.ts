@@ -184,13 +184,13 @@ export interface Upload {
   createdAt: string
 }
 
-/** Shape of GET /admin/dashboard — flat aggregate counters. */
+/** Shape of GET /admin/dashboard — aggregate counters grouped by domain. */
 export interface AdminDashboard {
-  totalUsers: number
-  totalPosts: number
-  totalPayments: number
-  /** Aggregate marketplace volume in the smallest currency unit (cents). */
-  totalVolumeCents: number
+  users: { total: number; active: number; suspended: number; banned: number }
+  posts: { total: number }
+  reports: { pending: number }
+  /** Completed payments grouped by currency. */
+  sales: { _id: string; totalAmount: number; count: number }[]
 }
 
 /** Cursor-paginated envelope used by every list endpoint. */
