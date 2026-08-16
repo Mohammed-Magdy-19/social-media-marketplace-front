@@ -24,7 +24,7 @@ function SavedGrid() {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
           <Skeleton key={i} className="aspect-square w-full rounded-card" />
         ))}
@@ -34,7 +34,7 @@ function SavedGrid() {
 
   if (posts.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-2 rounded-card bg-card p-10 text-center ring-1 ring-foreground/10">
+      <div className="mt-4 flex flex-col items-center gap-2 rounded-card bg-card p-10 text-center ring-1 ring-foreground/10">
         <Bookmark className="size-8 text-muted-foreground" />
         <p className="text-sm font-medium">No saved posts yet</p>
         <p className="max-w-sm text-sm text-muted-foreground">
@@ -45,7 +45,7 @@ function SavedGrid() {
   }
 
   return (
-    <div ref={parentRef} className="max-h-[calc(100svh-10rem)] overflow-y-auto pr-1">
+    <div ref={parentRef} className="mt-4 max-h-[calc(100svh-10rem)] overflow-y-auto pr-1">
       <div className="relative" style={{ height: virtualizer.getTotalSize() }}>
         {virtualizer.getVirtualItems().map((item) => {
           const rowStart = item.index * COLUMNS

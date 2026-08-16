@@ -14,7 +14,7 @@ function CategoryPills() {
   const setCategory = useFilterStore((s) => s.setCategory)
 
   return (
-    <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto py-2">
+    <div className="mt-4 no-scrollbar flex items-center gap-1.5 overflow-x-auto py-2">
       <button
         type="button"
         onClick={() => setCategory(null)}

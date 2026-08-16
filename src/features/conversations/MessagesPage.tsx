@@ -500,7 +500,7 @@ export default function MessagesPage() {
             Negotiate listings and keep offers in one place.
           </p>
         </div>
-        <Card className="rounded-card">
+        <Card className="mt-4 rounded-card">
           <CardContent className="p-2">
             <ErrorBoundary fallback={<SectionFallback />}>
               <ConversationList />

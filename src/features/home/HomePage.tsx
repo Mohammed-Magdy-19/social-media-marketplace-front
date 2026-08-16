@@ -34,7 +34,7 @@ function Composer() {
 
   if (!user) {
     return (
-      <div className="flex items-center gap-3 rounded-card bg-card p-4 ring-1 ring-foreground/10">
+      <div className="mt-4 flex items-center gap-3 rounded-card bg-card p-4 ring-1 ring-foreground/10">
         <AvatarWithFallback name="Guest" src={null} />
         <p className="flex-1 text-sm text-muted-foreground">
           Share a listing with the community.
@@ -64,7 +64,7 @@ function Composer() {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="flex flex-col gap-3 rounded-card bg-card p-4 ring-1 ring-foreground/10"
+        className="mt-4 flex flex-col gap-3 rounded-card bg-card p-4 ring-1 ring-foreground/10"
       >
         <div className="flex items-center gap-3">
           <AvatarWithFallback name={user.name} src={user.avatar} />
