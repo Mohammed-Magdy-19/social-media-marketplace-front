@@ -104,8 +104,13 @@ export function useReports(filters: ReportsFilters = {}) {
 export function useAdminConversations() {
   return useQuery({
     queryKey: queryKeys.admin.conversations(),
-    queryFn: ({ signal }) =>
-      apiGet<Conversation[]>("/admin/conversations", { signal }),
+    queryFn: async ({ signal }) => {
+      const res = await apiGet<ApiResponse<{ conversations: Conversation[] }>>(
+        "/admin/conversations",
+        { signal }
+      )
+      return res.data.conversations ?? []
+    },
     placeholderData: keepPreviousData,
   })
 }
