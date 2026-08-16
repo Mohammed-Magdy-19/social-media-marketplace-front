@@ -134,6 +134,8 @@ export async function apiDelete<T>(
 export const AVATAR_MAX_BYTES = 2 * 1024 * 1024
 export const POST_MEDIA_MAX_FILES = 10
 export const POST_MEDIA_MAX_BYTES = 10 * 1024 * 1024
+/** Multer on the backend accepts at most 5 images per request. */
+export const POST_MEDIA_UPLOAD_BATCH = 5
 
 /**
  * Upload transport. The `Content-Type` header is intentionally left unset for
@@ -182,26 +184,34 @@ export async function uploadPostMedia(
   files: File[],
   signal?: AbortSignal,
   onProgress?: ProgressCallback
-): Promise<{ assets: { id: string; url: string; kind: "image" | "video" }[] }> {
+): Promise<{ media: string[] }> {
   if (files.length > POST_MEDIA_MAX_FILES) {
     throw new ApiError(400, `Upload up to ${POST_MEDIA_MAX_FILES} files`)
   }
   if (files.some((f) => f.size > POST_MEDIA_MAX_BYTES)) {
     throw new ApiError(400, "Each file must be 10MB or smaller")
   }
-  const form = new FormData()
-  files.forEach((f) => form.append("images", f))
-  const res = await uploadClient.post<
-    ApiResponse<{ media: string[]; files: unknown[] }>
-  >(`/uploads/posts/${postId}`, form, {
-    signal,
-    onUploadProgress: onUploadProgress(onProgress),
-  })
-  return {
-    assets: res.data.data.media.map((url) => ({
-      id: url,
-      url,
-      kind: "image",
-    })),
+  const media: string[] = []
+  for (let i = 0; i < files.length; i += POST_MEDIA_UPLOAD_BATCH) {
+    const batch = files.slice(i, i + POST_MEDIA_UPLOAD_BATCH)
+    const form = new FormData()
+    batch.forEach((f) => form.append("images", f))
+    const res = await uploadClient.post<
+      ApiResponse<{ media: string[]; files: unknown[] }>
+    >(`/uploads/posts/${postId}`, form, {
+      signal,
+      onUploadProgress: onUploadProgress(
+        onProgress
+          ? (percent) =>
+              onProgress(
+                Math.round(
+                  ((i + percent / 100) / files.length) * 100
+                )
+              )
+          : undefined
+      ),
+    })
+    media.push(...res.data.data.media)
   }
+  return { media }
 }

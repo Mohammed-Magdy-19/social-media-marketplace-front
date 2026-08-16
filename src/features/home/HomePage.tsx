@@ -1,17 +1,22 @@
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import { Link } from "react-router-dom"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import type { z } from "zod"
-import { Plus } from "lucide-react"
+import { ImagePlus, Loader2, Plus, X } from "lucide-react"
 import { useAuthStore } from "@/stores/authStore"
 import { useCategories } from "@/features/categories/queries"
 import { useFeedInfinite } from "@/features/feed/queries"
 import { useCreatePost } from "@/features/posts/mutations"
 import { postComposerSchema } from "@/features/posts/schemas"
 import { getErrorMessage } from "@/lib/api/errors"
+import {
+  POST_MEDIA_MAX_BYTES,
+  POST_MEDIA_MAX_FILES,
+  uploadPostMedia,
+} from "@/lib/api/client"
 import { ErrorBoundary, SectionFallback } from "@/components/shared/ErrorBoundary"
 import { PostCard } from "@/features/posts/components/PostCard"
 import { AvatarWithFallback } from "@/components/shared/AvatarWithFallback"
@@ -28,10 +33,44 @@ function Composer() {
   const { data: categories } = useCategories()
   const createPost = useCreatePost()
 
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [media, setMedia] = useState<{ file: File; url: string }[]>([])
+  const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+
   const form = useForm<ComposerValues>({
     resolver: zodResolver(postComposerSchema),
     defaultValues: { title: "", content: "", categoryId: "", price: undefined, tags: [] },
   })
+
+  const addFiles = (incoming: File[]) => {
+    if (incoming.length === 0) return
+    const oversized = incoming.find((f) => f.size > POST_MEDIA_MAX_BYTES)
+    if (oversized) {
+      toast.error("Each photo must be 10MB or smaller")
+      return
+    }
+    const room = POST_MEDIA_MAX_FILES - media.length
+    const accepted = incoming.slice(0, room)
+    if (accepted.length === 0) {
+      toast.error(`Up to ${POST_MEDIA_MAX_FILES} photos per post`)
+      return
+    }
+    if (accepted.length < incoming.length) {
+      toast.error(`Up to ${POST_MEDIA_MAX_FILES} photos per post`)
+    }
+    const next = accepted.map((file) => ({ file, url: URL.createObjectURL(file) }))
+    setMedia((prev) => [...prev, ...next])
+  }
+
+  const removeFile = (index: number) => {
+    setMedia((prev) => {
+      const next = [...prev]
+      URL.revokeObjectURL(next[index].url)
+      next.splice(index, 1)
+      return next
+    })
+  }
 
   if (!user) {
     return (
@@ -48,17 +87,26 @@ function Composer() {
     )
   }
 
-  const onSubmit = (values: ComposerValues) => {
-    createPost.mutate(
-      { ...values, tags: values.tags.filter(Boolean) },
-      {
-        onSuccess: () => {
-          toast.success("Post created")
-          form.reset({ title: "", content: "", categoryId: "", price: undefined, tags: [] })
-        },
-        onError: (error) => toast.error(getErrorMessage(error)),
+  const onSubmit = async (values: ComposerValues) => {
+    const payload = { ...values, tags: values.tags.filter(Boolean) }
+    setUploading(true)
+    setUploadProgress(0)
+    try {
+      const res = await createPost.mutateAsync(payload)
+      const postId = res.data.post.id
+      if (media.length > 0) {
+        await uploadPostMedia(postId, media.map((m) => m.file), undefined, setUploadProgress)
       }
-    )
+      toast.success("Post created")
+      form.reset({ title: "", content: "", categoryId: "", price: undefined, tags: [] })
+      media.forEach((m) => URL.revokeObjectURL(m.url))
+      setMedia([])
+    } catch (error) {
+      toast.error(getErrorMessage(error))
+    } finally {
+      setUploading(false)
+      setUploadProgress(0)
+    }
   }
 
   return (
@@ -102,7 +150,58 @@ function Composer() {
             </FormItem>
           )}
         />
+        {media.length > 0 && (
+          <div className="grid grid-cols-4 gap-2">
+            {media.map((m, i) => (
+              <div
+                key={m.url}
+                className="relative aspect-square overflow-hidden rounded-lg ring-1 ring-foreground/10"
+              >
+                <img
+                  src={m.url}
+                  alt={`Uploaded photo ${i + 1}`}
+                  className="size-full object-cover"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label="Remove photo"
+                  className="absolute right-1 top-1 bg-black/50 text-white hover:bg-black/70 hover:text-white"
+                  onClick={() => removeFile(i)}
+                  disabled={uploading}
+                >
+                  <X />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
         <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading || media.length >= POST_MEDIA_MAX_FILES}
+          >
+            <ImagePlus />
+            {media.length > 0
+              ? `${media.length}/${POST_MEDIA_MAX_FILES} photos`
+              : "Add photos"}
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            aria-label="Upload photos"
+            onChange={(e) => {
+              addFiles(Array.from(e.target.files ?? []))
+              e.target.value = ""
+            }}
+          />
           <FormField
             control={form.control}
             name="categoryId"
@@ -176,8 +275,19 @@ function Composer() {
               </FormItem>
             )}
           />
-          <Button type="submit" size="sm" disabled={createPost.isPending}>
-            Publish
+          <Button
+            type="submit"
+            size="sm"
+            disabled={createPost.isPending || uploading}
+          >
+            {uploading ? (
+              <>
+                <Loader2 className="animate-spin" />
+                Uploading {uploadProgress}%
+              </>
+            ) : (
+              "Publish"
+            )}
           </Button>
         </div>
       </form>
