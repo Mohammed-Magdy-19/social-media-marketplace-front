@@ -133,98 +133,98 @@ export const router = createBrowserRouter([
               </PageBoundary>
             ),
           },
+        ],
+      },
+      {
+        path: "admin",
+        element: <RequireRole role="admin" />,
+        children: [
           {
-            path: "admin",
-            element: <RequireRole role="admin" />,
+            element: (
+              <PageBoundary>
+                <AdminRoot />
+              </PageBoundary>
+            ),
             children: [
               {
+                index: true,
                 element: (
                   <PageBoundary>
-                    <AdminRoot />
+                    <AdminOverviewPage />
                   </PageBoundary>
                 ),
-                children: [
-                  {
-                    index: true,
-                    element: (
-                      <PageBoundary>
-                        <AdminOverviewPage />
-                      </PageBoundary>
-                    ),
-                  },
-                  {
-                    path: "posts",
-                    element: (
-                      <PageBoundary>
-                        <AdminPostsPage />
-                      </PageBoundary>
-                    ),
-                  },
-                  {
-                    path: "categories",
-                    element: (
-                      <PageBoundary>
-                        <AdminCategoriesPage />
-                      </PageBoundary>
-                    ),
-                  },
-                  {
-                    path: "users",
-                    element: (
-                      <PageBoundary>
-                        <AdminUsersPage />
-                      </PageBoundary>
-                    ),
-                  },
-                  {
-                    path: "reports",
-                    element: (
-                      <PageBoundary>
-                        <AdminReportsPage />
-                      </PageBoundary>
-                    ),
-                  },
-                  {
-                    path: "notifications",
-                    element: (
-                      <PageBoundary>
-                        <AdminNotificationsPage />
-                      </PageBoundary>
-                    ),
-                  },
-                  {
-                    path: "conversations",
-                    element: (
-                      <PageBoundary>
-                        <AdminConversationsPage />
-                      </PageBoundary>
-                    ),
-                  },
-                  {
-                    path: "payments",
-                    element: (
-                      <PageBoundary>
-                        <AdminPaymentsPage />
-                      </PageBoundary>
-                    ),
-                  },
-                  {
-                    path: "audit-logs",
-                    element: (
-                      <PageBoundary>
-                        <AdminAuditLogsPage />
-                      </PageBoundary>
-                    ),
-                  },
-                  {
-                    path: "uploads",
-                    element: (
-                      <PageBoundary>
-                        <AdminUploadsPage />
-                      </PageBoundary>
-                    ),
-                  },
-                ],
+              },
+              {
+                path: "posts",
+                element: (
+                  <PageBoundary>
+                    <AdminPostsPage />
+                  </PageBoundary>
+                ),
+              },
+              {
+                path: "categories",
+                element: (
+                  <PageBoundary>
+                    <AdminCategoriesPage />
+                  </PageBoundary>
+                ),
+              },
+              {
+                path: "users",
+                element: (
+                  <PageBoundary>
+                    <AdminUsersPage />
+                  </PageBoundary>
+                ),
+              },
+              {
+                path: "reports",
+                element: (
+                  <PageBoundary>
+                    <AdminReportsPage />
+                  </PageBoundary>
+                ),
+              },
+              {
+                path: "notifications",
+                element: (
+                  <PageBoundary>
+                    <AdminNotificationsPage />
+                  </PageBoundary>
+                ),
+              },
+              {
+                path: "conversations",
+                element: (
+                  <PageBoundary>
+                    <AdminConversationsPage />
+                  </PageBoundary>
+                ),
+              },
+              {
+                path: "payments",
+                element: (
+                  <PageBoundary>
+                    <AdminPaymentsPage />
+                  </PageBoundary>
+                ),
+              },
+              {
+                path: "audit-logs",
+                element: (
+                  <PageBoundary>
+                    <AdminAuditLogsPage />
+                  </PageBoundary>
+                ),
+              },
+              {
+                path: "uploads",
+                element: (
+                  <PageBoundary>
+                    <AdminUploadsPage />
+                  </PageBoundary>
+                ),
               },
             ],
           },
