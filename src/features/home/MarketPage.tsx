@@ -23,7 +23,7 @@ function CategoryPills() {
           "shrink-0 rounded-pill px-3 py-1.5 text-sm font-medium transition-colors",
           category === null
             ? "bg-brand text-white"
-            : "bg-soft text-mut hover:bg-muted"
+            : "bg-soft text-muted-foreground hover:bg-muted"
         )}
       >
         All
@@ -37,7 +37,7 @@ function CategoryPills() {
             "shrink-0 rounded-pill px-3 py-1.5 text-sm font-medium transition-colors",
             category === c.id
               ? "bg-brand text-white"
-              : "bg-soft text-mut hover:bg-muted"
+              : "bg-soft text-muted-foreground hover:bg-muted"
           )}
         >
           {c.name}

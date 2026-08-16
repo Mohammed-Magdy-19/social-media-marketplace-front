@@ -156,7 +156,7 @@ function AdminSidebar() {
                 <span className="font-display text-sm font-bold tracking-[-0.02em]">
                   Vendo Admin
                 </span>
-                <span className="text-[10px] text-mut">Control Center</span>
+                <span className="text-[10px] text-muted-foreground">Control Center</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>

@@ -56,8 +56,8 @@ export default function AdminPaymentsPage() {
         className: "min-w-40",
         cell: (p: Payment) => (
           <div className="flex flex-col">
-            <span className="font-mono text-xs text-ink">{p.id}</span>
-            <span className="text-[10px] text-mut">{p.method}</span>
+            <span className="font-mono text-xs text-foreground">{p.id}</span>
+            <span className="text-[10px] text-muted-foreground">{p.method}</span>
           </div>
         ),
       },
@@ -68,7 +68,7 @@ export default function AdminPaymentsPage() {
         cell: (p: Payment) => (
           <div className="flex items-center gap-2">
             <AvatarWithFallback name={`User ${p.userId}`} src={null} size="sm" />
-            <span className="font-mono text-[10px] text-mut">{p.userId}</span>
+            <span className="font-mono text-[10px] text-muted-foreground">{p.userId}</span>
           </div>
         ),
       },
@@ -76,7 +76,7 @@ export default function AdminPaymentsPage() {
         key: "amount",
         header: "Amount",
         cell: (p: Payment) => (
-          <span className="font-mono text-sm font-semibold text-ink">
+          <span className="font-mono text-sm font-semibold text-foreground">
             {formatCurrency(p.amount, p.currency)}
           </span>
         ),
@@ -91,7 +91,7 @@ export default function AdminPaymentsPage() {
         header: "Created",
         className: "min-w-24",
         cell: (p: Payment) => (
-          <span className="text-xs text-mut">{formatRelativeTime(p.createdAt)}</span>
+          <span className="text-xs text-muted-foreground">{formatRelativeTime(p.createdAt)}</span>
         ),
       },
       {
@@ -165,7 +165,7 @@ export default function AdminPaymentsPage() {
             <AlertDialogTitle>Delete payment record?</AlertDialogTitle>
             <AlertDialogDescription>
               This removes the transaction record{" "}
-              <span className="font-mono text-ink">{deleteTarget?.id}</span> from
+              <span className="font-mono text-foreground">{deleteTarget?.id}</span> from
               the ledger. Refunds are not issued by this action.
             </AlertDialogDescription>
           </AlertDialogHeader>

@@ -6,7 +6,7 @@ const STATUS_TONE: Record<string, string> = {
   published: "text-ok bg-ok-soft",
   resolved: "text-ok bg-ok-soft",
   active: "text-ok bg-ok-soft",
-  hidden: "text-mut bg-soft",
+  hidden: "text-muted-foreground bg-soft",
   pending: "text-warn bg-warn-soft",
   suspended: "text-warn bg-warn-soft",
   draft: "text-info bg-info-soft",
@@ -32,7 +32,7 @@ export function StatusPill({
   status: string
   className?: string
 }) {
-  const tone = STATUS_TONE[status] ?? "text-mut bg-soft"
+  const tone = STATUS_TONE[status] ?? "text-muted-foreground bg-soft"
   return (
     <Badge variant="outline" className={cn("border-transparent", tone, className)}>
       {status}

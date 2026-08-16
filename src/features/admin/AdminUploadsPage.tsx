@@ -26,7 +26,7 @@ import type { Upload } from "@/types"
 function MediaThumb({ upload }: { upload: Upload }) {
   if (upload.kind === "video") {
     return (
-      <div className="grid size-full place-items-center bg-soft font-mono text-[10px] text-mut">
+      <div className="grid size-full place-items-center bg-soft font-mono text-[10px] text-muted-foreground">
         MP4
       </div>
     )
@@ -40,7 +40,7 @@ function MediaThumb({ upload }: { upload: Upload }) {
   }
   if (upload.kind === "document") {
     return (
-      <div className="grid size-full place-items-center bg-soft font-mono text-[10px] text-mut">
+      <div className="grid size-full place-items-center bg-soft font-mono text-[10px] text-muted-foreground">
         DOC
       </div>
     )
@@ -101,7 +101,7 @@ export default function AdminUploadsPage() {
       </AdminPageHeader>
 
       <div className="flex flex-wrap items-center gap-3">
-        <span className="font-mono text-xs text-mut">
+        <span className="font-mono text-xs text-muted-foreground">
           {uploads.length} assets · {formatBytes(totalBytes)}
         </span>
       </div>
@@ -115,7 +115,7 @@ export default function AdminUploadsPage() {
               ))}
             </div>
           ) : uploads.length === 0 ? (
-            <p className="py-10 text-center text-sm text-mut">No uploads.</p>
+            <p className="py-10 text-center text-sm text-muted-foreground">No uploads.</p>
           ) : (
             <div ref={parentRef} className="max-h-[520px] overflow-y-auto">
               <div className="relative" style={{ height: virtualizer.getTotalSize() }}>
@@ -141,19 +141,19 @@ export default function AdminUploadsPage() {
                           <div className="aspect-square w-full overflow-hidden rounded-md bg-background">
                             <MediaThumb upload={upload} />
                           </div>
-                          <p className="truncate text-xs font-medium text-ink">
+                          <p className="truncate text-xs font-medium text-foreground">
                             {upload.name}
                           </p>
                           <div className="flex items-center justify-between gap-1">
-                            <span className="font-mono text-[10px] text-mut">
+                            <span className="font-mono text-[10px] text-muted-foreground">
                               {formatBytes(upload.size)}
                             </span>
-                            <span className="font-mono text-[10px] text-mut">
+                            <span className="font-mono text-[10px] text-muted-foreground">
                               {formatRelativeTime(upload.createdAt)}
                             </span>
                           </div>
                           <div className="flex items-center justify-between gap-1">
-                            <span className="truncate text-[10px] text-mut">
+                            <span className="truncate text-[10px] text-muted-foreground">
                               {upload.owner.name}
                             </span>
                             <div className="flex items-center gap-1">
@@ -189,7 +189,7 @@ export default function AdminUploadsPage() {
             <AlertDialogTitle>Delete upload?</AlertDialogTitle>
             <AlertDialogDescription>
               This permanently deletes{" "}
-              <span className="font-medium text-ink">{deleteTarget?.name}</span>{" "}
+              <span className="font-medium text-foreground">{deleteTarget?.name}</span>{" "}
               from object storage.
             </AlertDialogDescription>
           </AlertDialogHeader>

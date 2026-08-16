@@ -52,7 +52,7 @@ function NotificationRow({
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
-          <p className="text-sm font-medium text-ink">{notification.title}</p>
+          <p className="text-sm font-medium text-foreground">{notification.title}</p>
           <StatusPill
             status={notification.transport === "socket" ? "System" : "User"}
             className={cn(
@@ -61,16 +61,16 @@ function NotificationRow({
                 : "bg-info-soft text-info"
             )}
           />
-          <span className="text-[10px] text-mut">
+          <span className="text-[10px] text-muted-foreground">
             {notification.transport === "socket" ? "Socket.io" : "Hybrid write"}
           </span>
         </div>
         {notification.body && (
-          <p className="truncate text-xs text-mut">{notification.body}</p>
+          <p className="truncate text-xs text-muted-foreground">{notification.body}</p>
         )}
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        <span className="font-mono text-[10px] text-mut">
+        <span className="font-mono text-[10px] text-muted-foreground">
           {formatRelativeTime(notification.createdAt)}
         </span>
         <Button
@@ -111,7 +111,7 @@ export default function AdminNotificationsPage() {
         title="Notifications"
         subtitle="All system and community notifications"
       >
-        <Badge variant="outline" className="border-transparent bg-soft font-mono text-[10px] text-mut">
+        <Badge variant="outline" className="border-transparent bg-soft font-mono text-[10px] text-muted-foreground">
           {unreadCount} unread
         </Badge>
         <Button
@@ -139,7 +139,7 @@ export default function AdminNotificationsPage() {
               ))}
             </div>
           ) : notifications.length === 0 ? (
-            <p className="py-10 text-center text-sm text-mut">
+            <p className="py-10 text-center text-sm text-muted-foreground">
               No notifications yet.
             </p>
           ) : (
@@ -177,7 +177,7 @@ export default function AdminNotificationsPage() {
             <AlertDialogTitle>Delete notification?</AlertDialogTitle>
             <AlertDialogDescription>
               This permanently removes the notification{" "}
-              <span className="font-medium text-ink">
+              <span className="font-medium text-foreground">
                 {deleteTarget?.title}
               </span>
               .

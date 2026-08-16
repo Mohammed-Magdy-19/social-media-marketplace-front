@@ -102,7 +102,7 @@ export function VirtualTable<T>({
                 <TableHead
                   key={col.key}
                   className={cn(
-                    "truncate px-3 text-[11px] font-semibold uppercase tracking-wider text-mut",
+                    "truncate px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground",
                     ALIGN_CLASSES[col.align ?? "left"]
                   )}
                 >

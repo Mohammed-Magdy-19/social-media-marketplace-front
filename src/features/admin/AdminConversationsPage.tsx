@@ -40,10 +40,10 @@ function ConversationRow({
       <AvatarWithFallback name={other?.name ?? "Unknown"} src={other?.avatar ?? null} size="sm" />
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
-          <p className="truncate text-sm font-medium text-ink">
+          <p className="truncate text-sm font-medium text-foreground">
             {other?.name ?? "Unknown"}
           </p>
-          <span className="shrink-0 font-mono text-[10px] text-mut">
+          <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
             {conversation.lastMessageAt
               ? formatRelativeTime(conversation.lastMessageAt)
               : "—"}
@@ -53,7 +53,7 @@ function ConversationRow({
           <p
             className={cn(
               "truncate text-xs",
-              typing ? "font-medium text-brand" : "text-mut"
+              typing ? "font-medium text-brand" : "text-muted-foreground"
             )}
           >
             {typing
@@ -72,7 +72,7 @@ function ConversationRow({
       </div>
       <div className="flex shrink-0 flex-col items-end gap-1">
         {conversation.post?.price != null && (
-          <span className="font-mono text-[10px] text-mut">
+          <span className="font-mono text-[10px] text-muted-foreground">
             {formatCurrency(conversation.post.price, conversation.post.currency)}
           </span>
         )}
@@ -136,7 +136,7 @@ export default function AdminConversationsPage() {
               ))}
             </div>
           ) : conversations.length === 0 ? (
-            <p className="py-10 text-center text-sm text-mut">
+            <p className="py-10 text-center text-sm text-muted-foreground">
               No conversations yet.
             </p>
           ) : (

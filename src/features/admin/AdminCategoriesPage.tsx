@@ -89,7 +89,7 @@ export default function AdminCategoriesPage() {
                     </FormControl>
                     <FormDescription>
                       Slug preview:{" "}
-                      <span className="font-mono text-[10px] text-mut">
+                      <span className="font-mono text-[10px] text-muted-foreground">
                         /categories/
                         {slugPreview || "…"}
                       </span>
@@ -129,13 +129,13 @@ export default function AdminCategoriesPage() {
                   className="flex items-center justify-between gap-2 border-b border-line-2 px-3 py-2.5 last:border-0"
                 >
                   <div className="flex min-w-0 flex-col">
-                    <span className="text-sm font-medium text-ink">{c.name}</span>
-                    <span className="font-mono text-[10px] text-mut">
+                    <span className="text-sm font-medium text-foreground">{c.name}</span>
+                    <span className="font-mono text-[10px] text-muted-foreground">
                       /categories/{c.slug}
                     </span>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
-                    <Badge variant="outline" className="border-transparent bg-soft font-mono text-[10px] text-mut">
+                    <Badge variant="outline" className="border-transparent bg-soft font-mono text-[10px] text-muted-foreground">
                       {c.postCount ?? 0} posts
                     </Badge>
                     <StatusPill status={c.slug === "digital" ? "hidden" : "active"} />
@@ -164,7 +164,7 @@ export default function AdminCategoriesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete category?</AlertDialogTitle>
             <AlertDialogDescription>
-              Removing <span className="font-medium text-ink">{deleteTarget?.name}</span>{" "}
+              Removing <span className="font-medium text-foreground">{deleteTarget?.name}</span>{" "}
               unassigns it from any listings that use it.
             </AlertDialogDescription>
           </AlertDialogHeader>

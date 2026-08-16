@@ -18,29 +18,29 @@ function AuditRow({ entry }: { entry: AuditLog }) {
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
-          <p className="text-sm font-medium text-ink">{entry.actorName}</p>
+          <p className="text-sm font-medium text-foreground">{entry.actorName}</p>
           <Badge variant="outline" className="border-transparent bg-violet-soft font-mono text-[10px] text-violet">
             {entry.action}
           </Badge>
         </div>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
           {entry.target && (
-            <span className="font-mono text-[10px] text-mut">
+            <span className="font-mono text-[10px] text-muted-foreground">
               target: {entry.target}
             </span>
           )}
           {entry.ip && (
-            <span className="font-mono text-[10px] text-mut">ip: {entry.ip}</span>
+            <span className="font-mono text-[10px] text-muted-foreground">ip: {entry.ip}</span>
           )}
           {entry.meta &&
             Object.entries(entry.meta).map(([k, v]) => (
-              <span key={k} className="font-mono text-[10px] text-mut">
+              <span key={k} className="font-mono text-[10px] text-muted-foreground">
                 {k}: {v}
               </span>
             ))}
         </div>
       </div>
-      <span className="shrink-0 font-mono text-[10px] text-mut">
+      <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
         {formatRelativeTime(entry.createdAt)}
       </span>
     </div>
@@ -76,7 +76,7 @@ export default function AdminAuditLogsPage() {
               ))}
             </div>
           ) : logs.length === 0 ? (
-            <p className="py-10 text-center text-sm text-mut">No audit events.</p>
+            <p className="py-10 text-center text-sm text-muted-foreground">No audit events.</p>
           ) : (
             <div ref={parentRef} className="max-h-[520px] overflow-y-auto">
               <div className="relative" style={{ height: virtualizer.getTotalSize() }}>

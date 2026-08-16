@@ -34,14 +34,14 @@ function KpiCard({
   return (
     <Card className="rounded-card border-border">
       <CardContent className="flex flex-col gap-1 p-4">
-        <div className="flex items-center gap-1.5 text-xs font-medium text-mut">
+        <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
           {icon}
           {label}
         </div>
-        <span className={cn("text-2xl font-semibold text-ink", mono && "font-mono")}>
+        <span className={cn("text-2xl font-semibold text-foreground", mono && "font-mono")}>
           {value}
         </span>
-        {hint && <span className="text-[10px] text-mut">{hint}</span>}
+        {hint && <span className="text-[10px] text-muted-foreground">{hint}</span>}
       </CardContent>
     </Card>
   )
@@ -94,11 +94,11 @@ export default function AdminOverviewPage() {
 
       <Card className="rounded-card border-border">
         <CardContent className="p-4">
-          <div className="mb-3 text-xs font-medium text-mut">
+          <div className="mb-3 text-xs font-medium text-muted-foreground">
             Sales volume by currency
           </div>
           {data.sales.length === 0 ? (
-            <p className="py-6 text-center text-sm text-mut">No completed sales yet.</p>
+            <p className="py-6 text-center text-sm text-muted-foreground">No completed sales yet.</p>
           ) : (
             <div className="flex flex-col gap-2">
               {data.sales.map((s) => (
@@ -107,14 +107,14 @@ export default function AdminOverviewPage() {
                   className="flex items-center justify-between gap-2 rounded-lg bg-soft px-3 py-2"
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-ink">
+                    <p className="truncate text-sm font-medium text-foreground">
                       {formatCurrency(s.totalAmount, s._id)}
                     </p>
-                    <p className="truncate font-mono text-[10px] text-mut">
+                    <p className="truncate font-mono text-[10px] text-muted-foreground">
                       {s.count.toLocaleString()} payments · {s._id}
                     </p>
                   </div>
-                  <span className="shrink-0 font-mono text-[10px] text-mut">
+                  <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
                     {s._id}
                   </span>
                 </div>

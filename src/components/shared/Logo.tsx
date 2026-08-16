@@ -27,7 +27,7 @@ export function Logo({
       />
       {showWordmark && (
         <span
-          className="font-display text-lg font-black tracking-[-0.02em] text-ink"
+          className="font-display text-lg font-black tracking-[-0.02em] text-foreground"
         >
           {wordmark}
         </span>

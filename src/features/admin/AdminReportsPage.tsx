@@ -67,10 +67,10 @@ export default function AdminReportsPage() {
           <div className="flex items-center gap-2">
             <AvatarWithFallback name={r.targetSummary ?? r.targetId} src={null} size="sm" />
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-ink">
+              <p className="truncate text-sm font-medium text-foreground">
                 {r.targetSummary ?? r.targetId}
               </p>
-              <p className="font-mono text-[10px] text-mut">
+              <p className="font-mono text-[10px] text-muted-foreground">
                 {r.targetType} · {r.targetId}
               </p>
             </div>
@@ -81,14 +81,14 @@ export default function AdminReportsPage() {
         key: "reason",
         header: "Reason",
         className: "min-w-32",
-        cell: (r: Report) => <span className="text-sm text-ink">{r.reason}</span>,
+        cell: (r: Report) => <span className="text-sm text-foreground">{r.reason}</span>,
       },
       {
         key: "reporter",
         header: "Reporter",
         className: "min-w-32",
         cell: (r: Report) => (
-          <span className="text-sm text-mut">{r.reporter.name}</span>
+          <span className="text-sm text-muted-foreground">{r.reporter.name}</span>
         ),
       },
       {
@@ -101,7 +101,7 @@ export default function AdminReportsPage() {
         header: "Reported",
         className: "min-w-24",
         cell: (r: Report) => (
-          <span className="text-xs text-mut">{formatRelativeTime(r.createdAt)}</span>
+          <span className="text-xs text-muted-foreground">{formatRelativeTime(r.createdAt)}</span>
         ),
       },
       {
@@ -129,7 +129,7 @@ export default function AdminReportsPage() {
               variant="ghost"
               size="icon-xs"
               aria-label="Dismiss report"
-              className="text-mut hover:bg-soft"
+              className="text-muted-foreground hover:bg-soft"
               disabled={r.status === "dismissed"}
               onClick={() =>
                 dismissReport.mutate(r.id, {

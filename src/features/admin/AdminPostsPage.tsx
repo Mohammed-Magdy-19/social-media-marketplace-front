@@ -67,8 +67,8 @@ export default function AdminPostsPage() {
           <div className="flex items-center gap-2">
             <AvatarWithFallback name={post.title} src={post.media[0] ?? null} size="sm" />
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-ink">{post.title}</p>
-              <p className="font-mono text-[10px] text-mut">{post.id}</p>
+              <p className="truncate text-sm font-medium text-foreground">{post.title}</p>
+              <p className="font-mono text-[10px] text-muted-foreground">{post.id}</p>
             </div>
           </div>
         ),
@@ -78,14 +78,14 @@ export default function AdminPostsPage() {
         header: "Seller",
         className: "min-w-32",
         cell: (post: Post) => (
-          <span className="text-sm text-ink">{post.author.name}</span>
+          <span className="text-sm text-foreground">{post.author.name}</span>
         ),
       },
       {
         key: "price",
         header: "Price",
         cell: (post: Post) => (
-          <span className="font-mono text-sm text-ink">
+          <span className="font-mono text-sm text-foreground">
             {post.price != null ? formatCurrency(post.price, post.currency) : "—"}
           </span>
         ),
@@ -100,7 +100,7 @@ export default function AdminPostsPage() {
         header: "Created",
         className: "min-w-24",
         cell: (post: Post) => (
-          <span className="text-xs text-mut">{formatRelativeTime(post.createdAt)}</span>
+          <span className="text-xs text-muted-foreground">{formatRelativeTime(post.createdAt)}</span>
         ),
       },
       {
@@ -204,7 +204,7 @@ export default function AdminPostsPage() {
             <AlertDialogTitle>Delete post?</AlertDialogTitle>
             <AlertDialogDescription>
               This permanently removes{" "}
-              <span className="font-medium text-ink">{deleteTarget?.title}</span>{" "}
+              <span className="font-medium text-foreground">{deleteTarget?.title}</span>{" "}
               and all of its media. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>

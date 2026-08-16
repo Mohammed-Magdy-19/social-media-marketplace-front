@@ -76,13 +76,13 @@ export default function AdminUsersPage() {
           <div className="flex items-center gap-2.5">
             <AvatarWithFallback name={u.name} src={u.avatar ?? null} size="sm" />
             <div className="min-w-0">
-              <p className="flex items-center gap-1 truncate text-sm font-medium text-ink">
+              <p className="flex items-center gap-1 truncate text-sm font-medium text-foreground">
                 {u.name}
                 {u.role === "admin" && (
                   <ShieldCheck className="size-3.5 shrink-0 text-violet" />
                 )}
               </p>
-              <p className="truncate font-mono text-[10px] text-mut">@{u.username}</p>
+              <p className="truncate font-mono text-[10px] text-muted-foreground">@{u.username}</p>
             </div>
           </div>
         ),
@@ -93,7 +93,7 @@ export default function AdminUsersPage() {
         className: "min-w-44",
         align: "center",
         cell: (u: PublicUser) => (
-          <span className="truncate text-sm text-mut">{u.email}</span>
+          <span className="truncate text-sm text-muted-foreground">{u.email}</span>
         ),
       },
       {
@@ -116,7 +116,7 @@ export default function AdminUsersPage() {
         className: "min-w-24",
         align: "center",
         cell: (u: PublicUser) => (
-          <span className="text-xs text-mut">{formatRelativeTime(u.createdAt)}</span>
+          <span className="text-xs text-muted-foreground">{formatRelativeTime(u.createdAt)}</span>
         ),
       },
       {
@@ -135,7 +135,7 @@ export default function AdminUsersPage() {
                 }
               />
               <DropdownMenuContent align="end" className="min-w-44">
-                <DropdownMenuLabel className="text-xs text-mut">
+                <DropdownMenuLabel className="text-xs text-muted-foreground">
                   Set account status
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -198,7 +198,7 @@ export default function AdminUsersPage() {
       />
 
       <div className="flex items-center gap-2">
-        <span className="font-mono text-xs text-mut">
+        <span className="font-mono text-xs text-muted-foreground">
           {rows.length} user{rows.length === 1 ? "" : "s"}
           {activePill !== "All" && ` · ${activePill}`}
           {debounced && ` · “${debounced}”`}
@@ -268,7 +268,7 @@ export default function AdminUsersPage() {
             <AlertDialogTitle>Delete user?</AlertDialogTitle>
             <AlertDialogDescription>
               This permanently removes the account for{" "}
-              <span className={cn("font-medium text-ink")}>
+              <span className={cn("font-medium text-foreground")}>
                 {deleteTarget?.name}
               </span>{" "}
               and all of its content.

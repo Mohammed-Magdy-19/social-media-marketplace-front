@@ -16,12 +16,12 @@ export function AdminPageHeader({
     <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
       <div className="flex flex-col gap-1">
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="font-display text-lg font-bold tracking-[-0.02em] text-ink">
+          <h1 className="font-display text-lg font-bold tracking-[-0.02em] text-foreground">
             {title}
           </h1>
         </div>
         {subtitle && (
-          <p className="text-sm leading-[1.5] text-mut">{subtitle}</p>
+          <p className="text-sm leading-[1.5] text-muted-foreground">{subtitle}</p>
         )}
       </div>
       {children ? (
