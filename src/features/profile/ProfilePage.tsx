@@ -1,7 +1,7 @@
 import * as React from "react"
 import { useRef } from "react"
 import { useVirtualizer } from "@tanstack/react-virtual"
-import { Camera, Mail } from "lucide-react"
+import { Camera } from "lucide-react"
 import { toast } from "sonner"
 import { useCurrentUser } from "@/features/auth/queries"
 import { useLogoutMutation } from "@/features/auth/mutations"
@@ -10,14 +10,14 @@ import { ProductCard } from "@/features/posts/components/ProductCard"
 import { AvatarWithFallback } from "@/components/shared/AvatarWithFallback"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { uploadAvatar } from "@/lib/api/client"
 import { getErrorMessage } from "@/lib/api/errors"
 import { ErrorBoundary, SectionFallback } from "@/components/shared/ErrorBoundary"
 import { queryClient } from "@/lib/queryClient"
 import { queryKeys } from "@/api/queryKeys"
-import { formatDate } from "@/lib/utils"
+import { cn, formatDate } from "@/lib/utils"
 import { useAuthStore } from "@/stores/authStore"
 
 function MyPostsGrid({ author }: { author: string }) {
@@ -127,67 +127,61 @@ export default function ProfilePage() {
   return (
     <div className="flex flex-col gap-4">
       <ErrorBoundary fallback={<SectionFallback />}>
-        <div className="flex justify-center">
-          <Card className="w-full max-w-sm text-center">
-            <CardHeader className="pb-0">
-              <div className="flex flex-col items-center gap-4">
-                <div className="group relative">
-                  <AvatarWithFallback
-                    name={profile.name}
-                    src={profile.avatar ?? null}
-                    size="lg"
-                    className="size-24"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => fileInput.current?.click()}
-                    disabled={uploading}
-                    className="absolute inset-0 grid cursor-pointer place-items-center rounded-full bg-black/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100 disabled:opacity-0"
-                    aria-label="Upload avatar"
-                  >
-                    <Camera className="size-6" />
-                  </button>
-                  <input
-                    ref={fileInput}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={onPickAvatar}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <div className="flex items-center justify-center gap-2">
-                    <h3 className="text-xl font-semibold">{profile.name}</h3>
-                    <Badge
-                      variant={profile.role === "admin" ? "destructive" : "secondary"}
-                      className="text-xs"
-                    >
-                      {profile.role}
-                    </Badge>
-                  </div>
-                </div>
+        <Card className="mt-4 rounded-card">
+          <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center">
+            <div className="group relative">
+              <AvatarWithFallback
+                name={profile.name}
+                src={profile.avatar ?? null}
+                size="lg"
+                className="size-20"
+              />
+              <button
+                type="button"
+                onClick={() => fileInput.current?.click()}
+                disabled={uploading}
+                className="absolute inset-0 grid cursor-pointer place-items-center rounded-full bg-black/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100 disabled:opacity-0"
+                aria-label="Upload avatar"
+              >
+                <Camera className="size-6" />
+              </button>
+              <input
+                ref={fileInput}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={onPickAvatar}
+              />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-xl font-semibold">{profile.name}</h3>
+                <Badge
+                  variant={profile.role === "admin" ? "destructive" : "secondary"}
+                >
+                  {profile.role}
+                </Badge>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4 pt-6">
-              {profile.bio && (
-                <p className="text-sm text-muted-foreground">{profile.bio}</p>
-              )}
-              <div className="flex flex-col items-center gap-2 text-sm text-muted-foreground">
-                {profile.email && (
-                  <div className="flex items-center gap-1.5">
-                    <Mail className="size-3.5" />
-                    <span>{profile.email}</span>
-                  </div>
-                )}
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm text-muted-foreground">@{profile.username}</p>
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    profile.status === "active"
+                      ? "bg-emerald-500/10 text-emerald-500"
+                      : "bg-red-500/10 text-red-500"
+                  )}
+                >
+                  {profile.status}
+                </Badge>
               </div>
-            </CardContent>
-            <CardFooter className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => logout.mutate()}>
-                Log out
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
+              {profile.bio && <p className="mt-1 text-sm">{profile.bio}</p>}
+            </div>
+            <Button variant="outline" onClick={() => logout.mutate()}>
+              Log out
+            </Button>
+          </CardContent>
+        </Card>
       </ErrorBoundary>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
