@@ -38,7 +38,7 @@ function App() {
       >
         <QueryClientProvider client={queryClient}>
           <RouterProvider router={router} />
-          <Toaster position="bottom-right" richColors closeButton />
+          <Toaster position="top-center" richColors closeButton />
         </QueryClientProvider>
       </ThemeProvider>
     </ErrorBoundary>
