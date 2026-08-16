@@ -492,7 +492,7 @@ export default function MessagesPage() {
   if (!conversationId) {
     return (
       <div className="flex flex-col gap-4">
-        <div>
+        <div className="mt-4">
           <h1 className="font-display text-xl font-bold tracking-[-0.02em]">
             Messages
           </h1>
@@ -512,7 +512,7 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-[18rem_1fr]">
+    <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-[18rem_1fr]">
       <Card className="hidden max-h-[calc(100svh-6rem)] overflow-y-auto rounded-card md:block">
         <CardContent className="p-2">
           <ErrorBoundary fallback={<SectionFallback />}>

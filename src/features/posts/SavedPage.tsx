@@ -71,21 +71,13 @@ function SavedGrid() {
 export default function SavedPage() {
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="font-display text-xl font-bold tracking-[-0.02em]">
-            Saved posts
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Listings you&apos;ve bookmarked for later.
-          </p>
-        </div>
-        <Badge
-          variant="outline"
-          className="font-mono text-[10px] text-muted-foreground"
-        >
-          GET /users/me/saved-posts
-        </Badge>
+      <div className=" mt-4 flex flex-wrap items-center justify-between gap-2">
+        <h1 className="font-display text-xl font-bold tracking-[-0.02em]">
+          Saved posts
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Listings you&apos;ve bookmarked for later.
+        </p>
       </div>
       <ErrorBoundary fallback={<SectionFallback />}>
         <SavedGrid />
