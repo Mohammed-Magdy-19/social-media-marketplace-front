@@ -24,7 +24,7 @@ export function useToggleLike() {
       updatePostInCache(queryClient, postId, (post) => ({
         ...post,
         isLiked: !isLiked,
-        likeCount: Math.max(0, post.likeCount + (isLiked ? -1 : 1)),
+        likesCount: Math.max(0, post.likesCount + (isLiked ? -1 : 1)),
       }))
       return snapshot
     },
@@ -104,7 +104,13 @@ export function useCreateReply() {
 export function useCreatePost() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: { caption: string; categoryId: string; tags: string[] }) =>
+    mutationFn: (input: {
+      title: string
+      content: string
+      categoryId: string
+      price?: number
+      tags: string[]
+    }) =>
       apiPost<ApiResponse<{ post: Post }>>("/posts", input),
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.posts.all })

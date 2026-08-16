@@ -45,7 +45,7 @@ export function PostCard({ post }: { post: Post }) {
 
       <Link to={`/posts/${post.id}`} className="group">
         <p className="text-sm leading-relaxed group-hover:text-muted-foreground">
-          {post.caption}
+          {post.title}
         </p>
       </Link>
 
@@ -56,8 +56,8 @@ export function PostCard({ post }: { post: Post }) {
       >
         {post.media.length > 0 ? (
           <img
-            src={post.media[0].url}
-            alt={post.caption}
+            src={post.media[0]}
+            alt={post.title}
             loading="lazy"
             className="aspect-video w-full rounded-lg object-cover"
           />
@@ -87,7 +87,7 @@ export function PostCard({ post }: { post: Post }) {
           aria-pressed={post.isLiked}
         >
           <Heart className={cn("size-4", post.isLiked && "fill-current")} />
-          {post.likeCount}
+          {post.likesCount}
         </Button>
         <Link
           to={`/posts/${post.id}`}
@@ -95,7 +95,7 @@ export function PostCard({ post }: { post: Post }) {
           aria-label="View comments"
         >
           <MessageCircle className="size-4" />
-          {post.commentCount}
+          {post.commentsCount}
         </Link>
         <Button
           variant="ghost"

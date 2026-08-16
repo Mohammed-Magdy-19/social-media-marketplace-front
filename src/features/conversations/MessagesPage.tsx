@@ -313,7 +313,7 @@ function Thread({ conversationId }: { conversationId: string }) {
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold">{other?.name ?? "Conversation"}</p>
           <p className="truncate text-xs text-muted-foreground">
-            {meta?.post?.caption ?? "Negotiation"}
+            {meta?.post?.title ?? "Negotiation"}
           </p>
         </div>
         {meta?.post?.price != null && (

@@ -33,7 +33,7 @@ import { formatCurrency, formatRelativeTime } from "@/lib/utils"
 import { getErrorMessage } from "@/lib/api/errors"
 import type { Post } from "@/types"
 
-const POST_PILLS = ["All", "published", "draft", "pending", "flagged"] as const
+const POST_PILLS = ["All", "active", "hidden", "flagged"] as const
 
 export default function AdminPostsPage() {
   const [search, setSearch] = React.useState("")
@@ -60,14 +60,14 @@ export default function AdminPostsPage() {
   const columns = React.useMemo(
     () => [
       {
-        key: "caption",
+        key: "title",
         header: "Listing",
         className: "min-w-56",
         cell: (post: Post) => (
           <div className="flex items-center gap-2">
-            <AvatarWithFallback name={post.caption} src={post.media[0]?.url ?? null} size="sm" />
+            <AvatarWithFallback name={post.title} src={post.media[0] ?? null} size="sm" />
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-ink">{post.caption}</p>
+              <p className="truncate text-sm font-medium text-ink">{post.title}</p>
               <p className="font-mono text-[10px] text-mut">{post.id}</p>
             </div>
           </div>
@@ -121,7 +121,7 @@ export default function AdminPostsPage() {
                 }
               />
               <DropdownMenuContent align="end">
-                {(["published", "draft", "pending", "flagged"] as const).map((s) => (
+                {(["active", "hidden", "flagged"] as const).map((s) => (
                   <DropdownMenuItem
                     key={s}
                     onSelect={() =>
@@ -204,7 +204,7 @@ export default function AdminPostsPage() {
             <AlertDialogTitle>Delete post?</AlertDialogTitle>
             <AlertDialogDescription>
               This permanently removes{" "}
-              <span className="font-medium text-ink">{deleteTarget?.caption}</span>{" "}
+              <span className="font-medium text-ink">{deleteTarget?.title}</span>{" "}
               and all of its media. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>

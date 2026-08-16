@@ -28,7 +28,7 @@ type CommentEvent =
 
 const pendingMessages = new Map<string, Message>()
 const pendingNotifications = new Map<string, AppNotification>()
-const pendingLikeDeltas = new Map<string, { likeCount: number; isLiked: boolean }>()
+const pendingLikeDeltas = new Map<string, { likesCount: number; isLiked: boolean }>()
 const pendingCommentDeltas = new Map<string, number>()
 const pendingCommentEvents: CommentEvent[] = []
 
@@ -53,13 +53,13 @@ export function bridgeNotification(notification: AppNotification) {
   scheduleFlush()
 }
 
-export function bridgeLikeDelta(postId: string, likeCount: number, isLiked: boolean) {
-  pendingLikeDeltas.set(postId, { likeCount, isLiked })
+export function bridgeLikeDelta(postId: string, likesCount: number, isLiked: boolean) {
+  pendingLikeDeltas.set(postId, { likesCount, isLiked })
   scheduleFlush()
 }
 
-export function bridgeCommentDelta(postId: string, commentCount: number) {
-  pendingCommentDeltas.set(postId, commentCount)
+export function bridgeCommentDelta(postId: string, commentsCount: number) {
+  pendingCommentDeltas.set(postId, commentsCount)
   scheduleFlush()
 }
 
@@ -190,7 +190,7 @@ function flushNotifications() {
 function updatePostInPage(
   pages: PaginatedResponse<Post>[],
   postId: string,
-  next: { likeCount?: number; isLiked?: boolean; commentCount?: number }
+  next: { likesCount?: number; isLiked?: boolean; commentsCount?: number }
 ) {
   let changed = false
   const mapped = pages.map((page) => ({
@@ -233,8 +233,8 @@ function flushCommentDeltas() {
       (old) => {
         if (!old) return old
         let pages = old.pages
-        for (const [postId, commentCount] of pendingCommentDeltas) {
-          pages = updatePostInPage(pages, postId, { commentCount })
+        for (const [postId, commentsCount] of pendingCommentDeltas) {
+          pages = updatePostInPage(pages, postId, { commentsCount })
         }
         return { ...old, pages }
       }
@@ -292,7 +292,7 @@ function bumpCommentCount(postId: string, delta: number) {
               changed = true
               return {
                 ...post,
-                commentCount: Math.max(0, post.commentCount + delta),
+                commentsCount: Math.max(0, post.commentsCount + delta),
               }
             }),
           }))
@@ -303,7 +303,7 @@ function bumpCommentCount(postId: string, delta: number) {
   }
   queryClient.setQueryData<Post>(queryKeys.posts.detail(postId), (old) =>
     old && old.id === postId
-      ? { ...old, commentCount: Math.max(0, old.commentCount + delta) }
+      ? { ...old, commentsCount: Math.max(0, old.commentsCount + delta) }
       : old
   )
 }

@@ -36,8 +36,8 @@ export function ProductCard({ post }: { post: Post }) {
         <Link to={`/posts/${post.id}`} aria-label="View product">
           {post.media.length > 0 ? (
             <img
-              src={post.media[0].url}
-              alt={post.caption}
+              src={post.media[0]}
+              alt={post.title}
               loading="lazy"
               className="aspect-square w-full object-cover"
             />
@@ -76,7 +76,7 @@ export function ProductCard({ post }: { post: Post }) {
 
       <div className="flex flex-1 flex-col gap-2 p-3">
         <Link to={`/posts/${post.id}`} className="line-clamp-2 text-sm font-medium">
-          {post.caption}
+          {post.title}
         </Link>
         <div className="flex items-baseline gap-1.5">
           {price != null && (

@@ -29,7 +29,7 @@ export interface Category {
   postCount?: number
 }
 
-export type PostStatus = "published" | "draft" | "pending" | "flagged"
+export type PostStatus = "active" | "hidden" | "flagged"
 
 export interface MediaAsset {
   id: string
@@ -43,17 +43,17 @@ export interface MediaAsset {
 export interface Post {
   id: string
   author: PublicUser
-  caption: string
-  body?: string
-  media: MediaAsset[]
+  title: string
+  content: string
+  media: string[]
   category: Category
   tags: string[]
   price?: number
   currency?: string
   status: PostStatus
   createdAt: string
-  likeCount: number
-  commentCount: number
+  likesCount: number
+  commentsCount: number
   saveCount: number
   isLiked: boolean
   isSaved: boolean

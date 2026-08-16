@@ -132,7 +132,7 @@ export async function apiDelete<T>(
 /* ---------------- Upload transport ---------------- */
 
 export const AVATAR_MAX_BYTES = 2 * 1024 * 1024
-export const POST_MEDIA_MAX_FILES = 5
+export const POST_MEDIA_MAX_FILES = 10
 export const POST_MEDIA_MAX_BYTES = 10 * 1024 * 1024
 
 /**

@@ -46,7 +46,7 @@ function TopDeals() {
               ratio=""
             />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{post.caption}</p>
+              <p className="truncate text-sm font-medium">{post.title}</p>
               {post.price != null && (
                 <p className="text-sm font-semibold text-brand">
                   {formatCurrency(post.price, post.currency)}

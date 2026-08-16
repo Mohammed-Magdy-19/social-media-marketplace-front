@@ -110,15 +110,21 @@ export default function PostDetailPage() {
 
         {post.media.length > 0 ? (
           <img
-            src={post.media[0].url}
-            alt={post.caption}
+            src={post.media[0]}
+            alt={post.title}
             className="aspect-video w-full rounded-lg object-cover"
           />
         ) : (
           <MediaPlaceholder className="rounded-lg" />
         )}
 
-        <h1 className="text-lg leading-snug font-semibold">{post.caption}</h1>
+        <h1 className="text-lg leading-snug font-semibold">{post.title}</h1>
+
+        {post.content && (
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            {post.content}
+          </p>
+        )}
 
         {post.tags.length > 0 && (
           <div className="flex flex-wrap gap-1">
@@ -139,11 +145,11 @@ export default function PostDetailPage() {
             disabled={!hasToken}
           >
             <Heart className={cn("size-4", post.isLiked && "fill-current")} />
-            {post.likeCount}
+            {post.likesCount}
           </Button>
           <Button variant="ghost" size="sm" disabled>
             <MessageCircle className="size-4" />
-            {post.commentCount}
+            {post.commentsCount}
           </Button>
           <Button
             variant="ghost"
@@ -200,11 +206,11 @@ export default function PostDetailPage() {
           <CardTitle>Comments</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          {post.commentCount > 0 ? (
+          {post.commentsCount > 0 ? (
             <div className="flex flex-col gap-3">
-              {post.commentCount > 0 && (
+              {post.commentsCount > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  {post.commentCount} comment{post.commentCount === 1 ? "" : "s"}
+                  {post.commentsCount} comment{post.commentsCount === 1 ? "" : "s"}
                 </p>
               )}
             </div>

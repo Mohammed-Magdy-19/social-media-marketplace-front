@@ -143,7 +143,7 @@ export function ReportDialog({
                     <SelectContent>
                       {posts.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
-                          {p.caption}
+                          {p.title}
                         </SelectItem>
                       ))}
                     </SelectContent>

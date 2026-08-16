@@ -44,11 +44,11 @@ export function useSocketLifecycle() {
       bridgeNotification(notification)
     const onLikeBroadcast = (payload: {
       postId: string
-      likeCount: number
+      likesCount: number
       isLiked: boolean
-    }) => bridgeLikeDelta(payload.postId, payload.likeCount, payload.isLiked)
-    const onCommentBroadcast = (payload: { postId: string; commentCount: number }) =>
-      bridgeCommentDelta(payload.postId, payload.commentCount)
+    }) => bridgeLikeDelta(payload.postId, payload.likesCount, payload.isLiked)
+    const onCommentBroadcast = (payload: { postId: string; commentsCount: number }) =>
+      bridgeCommentDelta(payload.postId, payload.commentsCount)
     const onNewComment = (comment: SocketComment) => bridgeNewComment(comment)
     const onCommentUpdated = (comment: SocketComment) =>
       bridgeCommentUpdated(comment)

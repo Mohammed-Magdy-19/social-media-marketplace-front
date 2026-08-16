@@ -18,6 +18,7 @@ import { AvatarWithFallback } from "@/components/shared/AvatarWithFallback"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 type ComposerValues = z.infer<typeof postComposerSchema>
@@ -29,7 +30,7 @@ function Composer() {
 
   const form = useForm<ComposerValues>({
     resolver: zodResolver(postComposerSchema),
-    defaultValues: { caption: "", categoryId: "", tags: [] },
+    defaultValues: { title: "", content: "", categoryId: "", price: undefined, tags: [] },
   })
 
   if (!user) {
@@ -53,7 +54,7 @@ function Composer() {
       {
         onSuccess: () => {
           toast.success("Post created")
-          form.reset({ caption: "", categoryId: "", tags: [] })
+          form.reset({ title: "", content: "", categoryId: "", price: undefined, tags: [] })
         },
         onError: (error) => toast.error(getErrorMessage(error)),
       }
@@ -70,14 +71,14 @@ function Composer() {
           <AvatarWithFallback name={user.name} src={user.avatar} />
           <FormField
             control={form.control}
-            name="caption"
+            name="title"
             render={({ field }) => (
               <FormItem className="grid flex-1">
                 <FormControl>
                   <Input
                     {...field}
-                    placeholder="What are you selling?"
-                    aria-label="Post caption"
+                    placeholder="Post title"
+                    aria-label="Post title"
                   />
                 </FormControl>
                 <FormMessage />
@@ -85,6 +86,22 @@ function Composer() {
             )}
           />
         </div>
+        <FormField
+          control={form.control}
+          name="content"
+          render={({ field }) => (
+            <FormItem className="grid">
+              <FormControl>
+                <Textarea
+                  {...field}
+                  placeholder="What are you selling?"
+                  aria-label="Post content"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <div className="flex flex-wrap items-center gap-2">
           <FormField
             control={form.control}
@@ -104,6 +121,32 @@ function Composer() {
                       ))}
                     </SelectContent>
                   </Select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="price"
+            render={({ field }) => (
+              <FormItem className="grid">
+                <FormControl>
+                  <Input
+                    {...field}
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    inputMode="decimal"
+                    placeholder="Price (USD)"
+                    aria-label="Post price"
+                    value={field.value ?? ""}
+                    onChange={(e) =>
+                      field.onChange(
+                        e.target.value === "" ? undefined : Number(e.target.value)
+                      )
+                    }
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

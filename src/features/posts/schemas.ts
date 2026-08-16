@@ -1,9 +1,11 @@
 import { z } from "zod"
 
 export const postComposerSchema = z.object({
-  caption: z.string().min(1, "Say something about your listing").max(2000),
+  title: z.string().min(1, "Post title is required").max(100, "Title cannot exceed 100 characters"),
+  content: z.string().min(1, "Post content is required").max(2000, "Content cannot exceed 2000 characters"),
   categoryId: z.string().min(1, "Choose a category"),
-  tags: z.array(z.string().min(1).max(24)).max(8, "Up to 8 tags"),
+  price: z.coerce.number().min(0, "Price cannot be negative").optional(),
+  tags: z.array(z.string().min(1).max(24)).max(20, "Up to 20 tags"),
 })
 
 export const commentSchema = z.object({
