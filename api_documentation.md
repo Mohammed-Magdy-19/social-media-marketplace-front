@@ -16,7 +16,7 @@
    - [Posts & Feed (`/api/posts`)](#53-posts--feed-apiposts)
    - [Comments & Replies (`/api/comments`)](#54-comments--replies-apicomments)
    - [Categories (`/api/categories`)](#55-categories-apicategories)
-   - [Conversations & Messages (`/api/conversations`)](#56-conversations--messages-apiconversations)
+   - [Conversations, Messages & Negotiation Offers (`/api/conversations`)](#56-conversations-messages--negotiation-offers-apiconversations)
    - [Notifications (`/api/notifications`)](#57-notifications-apinotifications)
    - [Payments & Ledger (`/api/payments`)](#58-payments--ledger-apipayments)
    - [Uploads & Media (`/api/uploads`)](#59-uploads--media-apiuploads)
@@ -38,8 +38,10 @@ Place these types in `src/types/api.ts` to maintain strict compatibility with Mo
 
 export type UserRole = 'user' | 'moderator' | 'admin';
 export type UserStatus = 'active' | 'suspended' | 'banned';
+export type PostStatus = 'active' | 'hidden' | 'flagged';
 export type PostSortOption = 'newest' | 'oldest' | 'most_liked' | 'most_commented';
 export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded';
+export type OfferStatus = 'pending' | 'accepted' | 'rejected' | 'countered';
 export type ReportTargetType = 'post' | 'comment' | 'user';
 export type ReportStatus = 'pending' | 'reviewed' | 'dismissed' | 'resolved';
 export type NotificationType = 'FOLLOW' | 'LIKE' | 'COMMENT' | 'MESSAGE' | 'SYSTEM';
@@ -80,6 +82,16 @@ export interface Post {
   category: Category | string;
   tags: string[];
   author: User | string;
+  // Optional — undefined means a plain social post. Set means this post
+  // is a marketplace listing (Instant Buy / Negotiate eligible on the
+  // frontend). Smallest currency unit (cents), matching Payment.amount.
+  price?: number;
+  // Admin moderation state. 'active' is the only status included in the
+  // public feed/search by default; a non-admin request always gets
+  // status: 'active' regardless of what it asks for. Only an admin can
+  // change this (via PATCH /api/posts/:id) or query other statuses (via
+  // GET /api/posts?status=).
+  status: PostStatus;
   likesCount: number;
   commentsCount: number;
   isLiked?: boolean;
@@ -137,6 +149,20 @@ export interface Payment {
   status: PaymentStatus;
   transactionId: string;
   createdAt: string;
+}
+
+export interface Offer {
+  id: string;
+  conversation: string;
+  post: Post | string;
+  buyer: User | string;
+  seller: User | string;
+  proposedBy: User | string; // whoever made THIS specific offer
+  amount: number; // In cents (smallest currency unit), matching Post.price
+  status: OfferStatus;
+  previousOffer?: string | null; // links a counter-offer chain
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Report {
@@ -363,6 +389,7 @@ export const queryKeys = {
     all: () => ['conversations'] as const,
     detail: (id: string) => ['conversations', id] as const,
     messages: (conversationId: string, cursor?: string) => ['conversations', conversationId, 'messages', cursor] as const,
+    offers: (conversationId: string) => ['conversations', conversationId, 'offers'] as const,
   },
   notifications: {
     all: (page?: number) => ['notifications', 'list', page] as const,
@@ -422,6 +449,8 @@ export const socket: Socket = io(import.meta.env.VITE_SOCKET_URL || import.meta.
 | `like_updated` | `{ postId: string, likesCount: number }` | Invalidate/update post like count state. |
 | `feed_update_available` | `{ authorId: string, postId: string }` | Show top floating alert: *"New posts available. Click to refresh."* |
 | `payment_updated` | `{ paymentId: string, status: PaymentStatus }` | Emitted to the buyer's `user_<buyerId>` room after a Stripe webhook confirms/fails a charge, or after an admin refund. Invalidate/refetch `usePaymentLedger` so the checkout/ledger UI reflects the real status without polling. |
+| `offer_created` | `Offer` object | Emitted to the `conversation_<conversationId>` room. Append a new offer card to the negotiation thread in that conversation's cache (`queryKeys.conversations.offers`). |
+| `offer_updated` | `{ offer: Offer, newOffer?: Offer }` | Emitted to `conversation_<conversationId>` after accept/reject/counter. `offer` is the offer that was responded to (now `accepted`/`rejected`/`countered`); `newOffer` is present only for a `counter` action — append it as a fresh pending offer below the updated one. |
 | `typing_message` | `{ userId: string }` | Render typing indicator in active chat window. |
 | `stop_typing_message` | `{ userId: string }` | Clear typing indicator in active chat window. |
 
@@ -613,6 +642,10 @@ export const socket: Socket = io(import.meta.env.VITE_SOCKET_URL || import.meta.
     title: z.string().min(1).max(100).trim(),
     content: z.string().min(1).trim(),
     category: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid category ID'),
+    // Optional — omit for a plain social post; set to make the post a
+    // marketplace listing (enables Instant Buy / Negotiate on the frontend).
+    // Integer cents, matching Payment.amount.
+    price: z.number().int().nonnegative().optional(),
     tags: z.array(z.string().min(1).max(30)).max(20).optional().default([]),
   });
   ```
@@ -627,6 +660,11 @@ export const socket: Socket = io(import.meta.env.VITE_SOCKET_URL || import.meta.
     category?: string;
     tag?: string;
     author?: string;
+    // Admin-only in effect: an authenticated admin can pass this to filter
+    // to a specific moderation state (or omit it to see every status).
+    // Any non-admin request always gets status: 'active' regardless of
+    // what it sends here — the param is silently ignored, not rejected.
+    status?: 'active' | 'hidden' | 'flagged';
     sort?: 'newest' | 'oldest' | 'most_liked' | 'most_commented'; // Default: newest
     page?: number;  // Default 1
     limit?: number; // Default 10, max 50
@@ -637,10 +675,12 @@ export const socket: Socket = io(import.meta.env.VITE_SOCKET_URL || import.meta.
 #### `GET /api/posts/:id`
 - **Auth**: Public
 - **Response `200 OK`**: `ApiResponse<{ post: Post }>`
+- A post with `status !== 'active'` (hidden/flagged) returns `404` to anyone who isn't its author or an admin — matching the standard pattern of not leaking a moderated resource's existence to an unrelated visitor.
 
 #### `PATCH /api/posts/:id`
 - **Auth**: Protected (Author **or** Admin) — admin override added so the admin dashboard's post moderation actions can act on posts they don't own, matching the same ownership pattern `DELETE /api/posts/:id` already used.
-- **Request Body**: Partial `createPostSchema`
+- **Request Body**: Partial `createPostSchema`, plus an optional `status: 'active' | 'hidden' | 'flagged'`.
+- **Field-level auth note**: `title`/`content`/`tags`/`price` are owner-writable (author or admin). `status` is **admin-only in effect** — schema-valid for anyone to send, but the controller silently ignores it unless the requester is an admin; a non-admin author including it in the request body does not get a `403`, the field is just dropped.
 - **Response `200 OK`**: `ApiResponse<{ post: Post }>`
 
 #### `DELETE /api/posts/:id`
@@ -731,16 +771,17 @@ export const socket: Socket = io(import.meta.env.VITE_SOCKET_URL || import.meta.
 
 ---
 
-### 5.6. Conversations & Messages (`/api/conversations`)
+### 5.6. Conversations, Messages & Negotiation Offers (`/api/conversations`)
 
 #### `POST /api/conversations`
 - **Auth**: Protected
-- **Request Body**: `{ "participantId": "64d3f7b2e1a4c80012a34599" }`
-- **Response `200 / 201`**: `ApiResponse<{ conversation: Conversation }>`
+- **Request Body**: `{ "participantIds": ["64d3f7b2e1a4c80012a34599"], "isGroup"?: boolean, "title"?: string }` — *not* a singular `participantId`; the requester's own id is added automatically and does not need to be included.
+- **Response**: `ApiResponse<{ conversation: Conversation }>` — `200 OK` if an existing 1:1 thread between the same two people was reused, `201 Created` if a new conversation was created. A group conversation (`isGroup: true`) is always newly created, never reused.
 
 #### `GET /api/conversations`
 - **Auth**: Protected
-- **Response `200 OK`**: `ApiResponse<{ conversations: Conversation[] }>`
+- **Query Params**: `page?: number`, `limit?: number`
+- **Response `200 OK`**: `PaginatedResponse<Conversation>` — *not* a bare `ApiResponse<{ conversations: [] }>`; sorted by most recently active (`updatedAt`).
 
 #### `GET /api/conversations/:id`
 - **Auth**: Protected (Participant only)
@@ -772,6 +813,29 @@ export const socket: Socket = io(import.meta.env.VITE_SOCKET_URL || import.meta.
 #### `PATCH /api/conversations/:conversationId/messages/read`
 - **Auth**: Protected (Participant only)
 - **Response `200 OK`**: `{ "status": "success", "message": "Messages marked as read." }`
+
+#### 5.6.1. Negotiation Offers (`/api/conversations/:conversationId/offers`)
+
+Structured price negotiation, nested under a conversation rather than a separate top-level resource. A negotiation is always anchored to a specific marketplace listing (`Post.price` must be set) and a 1:1 conversation (`isGroup: false`) between the listing's author (seller, resolved server-side from `Post.author`) and the other participant (buyer) — the roles are never sent by the client. Hybrid: REST persists each offer; a lightweight Socket.io broadcast (`offer_created`/`offer_updated`, see §4) to the `conversation_<id>` room notifies both sides live.
+
+##### `POST /api/conversations/:conversationId/offers`
+- **Auth**: Protected (Participant only)
+- **Request Body**: `{ "postId": "64d3f7b2e1a4c80012a11111", "amount": 4500 }` — `amount` in integer cents.
+- **Validation**: `postId` must reference a listing with a `price` set and `status: 'active'`; the conversation must be 1:1 and include the listing's author. Fails with `409` if a `pending` offer already exists for this conversation+post — only one active negotiation thread per listing per conversation at a time.
+- **Response `201 Created`**: `ApiResponse<{ offer: Offer }>`
+
+##### `GET /api/conversations/:conversationId/offers`
+- **Auth**: Protected (Participant only)
+- **Response `200 OK`**: `ApiResponse<{ offers: Offer[] }>` — full history, oldest first, **not paginated** (a single negotiation thread is expected to stay small; this is an intentional exception to every other list route's `PaginatedResponse` pattern).
+
+##### `PATCH /api/conversations/:conversationId/offers/:offerId`
+- **Auth**: Protected (Participant only — specifically, whichever participant did **not** propose the offer; `403` if you try to respond to your own offer)
+- **Request Body**: `{ "action": "accept" | "reject" | "counter", "amount"?: number }` — `amount` is required only when `action` is `"counter"`.
+- **Behavior**:
+  - `accept` / `reject` — flips the offer's `status`; terminal, cannot be responded to again (`409` if attempted).
+  - `counter` — marks the current offer `countered` and creates a **new** `pending` offer (`previousOffer` pointing back at the one just countered), proposed by whoever called this endpoint. The negotiation continues from the new offer.
+- **Response `200 OK`**: `ApiResponse<{ offer: Offer, newOffer?: Offer }>` — `newOffer` is present only for `action: "counter"`.
+- **Note**: accepting an offer does **not** itself create a payment or charge anything. The frontend separately calls `POST /api/payments/create-intent` with `{ postId, amount: offer.amount }` once accepted — negotiation and payment are deliberately decoupled, keeping payment writes off the socket layer per §5.8.
 
 ---
 
@@ -1015,6 +1079,9 @@ You are an expert Frontend Code Auditor enforcing strict API alignment with the 
    - Password change MUST use `currentPassword`, `newPassword`, `newPasswordConfirm` (NOT `oldPassword` or `confirmPassword`).
    - Post Query Sort parameter MUST accept only `'newest' | 'oldest' | 'most_liked' | 'most_commented'`.
    - User Role MUST be one of `'user' | 'moderator' | 'admin'`. User Status MUST be one of `'active' | 'suspended' | 'banned'`.
+   - `POST /api/conversations` body MUST use `participantIds` (array, NOT singular `participantId`).
+   - Post status filter/toggle MUST use `status: 'active' | 'hidden' | 'flagged'` — this field does not exist under any other name, and setting it via `PATCH /api/posts/:id` only takes effect for an admin requester; a non-admin author sending it is silently ignored, not rejected.
+   - Negotiation offer creation MUST post to `/api/conversations/:conversationId/offers` (nested under the conversation) — NOT a top-level `/api/offers` or `/api/negotiations` resource, which do not exist. Responding to an offer MUST send `action: 'accept' | 'reject' | 'counter'` (NOT `status`) in the request body, even though the resulting `Offer.status` field uses those same three words plus `'pending'`.
 
 3. TS DTO & TANSTACK QUERY MATCHING:
    - Every `useQuery` / `useMutation` MUST pull keys from `queryKeys.ts`.
