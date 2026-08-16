@@ -10,22 +10,36 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { ErrorBoundary, SectionFallback } from "@/components/shared/ErrorBoundary"
-import { cn } from "@/lib/utils"
 
 export interface VirtualColumn<T> {
   key: string
   header: React.ReactNode
-  /** Optional fixed width class; without it the cell flexes naturally. */
+  /** Tailwind width class (e.g. `min-w-56`, `w-24`). Optional; defaults to grow. */
   className?: string
   cell: (row: T) => React.ReactNode
 }
 
-const ROW_HEIGHT = 48
+const ROW_HEIGHT = 52
+
+const WIDTH_CLASSES: { regex: RegExp; track: (n: number) => string }[] = [
+  { regex: /min-w-(\d+)/, track: (n) => `minmax(${n / 4}rem, auto)` },
+  { regex: /w-(\d+)/, track: (n) => `${n / 4}rem` },
+]
+
+function columnTrack(className: string | undefined): string {
+  for (const { regex, track } of WIDTH_CLASSES) {
+    const m = className?.match(regex)
+    if (m) return track(Number(m[1]))
+  }
+  return "minmax(0, 1fr)"
+}
 
 /**
- * Windowed admin table. Even though admin lists are not cursor-infinite yet
- * (spec §2.1), rows are virtualized now so production-scale tables don't
- * paint thousands of DOM rows (§10.2 virtualization matrix).
+ * Windowed admin table. Header and body share one `gridTemplateColumns`
+ * built from the column width classes, so cells align perfectly while only
+ * the visible rows are painted (§10.2 virtualization matrix). The spacer div
+ * inside the tbody gives the scroll container its full height, keeping the
+ * header sticky and the virtual rows in their own slots.
  */
 export function VirtualTable<T>({
   rows,
@@ -41,6 +55,11 @@ export function VirtualTable<T>({
   emptyState?: React.ReactNode
 }) {
   const parentRef = useRef<HTMLDivElement>(null)
+
+  const gridTemplateColumns = React.useMemo(
+    () => columns.map((col) => columnTrack(col.className)).join(" "),
+    [columns]
+  )
 
   const virtualizer = useVirtualizer({
     count: rows.length,
@@ -66,33 +85,48 @@ export function VirtualTable<T>({
       >
         <Table>
           <TableHeader className="sticky top-0 z-10 bg-card shadow-[0_1px_0_0_var(--line-2)]">
-            <TableRow>
+            <TableRow
+              className="grid items-center hover:bg-transparent"
+              style={{ gridTemplateColumns }}
+            >
               {columns.map((col) => (
-                <TableHead key={col.key} className={cn("text-[11px] font-semibold uppercase tracking-wider", col.className)}>
+                <TableHead
+                  key={col.key}
+                  className="truncate px-3 text-[11px] font-semibold uppercase tracking-wider text-mut"
+                >
                   {col.header}
                 </TableHead>
               ))}
             </TableRow>
           </TableHeader>
           <TableBody className="relative">
-            {virtualizer.getVirtualItems().map((item) => {
-              const row = rows[item.index]
-              return (
-                <TableRow
-                  key={rowKey(row)}
-                  ref={virtualizer.measureElement}
-                  data-index={item.index}
-                  className="absolute top-0 left-0 w-full border-line-2 hover:bg-soft"
-                  style={{ transform: `translateY(${item.start}px)` }}
-                >
-                  {columns.map((col) => (
-                    <TableCell key={col.key} className={col.className}>
-                      {col.cell(row)}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              )
-            })}
+            <div style={{ height: virtualizer.getTotalSize() }}>
+              {virtualizer.getVirtualItems().map((item) => {
+                const row = rows[item.index]
+                return (
+                  <TableRow
+                    key={rowKey(row)}
+                    ref={virtualizer.measureElement}
+                    data-index={item.index}
+                    className="absolute top-0 left-0 grid w-full items-center border-b border-line-2 hover:bg-soft"
+                    style={{
+                      gridTemplateColumns,
+                      height: item.size,
+                      transform: `translateY(${item.start}px)`,
+                    }}
+                  >
+                    {columns.map((col) => (
+                      <TableCell
+                        key={col.key}
+                        className="flex min-w-0 items-center overflow-hidden px-3"
+                      >
+                        {col.cell(row)}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                )
+              })}
+            </div>
           </TableBody>
         </Table>
       </div>

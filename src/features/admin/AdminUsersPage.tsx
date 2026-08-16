@@ -1,6 +1,6 @@
 import * as React from "react"
 import { toast } from "sonner"
-import { Trash2 } from "lucide-react"
+import { Check, ShieldCheck, Trash2 } from "lucide-react"
 import { useAdminUsers } from "@/features/admin/queries"
 import { useSetUserStatus, useDelRow } from "@/features/admin/mutations"
 import { AdminPageHeader } from "@/features/admin/components/AdminPageHeader"
@@ -27,13 +27,21 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn, formatRelativeTime } from "@/lib/utils"
 import { getErrorMessage } from "@/lib/api/errors"
-import type { PublicUser } from "@/types"
+import type { PublicUser, UserStatus } from "@/types"
 
 const USER_PILLS = ["All", "active", "suspended", "banned"] as const
+
+const STATUS_OPTIONS: { value: UserStatus; label: string }[] = [
+  { value: "active", label: "Active" },
+  { value: "suspended", label: "Suspended" },
+  { value: "banned", label: "Banned" },
+]
 
 export default function AdminUsersPage() {
   const [search, setSearch] = React.useState("")
@@ -63,12 +71,17 @@ export default function AdminUsersPage() {
       {
         key: "user",
         header: "User",
-        className: "min-w-56",
+        className: "min-w-60",
         cell: (u: PublicUser) => (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <AvatarWithFallback name={u.name} src={u.avatar ?? null} size="sm" />
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-ink">{u.name}</p>
+              <p className="flex items-center gap-1 truncate text-sm font-medium text-ink">
+                {u.name}
+                {u.role === "admin" && (
+                  <ShieldCheck className="size-3.5 shrink-0 text-violet" />
+                )}
+              </p>
               <p className="truncate font-mono text-[10px] text-mut">@{u.username}</p>
             </div>
           </div>
@@ -77,19 +90,21 @@ export default function AdminUsersPage() {
       {
         key: "email",
         header: "Email",
-        className: "min-w-40",
+        className: "min-w-44",
         cell: (u: PublicUser) => (
-          <span className="text-sm text-mut">{u.email}</span>
+          <span className="truncate text-sm text-mut">{u.email}</span>
         ),
       },
       {
         key: "role",
         header: "Role",
+        className: "w-28",
         cell: (u: PublicUser) => <StatusPill status={u.role} />,
       },
       {
         key: "status",
         header: "Status",
+        className: "w-28",
         cell: (u: PublicUser) => <StatusPill status={u.status} />,
       },
       {
@@ -103,32 +118,35 @@ export default function AdminUsersPage() {
       {
         key: "actions",
         header: "Actions",
-        className: "w-24 text-right",
+        className: "w-36",
         cell: (u: PublicUser) => (
-          <div className="flex justify-end gap-1">
+          <div className="flex items-center justify-end gap-1">
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
                   <Button variant="outline" size="xs" aria-label="Change status">
-                    <span className="text-[11px]">Status</span>
+                    <span className="text-[11px]">Moderate</span>
                   </Button>
                 }
               />
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onSelect={() =>
-                    setStatus.mutate({ id: u.id, status: "active" })
-                  }
-                >
-                  Set Active
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={() =>
-                    setStatus.mutate({ id: u.id, status: "suspended" })
-                  }
-                >
-                  Set Suspended
-                </DropdownMenuItem>
+              <DropdownMenuContent align="end" className="min-w-44">
+                <DropdownMenuLabel className="text-xs text-mut">
+                  Set account status
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {STATUS_OPTIONS.map((option) => (
+                  <DropdownMenuItem
+                    key={option.value}
+                    disabled={u.status === option.value}
+                    onSelect={() =>
+                      setStatus.mutate({ id: u.id, status: option.value })
+                    }
+                  >
+                    <span className="flex-1">{option.label}</span>
+                    {u.status === option.value && <Check className="size-3.5" />}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   variant="destructive"
                   onSelect={() => setBanTarget(u)}
@@ -173,6 +191,14 @@ export default function AdminUsersPage() {
         value={activePill}
         onChange={(pill) => setFilterPill("users", pill)}
       />
+
+      <div className="flex items-center gap-2">
+        <span className="font-mono text-xs text-mut">
+          {rows.length} user{rows.length === 1 ? "" : "s"}
+          {activePill !== "All" && ` · ${activePill}`}
+          {debounced && ` · “${debounced}”`}
+        </span>
+      </div>
 
       <Card className="rounded-card border-border">
         <CardContent className="p-2">
