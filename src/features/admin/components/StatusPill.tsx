@@ -6,6 +6,7 @@ const STATUS_TONE: Record<string, string> = {
   published: "text-ok bg-ok-soft",
   resolved: "text-ok bg-ok-soft",
   active: "text-ok bg-ok-soft",
+  completed: "text-ok bg-ok-soft",
   hidden: "text-muted-foreground bg-soft",
   pending: "text-warn bg-warn-soft",
   suspended: "text-warn bg-warn-soft",

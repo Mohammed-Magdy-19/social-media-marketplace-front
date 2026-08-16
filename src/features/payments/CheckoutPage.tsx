@@ -1,15 +1,23 @@
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useParams } from "react-router-dom"
-import { usePaymentIntent, usePaymentLedger } from "@/features/payments/queries"
-import { useConfirmPayment } from "@/features/payments/mutations"
-import { checkoutSchema } from "@/features/payments/schemas"
-import type { CheckoutValues } from "@/features/payments/schemas"
-import { AvatarWithFallback } from "@/components/shared/AvatarWithFallback"
+import { Link, useParams, useSearchParams } from "react-router-dom"
+import {
+  Elements,
+  PaymentElement,
+  useElements,
+  useStripe,
+} from "@stripe/react-stripe-js"
+import { toast } from "sonner"
+import { CheckCircle2, Loader2, XCircle } from "lucide-react"
+import { stripePromise } from "@/lib/stripe-client"
+import { useCheckoutStore } from "@/stores/checkoutStore"
+import { useMyPayments, usePayment } from "@/features/payments/queries"
+import { checkoutSchema, type CheckoutValues } from "@/features/payments/schemas"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Form,
   FormControl,
@@ -21,35 +29,27 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn, formatCurrency } from "@/lib/utils"
-import { getErrorMessage } from "@/lib/api/errors"
 import { ErrorBoundary, SectionFallback } from "@/components/shared/ErrorBoundary"
 import type { PaymentStatus } from "@/types"
 
-function statusPill(status: PaymentStatus) {
-  switch (status) {
-    case "succeeded":
-      return { label: "Succeeded", className: "bg-emerald-500/10 text-emerald-500" }
-    case "pending":
-      return { label: "Pending", className: "bg-amber-500/10 text-amber-500" }
-    case "failed":
-      return { label: "Failed", className: "bg-red-500/10 text-red-500" }
-    case "refunded":
-      return { label: "Refunded", className: "bg-muted text-muted-foreground" }
-    default:
-      return { label: status, className: "bg-muted text-muted-foreground" }
-  }
+const STATUS_BADGE: Record<PaymentStatus, { label: string; className: string }> = {
+  pending: { label: "Pending", className: "bg-amber-500/10 text-amber-500" },
+  completed: { label: "Completed", className: "bg-emerald-500/10 text-emerald-500" },
+  failed: { label: "Failed", className: "bg-red-500/10 text-red-500" },
+  refunded: { label: "Refunded", className: "bg-muted text-muted-foreground" },
 }
 
-function Ledger() {
-  const { data, isLoading } = usePaymentLedger()
-  if (isLoading) {
-    return (
-      <div className="flex flex-col gap-2">
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-10 w-full" />
-      </div>
-    )
-  }
+function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
+  const badge = STATUS_BADGE[status]
+  return (
+    <Badge variant="outline" className={cn("border-transparent", badge.className)}>
+      {badge.label}
+    </Badge>
+  )
+}
+
+function PaymentHistory() {
+  const { data } = useMyPayments()
   if (!data || data.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">No payments yet.</p>
@@ -57,52 +57,259 @@ function Ledger() {
   }
   return (
     <ul className="flex flex-col gap-2">
-      {data.map((p) => {
-        const pill = statusPill(p.status)
-        return (
-          <li
-            key={p.id}
-            className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2"
-          >
-            <div className="flex flex-col">
-              <span className="font-mono text-xs text-muted-foreground">
-                {p.id.slice(0, 12)}…
-              </span>
-              <span className="text-sm font-medium">
-                {formatCurrency(p.amount, p.currency)}
-              </span>
-            </div>
-            <Badge
-              variant="outline"
-              className={cn("border-transparent", pill.className)}
-            >
-              {pill.label}
-            </Badge>
-          </li>
-        )
-      })}
+      {data.map((p) => (
+        <li
+          key={p.id}
+          className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2"
+        >
+          <div className="flex flex-col">
+            <span className="font-mono text-xs text-muted-foreground">
+              {p.id.slice(0, 12)}…
+            </span>
+            <span className="text-sm font-medium">
+              {formatCurrency(p.amount / 100, p.currency)}
+            </span>
+          </div>
+          <PaymentStatusBadge status={p.status} />
+        </li>
+      ))}
     </ul>
   )
 }
 
-export default function CheckoutPage() {
-  const { intentId } = useParams<{ intentId: string }>()
-  const { data: intent, isLoading } = usePaymentIntent(intentId ?? "")
-  const confirmPayment = useConfirmPayment()
-
+/**
+ * Inner Stripe Elements form. Card data lives only inside Stripe's hosted
+ * iframe — nothing here serializes raw card numbers into our API.
+ */
+function CheckoutForm({
+  onConfirmed,
+  submitting,
+}: {
+  onConfirmed: () => void
+  submitting: boolean
+}) {
+  const stripe = useStripe()
+  const elements = useElements()
   const form = useForm<CheckoutValues>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: { termsAccepted: false as never },
   })
 
-  if (isLoading || !intent) {
+  const handlePay = form.handleSubmit(async () => {
+    if (!stripe || !elements) return
+    const { error } = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: `${window.location.origin}${window.location.pathname}`,
+      },
+      redirect: "if_required",
+    })
+    if (error) {
+      toast.error(error.message ?? "Payment could not be confirmed.")
+      return
+    }
+    // Stripe accepted the confirmation attempt — the webhook is the source of
+    // truth for the final status, so move to the "confirming" state only.
+    onConfirmed()
+  })
+
+  return (
+    <Form {...form}>
+      <form id="checkout-form" onSubmit={handlePay} className="flex flex-col gap-4">
+        <PaymentElement />
+        <FormField
+          control={form.control}
+          name="termsAccepted"
+          render={({ field }) => (
+            <FormItem className="flex items-start gap-2 space-y-0">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={(v) => field.onChange(v === true)}
+                />
+              </FormControl>
+              <div className="flex flex-col gap-1">
+                <FormLabel className="font-normal leading-snug">
+                  I accept the NexMarket terms of service and escrow agreement.
+                </FormLabel>
+                <FormMessage />
+              </div>
+            </FormItem>
+          )}
+        />
+        <div className="flex justify-end">
+          <Button
+            type="submit"
+            form="checkout-form"
+            disabled={!stripe || submitting || form.formState.isSubmitting}
+          >
+            {form.formState.isSubmitting ? "Processing…" : "Confirm payment"}
+          </Button>
+        </div>
+      </form>
+    </Form>
+  )
+}
+
+function OrderSummary({
+  amount,
+  currency,
+  paymentId,
+}: {
+  amount: number
+  currency: string
+  paymentId: string
+}) {
+  return (
+    <Card className="rounded-card">
+      <CardContent className="flex flex-col gap-4 p-6">
+        <div className="flex items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold">Payment</p>
+            <p className="font-mono text-xs text-muted-foreground">
+              {paymentId.slice(0, 12)}…
+            </p>
+          </div>
+          <span className="font-mono text-lg font-semibold">
+            {formatCurrency(amount / 100, currency)}
+          </span>
+        </div>
+        <Separator />
+        <div className="flex flex-col gap-2 text-sm">
+          <div className="flex justify-between text-muted-foreground">
+            <span>Subtotal</span>
+            <span>{formatCurrency(amount / 100, currency)}</span>
+          </div>
+          <div className="flex justify-between text-muted-foreground">
+            <span>Processing fee</span>
+            <span>$0.00</span>
+          </div>
+          <div className="flex justify-between border-t border-border pt-2 font-semibold">
+            <span>Total</span>
+            <span className="font-mono">
+              {formatCurrency(amount / 100, currency)}
+            </span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+export default function CheckoutPage() {
+  const { intentId } = useParams<{ intentId: string }>()
+  const [searchParams] = useSearchParams()
+  const paymentId = intentId ?? ""
+  const intent = useCheckoutStore((s) => s.intent)
+
+  const [submitted, setSubmitted] = useState(false)
+  const [timedOut, setTimedOut] = useState(false)
+  const [stripeStatus, setStripeStatus] = useState<string | null>(null)
+
+  const { data: payment, isLoading } = usePayment(paymentId)
+
+  const redirectClientSecret = searchParams.get("payment_intent_client_secret")
+  const hasRedirectBack = !!redirectClientSecret
+  const clientSecret = redirectClientSecret ?? intent?.clientSecret ?? null
+  const amount = intent?.amount ?? payment?.amount ?? 0
+  const currency = intent?.currency ?? payment?.currency ?? "USD"
+
+  const isConfirmed = submitted || hasRedirectBack
+
+  // Clear the short-lived intent once the payment reaches a terminal state so
+  // a stale clientSecret is never reused for a new attempt.
+  useEffect(() => {
+    if (
+      payment?.status === "completed" ||
+      payment?.status === "failed" ||
+      payment?.status === "refunded"
+    ) {
+      useCheckoutStore.getState().clear()
+    }
+  }, [payment?.status])
+
+  // Backstop: stop the spinner after 60s and show a "still processing" state
+  // rather than spinning forever if the socket/poll never resolves.
+  useEffect(() => {
+    if (!isConfirmed || payment?.status !== "pending") return
+    const t = setTimeout(() => setTimedOut(true), 60_000)
+    return () => clearTimeout(t)
+  }, [isConfirmed, payment?.status])
+
+  // Redirect-back reconciliation (§4.3): read Stripe's own status for display
+  // only — the final UI decision always comes from our backend's Payment.status.
+  useEffect(() => {
+    if (!redirectClientSecret || !stripePromise) return
+    let cancelled = false
+    void stripePromise.then((stripe) =>
+      stripe
+        ?.retrievePaymentIntent(redirectClientSecret)
+        .then(({ paymentIntent }) => {
+          if (!cancelled && paymentIntent) setStripeStatus(paymentIntent.status)
+        })
+        .catch(() => undefined)
+    )
+    return () => {
+      cancelled = true
+    }
+  }, [redirectClientSecret])
+
+  if (isLoading && !payment) {
     return (
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
         <Skeleton className="h-8 w-56" />
+        <Skeleton className="h-40 w-full rounded-card" />
+        <Skeleton className="h-40 w-full rounded-card" />
+      </div>
+    )
+  }
+
+  // Terminal success / failure states — sourced only from backend Payment.status.
+  if (payment?.status === "completed") {
+    return (
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
         <Card className="rounded-card">
-          <CardContent className="flex flex-col gap-4 p-6">
-            <Skeleton className="h-12 w-full" />
-            <Skeleton className="h-12 w-full" />
+          <CardContent className="flex flex-col items-center gap-3 p-8 text-center">
+            <CheckCircle2 className="size-10 text-emerald-500" />
+            <h1 className="font-display text-xl font-bold tracking-[-0.02em]">
+              Payment completed
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {formatCurrency(amount / 100, currency)} charged to your card.
+              A receipt has been emailed to you.
+            </p>
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" size="sm" render={<Link to="/messages" />}>
+                View messages
+              </Button>
+              <Button size="sm" render={<Link to="/market" />}>
+                Keep shopping
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (payment?.status === "failed") {
+    return (
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
+        <Card className="rounded-card">
+          <CardContent className="flex flex-col items-center gap-3 p-8 text-center">
+            <XCircle className="size-10 text-red-500" />
+            <h1 className="font-display text-xl font-bold tracking-[-0.02em]">
+              Payment failed
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Your payment could not be processed. No charge was made. Please
+              try again or use a different payment method.
+            </p>
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" size="sm" render={<Link to="/market" />}>
+                Back to market
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -120,116 +327,80 @@ export default function CheckoutPage() {
         </p>
       </div>
 
+      {payment && <PaymentStatusBadge status={payment.status} />}
+
       <ErrorBoundary fallback={<SectionFallback />}>
-      <Card className="rounded-card">
-        <CardContent className="flex flex-col gap-4 p-6">
-          <div className="flex items-center gap-3">
-            <AvatarWithFallback name="NexMarket Pay" src={null} />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold">Payment intent</p>
-              <p className="font-mono text-xs text-muted-foreground">
-                {intent.id.slice(0, 12)}…
+        <OrderSummary amount={amount} currency={currency} paymentId={paymentId} />
+      </ErrorBoundary>
+
+      <ErrorBoundary fallback={<SectionFallback />}>
+        {isConfirmed && payment?.status === "pending" && !timedOut ? (
+          <Card className="rounded-card">
+            <CardContent className="flex flex-col items-center gap-3 p-8 text-center">
+              <Loader2 className="size-8 animate-spin text-brand" />
+              <p className="text-sm font-medium">Confirming your payment…</p>
+              <p className="text-xs text-muted-foreground">
+                {stripeStatus ? `Stripe status: ${stripeStatus}` : "This usually takes a few seconds."}
               </p>
-            </div>
-            <span className="font-mono text-lg font-semibold">
-              {formatCurrency(intent.amount, intent.currency)}
-            </span>
-          </div>
-
-          <Separator />
-
-          <div className="flex flex-col gap-2 text-sm">
-            <div className="flex justify-between text-muted-foreground">
-              <span>Subtotal</span>
-              <span>{formatCurrency(intent.amount, intent.currency)}</span>
-            </div>
-            <div className="flex justify-between text-muted-foreground">
-              <span>Processing fee</span>
-              <span>$0.00</span>
-            </div>
-            <div className="flex justify-between border-t border-border pt-2 font-semibold">
-              <span>Total</span>
-              <span className="font-mono">
-                {formatCurrency(intent.amount, intent.currency)}
-              </span>
-            </div>
-          </div>
-
-          <Separator />
-
-          <div className="flex flex-col gap-2 rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
-            <p className="font-mono break-all">client_secret: {intent.clientSecret}</p>
-            <p>
-              Funds are held in escrow until the seller confirms delivery.
-            </p>
-          </div>
-
-          <Form {...form}>
-            <form
-              id="checkout-form"
-              onSubmit={form.handleSubmit(() => {
-                confirmPayment.mutate(
-                  { intentId: intent.id },
-                  {
-                    onSuccess: () => {
-                      form.reset({ termsAccepted: false as never })
-                    },
-                    onError: (error) => {
-                      form.setError("termsAccepted", {
-                        message: getErrorMessage(error),
-                      })
-                    },
-                  }
-                )
-              })}
-              className="flex flex-col gap-4"
-            >
-              <FormField
-                control={form.control}
-                name="termsAccepted"
-                render={({ field }) => (
-                  <FormItem className="flex items-start gap-2 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={(v) => field.onChange(v === true)}
-                      />
-                    </FormControl>
-                    <div className="flex flex-col gap-1">
-                      <FormLabel className="font-normal leading-snug">
-                        I accept the NexMarket terms of service and escrow
-                        agreement.
-                      </FormLabel>
-                      <FormMessage />
-                    </div>
-                  </FormItem>
-                )}
-              />
-            </form>
-          </Form>
-
-          <div className="flex justify-end gap-2">
-            <Button
-              type="submit"
-              form="checkout-form"
-              disabled={confirmPayment.isPending}
-            >
-              {confirmPayment.isPending ? "Processing…" : "Confirm payment"}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        ) : isConfirmed && payment?.status === "pending" ? (
+          <Card className="rounded-card">
+            <CardContent className="flex flex-col gap-2 p-8 text-center">
+              <p className="text-sm font-medium">
+                Your payment is still processing.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                It may take a little longer than usual. We&apos;ll email you once
+                it completes — no need to keep this page open.
+              </p>
+            </CardContent>
+          </Card>
+        ) : !clientSecret ? (
+          <Card className="rounded-card">
+            <CardContent className="flex flex-col gap-2 p-8 text-center">
+              <p className="text-sm font-medium">
+                This checkout session has expired.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Return to the listing to start a new checkout.
+              </p>
+              <div className="pt-2">
+                <Button variant="outline" size="sm" render={<Link to="/market" />}>
+                  Back to market
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : stripePromise == null ? (
+          <Card className="rounded-card">
+            <CardContent className="flex flex-col gap-2 p-8 text-center">
+              <p className="text-sm font-medium">Payments are unavailable.</p>
+              <p className="text-xs text-muted-foreground">
+                Stripe is not configured. Set VITE_STRIPE_PUBLISHABLE_KEY to
+                enable card payments.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="rounded-card">
+            <CardContent className="flex flex-col gap-4 p-6">
+              <Elements stripe={stripePromise} options={{ clientSecret }}>
+                <CheckoutForm
+                  submitting={submitted}
+                  onConfirmed={() => setSubmitted(true)}
+                />
+              </Elements>
+            </CardContent>
+          </Card>
+        )}
       </ErrorBoundary>
 
       <Card className="rounded-card">
-        <CardHeader>
-          <CardTitle className="font-display text-base">
-            Payment ledger
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-3 p-6">
+          <p className="font-display text-base font-bold">Payment history</p>
           <ErrorBoundary fallback={<SectionFallback />}>
-            <Ledger />
+            <PaymentHistory />
           </ErrorBoundary>
         </CardContent>
       </Card>

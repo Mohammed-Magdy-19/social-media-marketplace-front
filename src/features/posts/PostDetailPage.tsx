@@ -172,7 +172,7 @@ export default function PostDetailPage() {
               <Button
                 size="sm"
                 onClick={() => {
-                  if (hasToken) {
+                  if (hasToken && post.status === "active") {
                     createIntent.mutate({
                       postId: post.id,
                       amount: price,
@@ -180,7 +180,7 @@ export default function PostDetailPage() {
                     })
                   }
                 }}
-                disabled={!hasToken}
+                disabled={!hasToken || post.status !== "active"}
               >
                 Instant Buy
               </Button>

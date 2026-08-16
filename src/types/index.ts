@@ -128,28 +128,36 @@ export interface Offer {
   updatedAt?: string
 }
 
+export type PaymentProvider = "stripe" | "paypal"
+
 export type PaymentStatus =
-  | "succeeded"
   | "pending"
+  | "completed"
   | "failed"
   | "refunded"
 
 export interface Payment {
   id: string
-  userId: string
-  postId?: string
+  /** Smallest currency unit (e.g. cents), matching Post.price / Payment.amount. */
   amount: number
+  /** Uppercase 3-letter ISO code, e.g. "USD". */
   currency: string
+  provider: PaymentProvider
   status: PaymentStatus
-  method: string
+  /** Stripe PaymentIntent id — opaque, display verbatim only, never parse. */
+  transactionId: string
+  buyer: PublicUser | string
+  seller?: PublicUser | string | null
+  post?: { id: string; title: string; media?: string[] } | string | null
+  metadata?: Record<string, unknown>
   createdAt: string
+  updatedAt: string
 }
 
-export interface PaymentIntent {
-  id: string
+/** Response of POST /payments/create-intent (§5.8 api-docs). */
+export interface CreatePaymentIntentResponse {
   clientSecret: string
-  amount: number
-  currency: string
+  paymentId: string
 }
 
 export type ReportTargetType = "post" | "user" | "message"

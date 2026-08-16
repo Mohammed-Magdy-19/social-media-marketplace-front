@@ -3,7 +3,7 @@ import { socket } from "@/lib/socket/client"
 import { useAuthStore } from "@/stores/authStore"
 import { useNegotiationUiStore } from "@/stores/negotiationUiStore"
 import { queryClient } from "@/lib/queryClient"
-import { queryKeys } from "@/api/queryKeys"
+import { queryKeys, queryKeyPrefixes } from "@/api/queryKeys"
 import {
   bridgeCommentDeleted,
   bridgeCommentDelta,
@@ -17,7 +17,13 @@ import {
   bridgeReplyCreated,
   type SocketComment,
 } from "@/lib/socket/queryBridge"
-import type { AppNotification, Message, Offer } from "@/types"
+import type {
+  AppNotification,
+  Message,
+  Offer,
+  Payment,
+  PaymentStatus,
+} from "@/types"
 
 /**
  * Connects the singleton socket once a valid session exists and wires the
@@ -62,8 +68,17 @@ export function useSocketLifecycle() {
     const onOfferCreated = (offer: Offer) => bridgeOfferCreated(offer)
     const onOfferUpdated = (payload: { offer: Offer; newOffer?: Offer }) =>
       bridgeOfferUpdated(payload)
-    const onPaymentSucceeded = () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.payments.my() })
+    const onPaymentUpdated = (payload: {
+      paymentId: string
+      status: PaymentStatus
+    }) => {
+      queryClient.setQueryData<Payment>(
+        queryKeys.payments.detail(payload.paymentId),
+        (old) => (old ? { ...old, status: payload.status } : old)
+      )
+      void queryClient.invalidateQueries({
+        queryKey: queryKeyPrefixes.paymentsMe,
+      })
     }
 
     const registerUserRoom = () => {
@@ -97,7 +112,7 @@ export function useSocketLifecycle() {
     socket.on("reply_created", onReplyCreated)
     socket.on("offer_created", onOfferCreated)
     socket.on("offer_updated", onOfferUpdated)
-    socket.on("payment_succeeded", onPaymentSucceeded)
+    socket.on("payment_updated", onPaymentUpdated)
     socket.on("connect", onConnect)
 
     return () => {
@@ -113,7 +128,7 @@ export function useSocketLifecycle() {
       socket.off("reply_created", onReplyCreated)
       socket.off("offer_created", onOfferCreated)
       socket.off("offer_updated", onOfferUpdated)
-      socket.off("payment_succeeded", onPaymentSucceeded)
+      socket.off("payment_updated", onPaymentUpdated)
       socket.off("connect", onConnect)
       if (socket.connected) socket.disconnect()
     }

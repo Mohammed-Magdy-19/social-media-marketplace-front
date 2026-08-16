@@ -21,7 +21,7 @@ export function ProductCard({ post }: { post: Post }) {
   const discount = price != null && post.saveCount > 0 ? "-15%" : undefined
 
   const onBuy = () => {
-    if (!hasToken || price == null) return
+    if (!hasToken || price == null || post.status !== "active") return
     createIntent.mutate({ postId: post.id, amount: price, currency: post.currency ?? "USD" })
   }
 
@@ -95,7 +95,7 @@ export function ProductCard({ post }: { post: Post }) {
             size="sm"
             className="flex-1"
             onClick={onBuy}
-            disabled={!hasToken || price == null}
+            disabled={!hasToken || price == null || post.status !== "active"}
           >
             Instant Buy
           </Button>

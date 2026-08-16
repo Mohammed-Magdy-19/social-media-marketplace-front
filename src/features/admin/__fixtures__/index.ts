@@ -58,12 +58,12 @@ export const fixtureReports: Report[] = [
 ]
 
 export const fixturePayments: Payment[] = [
-  { id: "pay1", userId: "u2", postId: "p1", amount: 1299, currency: "USD", status: "succeeded", method: "card", createdAt: "2026-08-12T10:00:00Z" },
-  { id: "pay2", userId: "u4", postId: "p2", amount: 240, currency: "USD", status: "succeeded", method: "card", createdAt: "2026-08-11T19:00:00Z" },
-  { id: "pay3", userId: "u6", postId: "p3", amount: 185, currency: "USD", status: "pending", method: "bank", createdAt: "2026-08-10T13:00:00Z" },
-  { id: "pay4", userId: "u7", postId: "p7", amount: 210, currency: "USD", status: "failed", method: "card", createdAt: "2026-08-09T15:00:00Z" },
-  { id: "pay5", userId: "u2", postId: "p8", amount: 320, currency: "USD", status: "succeeded", method: "card", createdAt: "2026-08-08T18:00:00Z" },
-  { id: "pay6", userId: "u3", postId: "p4", amount: 90, currency: "USD", status: "refunded", method: "card", createdAt: "2026-08-07T09:00:00Z" },
+  { id: "pay1", amount: 1299, currency: "USD", provider: "stripe", status: "completed", transactionId: "pi_abc123", buyer: fixtureUsers[1], seller: fixtureUsers[0], post: { id: "p1", title: "Hand-wired split keyboard" }, createdAt: "2026-08-12T10:00:00Z", updatedAt: "2026-08-12T10:00:05Z" },
+  { id: "pay2", amount: 240, currency: "USD", provider: "stripe", status: "completed", transactionId: "pi_abc124", buyer: fixtureUsers[3], seller: fixtureUsers[0], post: { id: "p2", title: "Mechanical switches bundle" }, createdAt: "2026-08-11T19:00:00Z", updatedAt: "2026-08-11T19:00:05Z" },
+  { id: "pay3", amount: 185, currency: "USD", provider: "stripe", status: "pending", transactionId: "pi_abc125", buyer: fixtureUsers[5], seller: fixtureUsers[0], post: { id: "p3", title: "Custom desk mat" }, createdAt: "2026-08-10T13:00:00Z", updatedAt: "2026-08-10T13:00:00Z" },
+  { id: "pay4", amount: 210, currency: "USD", provider: "stripe", status: "failed", transactionId: "pi_abc126", buyer: fixtureUsers[6], seller: fixtureUsers[0], post: { id: "p7", title: "Mechanical keyboard" }, createdAt: "2026-08-09T15:00:00Z", updatedAt: "2026-08-09T15:00:00Z" },
+  { id: "pay5", amount: 320, currency: "USD", provider: "stripe", status: "completed", transactionId: "pi_abc127", buyer: fixtureUsers[1], seller: fixtureUsers[0], post: { id: "p8", title: "Audio interface" }, createdAt: "2026-08-08T18:00:00Z", updatedAt: "2026-08-08T18:00:05Z" },
+  { id: "pay6", amount: 90, currency: "USD", provider: "stripe", status: "refunded", transactionId: "pi_abc128", buyer: fixtureUsers[2], seller: fixtureUsers[0], post: { id: "p4", title: "USB-C cable pack" }, createdAt: "2026-08-07T09:00:00Z", updatedAt: "2026-08-07T10:00:00Z" },
 ]
 
 export const fixtureNotifications: AppNotification[] = [
