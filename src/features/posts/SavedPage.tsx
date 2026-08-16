@@ -3,7 +3,6 @@ import { useVirtualizer } from "@tanstack/react-virtual"
 import { Bookmark } from "lucide-react"
 import { useSavedPosts } from "@/features/posts/queries"
 import { ProductCard } from "@/features/posts/components/ProductCard"
-import { Badge } from "@/components/ui/badge"
 import { ErrorBoundary, SectionFallback } from "@/components/shared/ErrorBoundary"
 import { Skeleton } from "@/components/ui/skeleton"
 
