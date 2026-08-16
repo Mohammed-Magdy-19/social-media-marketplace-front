@@ -68,40 +68,16 @@ function AdminDesk() {
 
   if (!isAdmin || !data) return null
 
-  const series = data.revenueSeries ?? []
-  const points = series.map((p, i) => {
-    const x = (i / Math.max(1, series.length - 1)) * 100
-    const max = Math.max(...series.map((s) => s.revenue), 1)
-    const y = 100 - (p.revenue / max) * 100
-    return `${x.toFixed(1)},${y.toFixed(1)}`
-  })
-
   return (
     <Card className="rounded-card">
       <CardHeader>
         <CardTitle>Admin Desk</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        <svg
-          viewBox="0 0 100 32"
-          preserveAspectRatio="none"
-          className="h-10 w-full"
-          aria-hidden="true"
-        >
-          <polyline
-            points={points.join(" ")}
-            fill="none"
-            stroke="var(--color-brand)"
-            strokeWidth="2"
-            vectorEffect="non-scaling-stroke"
-          />
-        </svg>
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted-foreground">
-            Revenue 30d ·{" "}
-            {data.kpis?.revenueDeltaPct != null
-              ? `${data.kpis.revenueDeltaPct > 0 ? "+" : ""}${data.kpis.revenueDeltaPct}%`
-              : "—"}
+            Total volume ·{" "}
+            {formatCurrency(data.totalVolumeCents / 100)}
           </span>
           <Button size="sm" variant="outline" render={<Link to="/admin" />}>
             Open console

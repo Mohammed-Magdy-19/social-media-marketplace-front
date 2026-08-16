@@ -184,35 +184,13 @@ export interface Upload {
   createdAt: string
 }
 
-export interface DashboardKpis {
-  revenue30d: number
-  revenueDeltaPct: number
-  activeUsers: number
-  activeUsersDeltaPct: number
-  postsToday: number
-  postsTodayDeltaPct: number
-  pendingReports: number
-  conversionRatePct: number
-}
-
-export interface RevenuePoint {
-  label: string
-  revenue: number
-}
-
-export interface CategoryActivity {
-  category: string
-  posts: number
-}
-
+/** Shape of GET /admin/dashboard — flat aggregate counters. */
 export interface AdminDashboard {
-  kpis: DashboardKpis
-  revenueSeries: RevenuePoint[]
-  categoryActivity: CategoryActivity[]
-  moderationQueue: Report[]
-  recentReports: Report[]
-  recentAudit: AuditLog[]
-  storageUsedBytes: number
+  totalUsers: number
+  totalPosts: number
+  totalPayments: number
+  /** Aggregate marketplace volume in the smallest currency unit (cents). */
+  totalVolumeCents: number
 }
 
 /** Cursor-paginated envelope used by every list endpoint. */
