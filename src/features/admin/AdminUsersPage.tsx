@@ -6,7 +6,7 @@ import { useSetUserStatus, useDelRow } from "@/features/admin/mutations"
 import { AdminPageHeader } from "@/features/admin/components/AdminPageHeader"
 import { FilterPills } from "@/features/admin/components/FilterPills"
 import { StatusPill } from "@/features/admin/components/StatusPill"
-import { VirtualTable } from "@/features/admin/components/VirtualTable"
+import { VirtualTable, type VirtualColumn } from "@/features/admin/components/VirtualTable"
 import { useAdminUiStore } from "@/stores/adminUiStore"
 import { AvatarWithFallback } from "@/components/shared/AvatarWithFallback"
 import {
@@ -66,7 +66,7 @@ export default function AdminUsersPage() {
 
   const rows = data?.data ?? []
 
-  const columns = React.useMemo(
+  const columns = React.useMemo<VirtualColumn<PublicUser>[]>(
     () => [
       {
         key: "user",
@@ -91,6 +91,7 @@ export default function AdminUsersPage() {
         key: "email",
         header: "Email",
         className: "min-w-44",
+        align: "center",
         cell: (u: PublicUser) => (
           <span className="truncate text-sm text-mut">{u.email}</span>
         ),
@@ -99,18 +100,21 @@ export default function AdminUsersPage() {
         key: "role",
         header: "Role",
         className: "w-28",
+        align: "center",
         cell: (u: PublicUser) => <StatusPill status={u.role} />,
       },
       {
         key: "status",
         header: "Status",
         className: "w-28",
+        align: "center",
         cell: (u: PublicUser) => <StatusPill status={u.status} />,
       },
       {
         key: "joined",
         header: "Joined",
         className: "min-w-24",
+        align: "center",
         cell: (u: PublicUser) => (
           <span className="text-xs text-mut">{formatRelativeTime(u.createdAt)}</span>
         ),
@@ -119,8 +123,9 @@ export default function AdminUsersPage() {
         key: "actions",
         header: "Actions",
         className: "w-36",
+        align: "center",
         cell: (u: PublicUser) => (
-          <div className="flex items-center justify-end gap-1">
+          <div className="flex items-center justify-center gap-1">
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={

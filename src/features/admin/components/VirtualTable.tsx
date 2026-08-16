@@ -10,16 +10,25 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { ErrorBoundary, SectionFallback } from "@/components/shared/ErrorBoundary"
+import { cn } from "@/lib/utils"
 
 export interface VirtualColumn<T> {
   key: string
   header: React.ReactNode
   /** Tailwind width class (e.g. `min-w-56`, `w-24`). Optional; defaults to grow. */
   className?: string
+  /** Horizontal alignment of header + cells. Defaults to `left`. */
+  align?: "left" | "center" | "right"
   cell: (row: T) => React.ReactNode
 }
 
 const ROW_HEIGHT = 52
+
+const ALIGN_CLASSES: Record<NonNullable<VirtualColumn<never>["align"]>, string> = {
+  left: "justify-start text-left",
+  center: "justify-center text-center",
+  right: "justify-end text-right",
+}
 
 const WIDTH_CLASSES: { regex: RegExp; track: (n: number) => string }[] = [
   { regex: /min-w-(\d+)/, track: (n) => `minmax(${n / 4}rem, auto)` },
@@ -92,7 +101,10 @@ export function VirtualTable<T>({
               {columns.map((col) => (
                 <TableHead
                   key={col.key}
-                  className="truncate px-3 text-[11px] font-semibold uppercase tracking-wider text-mut"
+                  className={cn(
+                    "truncate px-3 text-[11px] font-semibold uppercase tracking-wider text-mut",
+                    ALIGN_CLASSES[col.align ?? "left"]
+                  )}
                 >
                   {col.header}
                 </TableHead>
@@ -118,7 +130,10 @@ export function VirtualTable<T>({
                     {columns.map((col) => (
                       <TableCell
                         key={col.key}
-                        className="flex min-w-0 items-center overflow-hidden px-3"
+                        className={cn(
+                          "flex min-w-0 items-center overflow-hidden px-3",
+                          ALIGN_CLASSES[col.align ?? "left"]
+                        )}
                       >
                         {col.cell(row)}
                       </TableCell>
