@@ -46,9 +46,13 @@ function columnTrack(className: string | undefined): string {
 /**
  * Windowed admin table. Header and body share one `gridTemplateColumns`
  * built from the column width classes, so cells align perfectly while only
- * the visible rows are painted (§10.2 virtualization matrix). The spacer div
- * inside the tbody gives the scroll container its full height, keeping the
- * header sticky and the virtual rows in their own slots.
+ * the visible rows are painted (§10.2 virtualization matrix).
+ *
+ * Virtualization uses the "padding rows" pattern: only the visible `<tr>`
+ * rows render as direct children of `<tbody>` (valid HTML), and two spacer
+ * `<tr>` elements fill the space of the scrolled-out rows. No absolute-
+ * positioned `<div>`s inside `<tbody>`, which the browser would reparent and
+ * which cause hydration mismatches.
  */
 export function VirtualTable<T>({
   rows,
@@ -75,7 +79,22 @@ export function VirtualTable<T>({
     getScrollElement: () => parentRef.current,
     estimateSize: () => ROW_HEIGHT,
     overscan: 10,
+    enabled: rows.length > 0,
   })
+
+  const virtualRows = virtualizer.getVirtualItems()
+  const totalSize = virtualizer.getTotalSize()
+  const paddingTop = virtualRows.length > 0 ? virtualRows[0].start : 0
+  const paddingBottom =
+    virtualRows.length > 0
+      ? Math.max(0, totalSize - virtualRows[virtualRows.length - 1].end)
+      : 0
+
+  if (import.meta.env.DEV && Number.isNaN(totalSize)) {
+    console.warn(
+      "[VirtualTable] totalSize resolved to NaN — check rows.length and estimateSize()"
+    )
+  }
 
   if (rows.length === 0) {
     return (
@@ -111,37 +130,40 @@ export function VirtualTable<T>({
               ))}
             </TableRow>
           </TableHeader>
-          <TableBody className="relative">
-            <div style={{ height: virtualizer.getTotalSize() }}>
-              {virtualizer.getVirtualItems().map((item) => {
-                const row = rows[item.index]
-                return (
-                  <TableRow
-                    key={rowKey(row)}
-                    ref={virtualizer.measureElement}
-                    data-index={item.index}
-                    className="absolute top-0 left-0 grid w-full items-center border-b border-line-2 hover:bg-soft"
-                    style={{
-                      gridTemplateColumns,
-                      height: item.size,
-                      transform: `translateY(${item.start}px)`,
-                    }}
-                  >
-                    {columns.map((col) => (
-                      <TableCell
-                        key={col.key}
-                        className={cn(
-                          "flex min-w-0 items-center overflow-hidden px-3",
-                          ALIGN_CLASSES[col.align ?? "left"]
-                        )}
-                      >
-                        {col.cell(row)}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                )
-              })}
-            </div>
+          <TableBody>
+            {paddingTop > 0 && (
+              <tr aria-hidden style={{ height: paddingTop }}>
+                <td colSpan={columns.length} style={{ padding: 0, border: 0 }} />
+              </tr>
+            )}
+            {virtualRows.map((virtualRow) => {
+              const row = rows[virtualRow.index]
+              return (
+                <TableRow
+                  key={rowKey(row) ?? `pending-${virtualRow.index}`}
+                  data-index={virtualRow.index}
+                  className="grid w-full items-center border-b border-line-2 hover:bg-soft"
+                  style={{ gridTemplateColumns, height: virtualRow.size }}
+                >
+                  {columns.map((col) => (
+                    <TableCell
+                      key={col.key}
+                      className={cn(
+                        "flex min-w-0 items-center overflow-hidden px-3",
+                        ALIGN_CLASSES[col.align ?? "left"]
+                      )}
+                    >
+                      {col.cell(row)}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              )
+            })}
+            {paddingBottom > 0 && (
+              <tr aria-hidden style={{ height: paddingBottom }}>
+                <td colSpan={columns.length} style={{ padding: 0, border: 0 }} />
+              </tr>
+            )}
           </TableBody>
         </Table>
       </div>
