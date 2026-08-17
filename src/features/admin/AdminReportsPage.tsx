@@ -1,17 +1,14 @@
 import * as React from "react"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
+import { Check, Copy, Trash2 } from "lucide-react"
 import { toast } from "sonner"
-import { Check, Trash2, X } from "lucide-react"
 import { useReports } from "@/features/admin/queries"
-import {
-  useDismissReport,
-  useResolveReport,
-  useDelRow,
-} from "@/features/admin/mutations"
+import { useDeleteReport } from "@/features/admin/mutations"
+import { ReportModerateDialog } from "@/features/admin/components/ReportModerateDialog"
 import { AdminPageHeader } from "@/features/admin/components/AdminPageHeader"
 import { FilterPills } from "@/features/admin/components/FilterPills"
 import { StatusPill } from "@/features/admin/components/StatusPill"
 import { VirtualTable } from "@/features/admin/components/VirtualTable"
-import { useAdminUiStore } from "@/stores/adminUiStore"
 import { AvatarWithFallback } from "@/components/shared/AvatarWithFallback"
 import {
   AlertDialog,
@@ -26,34 +23,161 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatRelativeTime } from "@/lib/utils"
-import { getErrorMessage } from "@/lib/api/errors"
-import type { Report } from "@/types"
+import type { UpdateReportFormValues } from "@/features/reports/schemas"
+import { ApiError, type Report, type ReportTargetType } from "@/types"
 
-const REPORT_PILLS = ["All", "pending", "resolved", "dismissed"] as const
+const STATUS_OPTIONS: { value: UpdateReportFormValues["status"]; label: string }[] = [
+  { value: "reviewed", label: "Reviewed" },
+  { value: "dismissed", label: "Dismissed" },
+  { value: "resolved", label: "Resolved" },
+]
+
+const STATUS_PILLS = ["All", "pending", "reviewed", "dismissed", "resolved"]
+
+const TARGET_ROUTES: Partial<Record<ReportTargetType, (id: string) => string>> = {
+  post: (id) => `/posts/${id}`,
+}
+
+function isForbidden(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 403
+}
+
+function reporterLabel(report: Report): string {
+  return typeof report.reporter === "string" ? report.reporter : report.reporter.name
+}
+
+function resolvedByLabel(report: Report): string | null {
+  if (!report.resolvedBy) return null
+  return typeof report.resolvedBy === "string" ? report.resolvedBy : report.resolvedBy.name
+}
+
+function shortId(id: string): string {
+  return id.length > 10 ? `${id.slice(0, 6)}…${id.slice(-4)}` : id
+}
+
+function copyTargetId(report: Report) {
+  void navigator.clipboard?.writeText(report.targetId)
+  toast.success("Target ID copied")
+}
+
+function TargetCell({ report }: { report: Report }) {
+  const route = TARGET_ROUTES[report.targetType]
+  if (route) {
+    return (
+      <Link
+        to={route(report.targetId)}
+        className="flex items-center gap-2 text-sm text-brand hover:underline"
+      >
+        <Badge variant="outline" className="border-transparent bg-soft font-mono text-[10px]">
+          {report.targetType}
+        </Badge>
+        <span className="font-mono text-xs">{shortId(report.targetId)}</span>
+      </Link>
+    )
+  }
+  return (
+    <div className="flex items-center gap-2">
+      <Badge variant="outline" className="border-transparent bg-soft font-mono text-[10px]">
+        {report.targetType}
+      </Badge>
+      <span className="font-mono text-xs text-muted-foreground">{shortId(report.targetId)}</span>
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        aria-label="Copy target ID"
+        onClick={() => copyTargetId(report)}
+      >
+        <Copy />
+      </Button>
+    </div>
+  )
+}
+
+function ReasonCell({ report }: { report: Report }) {
+  const [expanded, setExpanded] = React.useState(false)
+  const needsExpand = report.reason.length > 120
+  const shown = expanded || !needsExpand ? report.reason : `${report.reason.slice(0, 120)}…`
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-sm text-foreground">{shown}</span>
+      {needsExpand && (
+        <Button
+          variant="ghost"
+          size="xs"
+          className="w-fit text-brand"
+          onClick={() => setExpanded((e) => !e)}
+        >
+          {expanded ? "Collapse" : "View full"}
+        </Button>
+      )}
+    </div>
+  )
+}
+
+function ResolvedCell({ report }: { report: Report }) {
+  const by = resolvedByLabel(report)
+  if (!by) {
+    return <span className="text-xs text-muted-foreground">—</span>
+  }
+  return (
+    <div className="flex flex-col">
+      <span className="text-xs text-foreground">{by}</span>
+      {report.resolvedAt && (
+        <span className="text-[10px] text-muted-foreground">
+          {formatRelativeTime(report.resolvedAt)}
+        </span>
+      )}
+    </div>
+  )
+}
 
 export default function AdminReportsPage() {
-  const [search, setSearch] = React.useState("")
-  const [debounced, setDebounced] = React.useState("")
+  const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [moderateTarget, setModerateTarget] = React.useState<{
+    report: Report
+    status: UpdateReportFormValues["status"]
+  } | null>(null)
   const [deleteTarget, setDeleteTarget] = React.useState<Report | null>(null)
 
-  const activePill = useAdminUiStore((s) => s.activeFilterPill.reports) ?? "All"
-  const setFilterPill = useAdminUiStore((s) => s.setFilterPill)
-  const resolveReport = useResolveReport()
-  const dismissReport = useDismissReport()
-  const delRow = useDelRow()
+  const rawStatus = searchParams.get("status")
+  const activeStatus = STATUS_PILLS.includes(rawStatus ?? "")
+    ? (rawStatus as string)
+    : "All"
 
   React.useEffect(() => {
-    const t = setTimeout(() => setDebounced(search.trim()), 250)
-    return () => clearTimeout(t)
-  }, [search])
+    if (!searchParams.has("status")) {
+      setSearchParams({ status: "pending" }, { replace: true })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
-  const { data, isLoading } = useReports({
-    status: activePill === "All" ? undefined : activePill,
-    search: debounced || undefined,
+  const setStatusFilter = (pill: string) => {
+    const next = new URLSearchParams(searchParams)
+    if (pill === "All") next.delete("status")
+    else next.set("status", pill)
+    setSearchParams(next, { replace: true })
+  }
+
+  const deleteReport = useDeleteReport()
+
+  const { data, isLoading, error } = useReports({
+    status: activeStatus === "All" ? undefined : activeStatus,
   })
+
+  React.useEffect(() => {
+    if (isForbidden(error)) navigate("/", { replace: true })
+  }, [error, navigate])
 
   const rows = data?.data ?? []
 
@@ -62,84 +186,83 @@ export default function AdminReportsPage() {
       {
         key: "target",
         header: "Target",
-        className: "min-w-56",
-        cell: (r: Report) => (
-          <div className="flex items-center gap-2">
-            <AvatarWithFallback name={r.targetSummary ?? r.targetId} src={null} size="sm" />
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-foreground">
-                {r.targetSummary ?? r.targetId}
-              </p>
-              <p className="font-mono text-[10px] text-muted-foreground">
-                {r.targetType} · {r.targetId}
-              </p>
-            </div>
-          </div>
-        ),
+        className: "min-w-40",
+        cell: (r: Report) => <TargetCell report={r} />,
       },
       {
         key: "reason",
         header: "Reason",
-        className: "min-w-32",
-        cell: (r: Report) => <span className="text-sm text-foreground">{r.reason}</span>,
+        className: "min-w-56",
+        cell: (r: Report) => <ReasonCell report={r} />,
       },
       {
         key: "reporter",
         header: "Reporter",
-        className: "min-w-32",
+        className: "min-w-28",
         cell: (r: Report) => (
-          <span className="text-sm text-muted-foreground">{r.reporter.name}</span>
+          <div className="flex items-center gap-2">
+            <AvatarWithFallback
+              name={reporterLabel(r)}
+              src={typeof r.reporter === "object" ? (r.reporter.avatar ?? null) : null}
+              size="sm"
+            />
+            <span className="truncate text-sm text-foreground">{reporterLabel(r)}</span>
+          </div>
         ),
       },
       {
         key: "status",
         header: "Status",
+        className: "w-24",
         cell: (r: Report) => <StatusPill status={r.status} />,
       },
       {
-        key: "created",
-        header: "Reported",
+        key: "filed",
+        header: "Filed",
         className: "min-w-24",
         cell: (r: Report) => (
           <span className="text-xs text-muted-foreground">{formatRelativeTime(r.createdAt)}</span>
         ),
       },
       {
+        key: "resolved",
+        header: "Resolved by",
+        className: "min-w-24",
+        cell: (r: Report) => <ResolvedCell report={r} />,
+      },
+      {
         key: "actions",
         header: "Actions",
-        className: "w-28 text-right",
+        className: "w-36 text-right",
         cell: (r: Report) => (
-          <div className="flex justify-end gap-1">
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              aria-label="Resolve report"
-              className="text-ok hover:bg-ok-soft"
-              disabled={r.status === "resolved"}
-              onClick={() =>
-                resolveReport.mutate(r.id, {
-                  onError: (error) =>
-                    toast.error(getErrorMessage(error)),
-                })
-              }
-            >
-              <Check />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              aria-label="Dismiss report"
-              className="text-muted-foreground hover:bg-soft"
-              disabled={r.status === "dismissed"}
-              onClick={() =>
-                dismissReport.mutate(r.id, {
-                  onError: (error) =>
-                    toast.error(getErrorMessage(error)),
-                })
-              }
-            >
-              <X />
-            </Button>
+          <div className="flex items-center justify-end gap-1">
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button variant="outline" size="xs" aria-label="Moderate report">
+                    <span className="text-[11px]">Moderate</span>
+                  </Button>
+                }
+              />
+              <DropdownMenuContent align="end" className="min-w-40">
+                <DropdownMenuLabel className="text-xs text-muted-foreground">
+                  Set report status
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {STATUS_OPTIONS.map((option) => (
+                  <DropdownMenuItem
+                    key={option.value}
+                    disabled={r.status === option.value}
+                    onSelect={() =>
+                      setModerateTarget({ report: r, status: option.value })
+                    }
+                  >
+                    <span className="flex-1">{option.label}</span>
+                    {r.status === option.value && <Check className="size-3.5" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button
               variant="ghost"
               size="icon-xs"
@@ -153,29 +276,29 @@ export default function AdminReportsPage() {
         ),
       },
     ],
-    [resolveReport, dismissReport]
+    []
   )
+
+  const onForbidden = () => navigate("/", { replace: true })
 
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
         title="Reports"
-        subtitle="Triage community reports on posts, users, and messages"
-      >
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search reports…"
-          className="h-8 w-48"
-          aria-label="Search reports"
-        />
-      </AdminPageHeader>
-
-      <FilterPills
-        pills={[...REPORT_PILLS]}
-        value={activePill}
-        onChange={(pill) => setFilterPill("reports", pill)}
+        subtitle="Triage community reports on posts, comments, and users"
       />
+
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <FilterPills
+          pills={STATUS_PILLS}
+          value={activeStatus}
+          onChange={setStatusFilter}
+        />
+        <span className="font-mono text-xs text-muted-foreground">
+          {rows.length} report{rows.length === 1 ? "" : "s"}
+          {activeStatus !== "All" && ` · ${activeStatus}`}
+        </span>
+      </div>
 
       <Card className="rounded-card border-border">
         <CardContent className="p-2">
@@ -196,6 +319,16 @@ export default function AdminReportsPage() {
         </CardContent>
       </Card>
 
+      {moderateTarget && (
+        <ReportModerateDialog
+          key={moderateTarget.report.id}
+          report={moderateTarget.report}
+          initialStatus={moderateTarget.status}
+          onOpenChange={(open) => !open && setModerateTarget(null)}
+          onForbidden={onForbidden}
+        />
+      )}
+
       <AlertDialog
         open={deleteTarget !== null}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
@@ -205,20 +338,28 @@ export default function AdminReportsPage() {
             <AlertDialogTitle>Delete report?</AlertDialogTitle>
             <AlertDialogDescription>
               This permanently removes the report on{" "}
-              <Badge variant="outline" className="mx-1 border-transparent bg-soft font-mono text-[10px]">
+              <Badge
+                variant="outline"
+                className="mx-1 border-transparent bg-soft font-mono text-[10px]"
+              >
                 {deleteTarget?.targetId}
               </Badge>
-              . The reported content is not affected.
+              . The reported content is not affected, and this can&apos;t be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
-              disabled={delRow.isPending}
+              disabled={deleteReport.isPending}
               onClick={() => {
                 if (!deleteTarget) return
-                delRow.mutate({ table: "reports", id: deleteTarget.id })
+                deleteReport.mutate(deleteTarget.id, {
+                  onError: (error) => {
+                    if (isForbidden(error)) onForbidden()
+                  },
+                })
                 setDeleteTarget(null)
               }}
             >

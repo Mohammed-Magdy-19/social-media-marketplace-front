@@ -32,7 +32,22 @@ export interface AdminPaymentsFilters {
 
 export interface ReportsFilters {
   status?: string
-  search?: string
+  page?: number
+}
+
+export function useReports(filters: ReportsFilters = {}) {
+  return useQuery({
+    queryKey: queryKeys.reports.all(filters),
+    queryFn: ({ signal }) =>
+      apiGet<PaginatedResponse<Report>>("/reports", {
+        params: {
+          status: filters.status ?? undefined,
+          page: filters.page ?? undefined,
+        },
+        signal,
+      }),
+    placeholderData: keepPreviousData,
+  })
 }
 
 export function useAdminDashboard(enabled = true) {
@@ -71,21 +86,6 @@ export function useAdminUsers(filters: AdminUsersFilters = {}) {
     queryKey: queryKeys.admin.users(filters),
     queryFn: ({ signal }) =>
       apiGet<PaginatedResponse<PublicUser>>("/admin/users", {
-        params: {
-          status: filters.status ?? undefined,
-          search: filters.search ?? undefined,
-        },
-        signal,
-      }),
-    placeholderData: keepPreviousData,
-  })
-}
-
-export function useReports(filters: ReportsFilters = {}) {
-  return useQuery({
-    queryKey: queryKeys.reports.all(filters),
-    queryFn: ({ signal }) =>
-      apiGet<PaginatedResponse<Report>>("/reports", {
         params: {
           status: filters.status ?? undefined,
           search: filters.search ?? undefined,

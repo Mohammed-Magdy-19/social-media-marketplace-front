@@ -1,10 +1,9 @@
-import { useMemo, useState } from "react"
+import { useMemo } from "react"
 import { Link } from "react-router-dom"
 import { ArrowUpRight, TrendingUp } from "lucide-react"
 import { useAuthStore } from "@/stores/authStore"
 import { usePostsInfinite } from "@/features/posts/queries"
 import { useAdminDashboard } from "@/features/admin/queries"
-import { ReportDialog } from "@/features/reports/ReportDialog"
 import { ErrorBoundary, SectionFallback } from "@/components/shared/ErrorBoundary"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -89,38 +88,11 @@ function AdminDesk() {
   )
 }
 
-function ReportItem() {
-  const [open, setOpen] = useState(false)
-  return (
-    <Card className="rounded-card bg-soft">
-      <CardHeader>
-        <CardTitle className="text-sm">Report an item</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="mb-3 text-xs text-muted-foreground">
-          See something off? Flag a post, user, or message for review.
-        </p>
-        <Button size="sm" className="w-full" onClick={() => setOpen(true)}>
-          File a report
-        </Button>
-      </CardContent>
-      <ReportDialog
-        open={open}
-        onOpenChange={setOpen}
-        presetTargetType="post"
-      />
-    </Card>
-  )
-}
-
 export function RightRail() {
   return (
     <aside className="sticky top-14 hidden h-[calc(100svh-3.5rem)] w-72 shrink-0 flex-col gap-4 overflow-y-auto border-l border-border p-3 xl:flex">
       <ErrorBoundary fallback={<SectionFallback />}>
         <TopDeals />
-      </ErrorBoundary>
-      <ErrorBoundary fallback={<SectionFallback />}>
-        <ReportItem />
       </ErrorBoundary>
       <ErrorBoundary fallback={<SectionFallback />}>
         <AdminDesk />

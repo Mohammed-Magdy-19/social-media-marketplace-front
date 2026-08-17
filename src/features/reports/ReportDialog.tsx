@@ -1,8 +1,6 @@
-import { useEffect, useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
-import type { z } from "zod"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import {
@@ -13,87 +11,77 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { useCreateReport } from "@/features/reports/mutations"
-import { reportSchema } from "@/features/reports/schemas"
+import { createReportFormSchema, type CreateReportFormValues } from "@/features/reports/schemas"
 import { getErrorMessage } from "@/lib/api/errors"
-import { usePostsInfinite } from "@/features/posts/queries"
-import type { ReportTargetType } from "@/types"
+import { ApiError, type ReportTargetType } from "@/types"
 
-type ReportValues = z.infer<typeof reportSchema>
+const REASON_MAX = 1000
 
+const QUICK_REASONS = ["Spam", "Harassment", "Fake listing", "Prohibited item"]
+
+/**
+ * §4.3 — the backend's two distinct 400/404 responses are user-legible and
+ * should render verbatim ("No {targetType} found with that ID." etc.) rather
+ * than being collapsed into a generic message.
+ */
+function reportErrorMessage(error: unknown): string {
+  if (error instanceof ApiError && (error.status === 400 || error.status === 404)) {
+    const serverMessage = error.message
+    if (serverMessage && !/request failed with status code/i.test(serverMessage)) {
+      return serverMessage
+    }
+  }
+  return getErrorMessage(error)
+}
+
+/**
+ * Shared "report this" trigger + form (spec §4). The target is fixed per
+ * mount point via `targetType`/`targetId` props — never user-editable —
+ * and only `reason` is a real form input. No optimistic UI: success just
+ * closes the dialog and shows a confirmation toast (§4.4).
+ */
 export function ReportDialog({
   open,
   onOpenChange,
-  presetTargetType = "post",
-  presetTargetId,
+  targetType,
+  targetId,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  presetTargetType?: ReportTargetType
-  presetTargetId?: string
+  targetType: ReportTargetType
+  targetId: string
 }) {
-  const [targetType, setTargetType] = useState<ReportTargetType>(presetTargetType)
-  const [postTarget, setPostTarget] = useState<string>(presetTargetId ?? "")
-
-  useEffect(() => {
-    if (open) {
-      setTargetType(presetTargetType)
-      setPostTarget(presetTargetId ?? "")
-      form.reset({ reason: undefined, detail: "" })
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, presetTargetType, presetTargetId])
-
   const report = useCreateReport()
-  const { data: postsData } = usePostsInfinite({
-    category: null,
-    tag: null,
-    author: null,
-    sort: "newest",
+
+  const form = useForm<CreateReportFormValues>({
+    resolver: zodResolver(createReportFormSchema),
+    defaultValues: { targetType, targetId, reason: "" },
   })
 
-  const posts = useMemo(
-    () => postsData?.pages.flatMap((p) => p.data) ?? [],
-    [postsData]
-  )
+  const reason = form.watch("reason") ?? ""
 
-  const form = useForm<ReportValues>({
-    resolver: zodResolver(reportSchema),
-    defaultValues: { reason: undefined, detail: "" },
-  })
-
-  const onSubmit = (values: ReportValues) => {
-    const targetId =
-      targetType === "post"
-        ? postTarget
-        : presetTargetId ?? promptTargetFor(targetType)
-    if (!targetId) {
-      toast.error("Pick a target to report")
-      return
-    }
-    report.mutate(
-      { ...values, targetType, targetId },
-      {
-        onSuccess: () => {
-          toast.success("Report submitted")
-          onOpenChange(false)
-        },
-        onError: (error) => {
-          toast.error(getErrorMessage(error))
-        },
-      }
-    )
+  const onSubmit = (values: CreateReportFormValues) => {
+    report.mutate(values, {
+      onSuccess: () => {
+        toast.success("Thanks, our team will review this")
+        onOpenChange(false)
+      },
+      onError: (error) => {
+        toast.error(reportErrorMessage(error))
+      },
+    })
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Report an item</DialogTitle>
+          <DialogTitle>Report {targetType}</DialogTitle>
           <DialogDescription>
-            Flag content that breaks the community rules.
+            Flag content that breaks the community rules. Our team will review
+            this.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -106,65 +94,33 @@ export function ReportDialog({
               control={form.control}
               name="reason"
               render={({ field }) => (
-                <FormItem className="grid">
+                <FormItem className="grid gap-2">
                   <FormLabel>Reason</FormLabel>
-                  <FormControl>
-                    <Select
-                      value={field.value ?? ""}
-                      onValueChange={(value) => {
-                        if (value) field.onChange(value)
-                      }}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Choose a reason" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {reportSchema.shape.reason.options.map((r) => (
-                          <SelectItem key={r} value={r}>
-                            {r}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {targetType === "post" && posts.length > 0 && (
-              <FormItem className="grid">
-                <FormLabel>Target post</FormLabel>
-                <FormControl>
-                  <Select value={postTarget} onValueChange={(v) => v && setPostTarget(v)}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select a post" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {posts.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-              </FormItem>
-            )}
-
-            <FormField
-              control={form.control}
-              name="detail"
-              render={({ field }) => (
-                <FormItem className="grid">
-                  <FormLabel>Details (optional)</FormLabel>
                   <FormControl>
                     <Textarea
                       {...field}
-                      rows={3}
-                      placeholder="What's wrong with this item?"
+                      rows={4}
+                      maxLength={REASON_MAX}
+                      placeholder={`What's wrong with this ${targetType}?`}
                     />
                   </FormControl>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap gap-1">
+                      {QUICK_REASONS.map((r) => (
+                        <button
+                          key={r}
+                          type="button"
+                          onClick={() => field.onChange(r)}
+                          className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-soft hover:text-foreground"
+                        >
+                          {r}
+                        </button>
+                      ))}
+                    </div>
+                    <span className="ml-auto shrink-0 font-mono text-[10px] text-muted-foreground">
+                      {reason.length}/{REASON_MAX}
+                    </span>
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
@@ -172,28 +128,14 @@ export function ReportDialog({
           </form>
         </Form>
         <div className="flex justify-end gap-2">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button
-            type="submit"
-            form="report-form"
-            disabled={report.isPending}
-          >
+          <Button type="submit" form="report-form" disabled={report.isPending}>
             Submit report
           </Button>
         </div>
       </DialogContent>
     </Dialog>
   )
-}
-
-function promptTargetFor(_type: ReportTargetType): string {
-  const value = window.prompt(
-    "Enter the ID of the item you want to report"
-  )
-  return value?.trim() ?? ""
 }

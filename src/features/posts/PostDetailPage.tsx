@@ -262,8 +262,8 @@ export default function PostDetailPage() {
       <ReportDialog
         open={reportOpen}
         onOpenChange={setReportOpen}
-        presetTargetType="post"
-        presetTargetId={post.id}
+        targetType="post"
+        targetId={post.id}
       />
     </div>
   )

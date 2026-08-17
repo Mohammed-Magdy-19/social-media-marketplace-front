@@ -50,11 +50,11 @@ export const fixturePosts: Post[] = [
 ]
 
 export const fixtureReports: Report[] = [
-  { id: "r1", targetType: "post", targetId: "p5", targetSummary: "Desk lamp + wireless charger bundle", reason: "Prohibited item", detail: "Claims to be authentic but looks like a replica.", status: "pending", reporter: fixtureUsers[2], createdAt: "2026-08-12T07:00:00Z" },
-  { id: "r2", targetType: "user", targetId: "u5", targetSummary: "Sara Lindqvist", reason: "Harassment", detail: "Repeated abusive messages.", status: "pending", reporter: fixtureUsers[6], createdAt: "2026-08-12T06:30:00Z" },
-  { id: "r3", targetType: "post", targetId: "p3", targetSummary: "Hand-wired split keyboard", reason: "Misleading", detail: "Keycaps not included as described.", status: "resolved", reporter: fixtureUsers[0], createdAt: "2026-08-11T15:00:00Z" },
-  { id: "r4", targetType: "message", targetId: "m9", targetSummary: "Negotiation message", reason: "Spam", status: "dismissed", reporter: fixtureUsers[3], createdAt: "2026-08-10T10:00:00Z" },
-  { id: "r5", targetType: "post", targetId: "p6", targetSummary: "Software license — photo editing suite", reason: "Counterfeit", status: "pending", reporter: fixtureUsers[1], createdAt: "2026-08-12T09:45:00Z" },
+  { id: "r1", targetType: "post", targetId: "p5", reason: "Prohibited item — claims to be authentic but looks like a replica. Please review the listing photos closely.", status: "pending", resolutionNotes: "", reporter: fixtureUsers[2], resolvedBy: null, resolvedAt: null, createdAt: "2026-08-12T07:00:00Z", updatedAt: "2026-08-12T07:00:00Z" },
+  { id: "r2", targetType: "user", targetId: "u5", reason: "Harassment — repeated abusive messages in negotiation threads.", status: "pending", resolutionNotes: "", reporter: fixtureUsers[6], resolvedBy: null, resolvedAt: null, createdAt: "2026-08-12T06:30:00Z", updatedAt: "2026-08-12T06:30:00Z" },
+  { id: "r3", targetType: "post", targetId: "p3", reason: "Misleading — keycaps not included as described in the listing.", status: "resolved", resolutionNotes: "Listed keycaps separately; listing text updated.", reporter: fixtureUsers[0], resolvedBy: fixtureUsers[0], resolvedAt: "2026-08-11T16:00:00Z", createdAt: "2026-08-11T15:00:00Z", updatedAt: "2026-08-11T16:00:00Z" },
+  { id: "r4", targetType: "comment", targetId: "c9", reason: "Spam — repeated promotional links in comments.", status: "dismissed", resolutionNotes: "No violation found on review.", reporter: fixtureUsers[3], resolvedBy: fixtureUsers[0], resolvedAt: "2026-08-10T11:00:00Z", createdAt: "2026-08-10T10:00:00Z", updatedAt: "2026-08-10T11:00:00Z" },
+  { id: "r5", targetType: "post", targetId: "p6", reason: "Counterfeit — software license appears to be an unauthorized reseller key.", status: "pending", resolutionNotes: "", reporter: fixtureUsers[1], resolvedBy: null, resolvedAt: null, createdAt: "2026-08-12T09:45:00Z", updatedAt: "2026-08-12T09:45:00Z" },
 ]
 
 export const fixturePayments: Payment[] = [

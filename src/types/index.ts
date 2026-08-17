@@ -160,19 +160,21 @@ export interface CreatePaymentIntentResponse {
   paymentId: string
 }
 
-export type ReportTargetType = "post" | "user" | "message"
-export type ReportStatus = "pending" | "reviewed" | "resolved" | "dismissed"
+export type ReportTargetType = "post" | "comment" | "user"
+export type ReportStatus = "pending" | "reviewed" | "dismissed" | "resolved"
 
 export interface Report {
   id: string
+  reporter: PublicUser | string
   targetType: ReportTargetType
   targetId: string
-  targetSummary?: string
   reason: string
-  detail?: string
   status: ReportStatus
-  reporter: PublicUser
+  resolutionNotes: string
+  resolvedBy: PublicUser | string | null
+  resolvedAt: string | null
   createdAt: string
+  updatedAt: string
 }
 
 export type NotificationType =

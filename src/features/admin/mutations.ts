@@ -16,51 +16,68 @@ const ADMIN_USERS_PREFIX = queryKeyPrefixes.adminUsers
 const ADMIN_POSTS_PREFIX = queryKeyPrefixes.adminPosts
 const NOTIFICATIONS_PREFIX = queryKeyPrefixes.notificationsList
 
-export function useResolveReport() {
+/**
+ * Move a report to reviewed/dismissed/resolved (PATCH /reports/:id).
+ * `pending` is deliberately not settable — the backend enum excludes it.
+ * The returned `resolvedBy`/`resolvedAt` come from the server verbatim; we
+ * never guess them optimistically from the current admin. On success the
+ * row is patched in the cache AND the active queue query is invalidated,
+ * since a status change likely moves the row out of a filtered view (§3.1).
+ */
+export function useUpdateReportStatus() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) =>
-      apiPatch<Report>(`/reports/${id}`, { status: "resolved" }),
-    onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: REPORTS_PREFIX })
-      const snapshot = snapshotAdminLists(queryClient, REPORTS_PREFIX)
-      updateAdminListItem<Report>(queryClient, REPORTS_PREFIX, id, (r) => ({
-        ...r,
-        status: "resolved",
-      }))
-      return snapshot
+    mutationFn: ({
+      id,
+      status,
+      resolutionNotes,
+    }: {
+      id: string
+      status: Report["status"]
+      resolutionNotes?: string
+    }) =>
+      apiPatch<{ status: string; data: { report: Report } }>(
+        `/reports/${id}`,
+        { status, resolutionNotes }
+      ),
+    onSuccess: (res, { id }) => {
+      const report = res?.data?.report
+      if (report) {
+        updateAdminListItem<Report>(
+          queryClient,
+          REPORTS_PREFIX,
+          id,
+          () => report
+        )
+      }
+      void queryClient.invalidateQueries({ queryKey: REPORTS_PREFIX })
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.admin.dashboard(),
+      })
     },
-    onError: (error, _v, snapshot) => {
-      if (snapshot) restoreAdminLists(queryClient, snapshot)
-      toast.error(getErrorMessage(error))
-    },
-    onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.admin.dashboard() })
-    },
+    onError: (error) => toast.error(getErrorMessage(error)),
   })
 }
 
-export function useDismissReport() {
+/**
+ * Permanently delete a report record (DELETE /reports/:id). No soft-delete
+ * or undo on the backend — removal is immediate. The row is dropped from the
+ * cached page locally and the queue is invalidated (§5.6).
+ */
+export function useDeleteReport() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) =>
-      apiPatch<Report>(`/reports/${id}`, { status: "dismissed" }),
-    onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: REPORTS_PREFIX })
-      const snapshot = snapshotAdminLists(queryClient, REPORTS_PREFIX)
-      updateAdminListItem<Report>(queryClient, REPORTS_PREFIX, id, (r) => ({
-        ...r,
-        status: "dismissed",
-      }))
-      return snapshot
+      apiDelete<{ status: string; message: string }>(`/reports/${id}`),
+    onSuccess: (_res, id) => {
+      removeAdminListItem(queryClient, REPORTS_PREFIX, id)
+      toast.success("Report deleted")
+      void queryClient.invalidateQueries({ queryKey: REPORTS_PREFIX })
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.admin.dashboard(),
+      })
     },
-    onError: (error, _v, snapshot) => {
-      if (snapshot) restoreAdminLists(queryClient, snapshot)
-      toast.error(getErrorMessage(error))
-    },
-    onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.admin.dashboard() })
-    },
+    onError: (error) => toast.error(getErrorMessage(error)),
   })
 }
 
