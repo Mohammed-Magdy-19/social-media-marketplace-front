@@ -45,24 +45,39 @@ const refreshClient = axios.create({
 export async function refreshAccessToken(): Promise<string> {
   if (refreshPromise) return refreshPromise
   refreshPromise = (async () => {
-    const refreshToken = useAuthStore.getState().refreshToken
     const res = await refreshClient.post<{
       status: string
-      data: { accessToken: string; refreshToken?: string }
-    }>("/auth/refresh-token", refreshToken ? { refreshToken } : {})
-    const { accessToken, refreshToken: nextRefreshToken } = res.data.data
-    useAuthStore
-      .getState()
-      .setSession(
-        useAuthStore.getState().user,
-        accessToken,
-        nextRefreshToken ?? refreshToken
-      )
+      data: { accessToken: string }
+    }>("/auth/refresh-token")
+    const { accessToken } = res.data.data
+    useAuthStore.getState().setAccessToken(accessToken)
     return accessToken
   })().finally(() => {
     refreshPromise = null
   })
   return refreshPromise
+}
+
+const HARD_LOGOUT_MESSAGES = [
+  "This account has been banned. Access denied.",
+  "This account is currently suspended.",
+  "This account no longer has access.",
+]
+
+function isHardLogoutError(error: unknown): boolean {
+  if (!axios.isAxiosError(error)) return false
+  const message = (error.response?.data as { message?: string } | undefined)
+    ?.message
+  return (
+    typeof message === "string" &&
+    HARD_LOGOUT_MESSAGES.some((m) => message.includes(m))
+  )
+}
+
+function hardLogout(message?: string) {
+  useAuthStore.getState().clear()
+  if (message) useAuthStore.getState().setNotice(message)
+  void router.navigate("/login", { replace: true })
 }
 
 api.interceptors.response.use(
@@ -71,10 +86,19 @@ api.interceptors.response.use(
     const original = error.config as
       | (InternalAxiosRequestConfig & { _retried?: boolean })
       | undefined
+    const status = error.response?.status
+
+    if (status === 403 && isHardLogoutError(error)) {
+      hardLogout(
+        (error.response?.data as { message?: string } | undefined)?.message
+      )
+      return Promise.reject(toApiError(error))
+    }
+
     const isRefreshCall = original?.url?.includes("/auth/refresh-token")
     const wasAuthenticated = !!original?.headers?.Authorization
     if (
-      error.response?.status === 401 &&
+      status === 401 &&
       original &&
       !original._retried &&
       !isRefreshCall &&
@@ -85,10 +109,17 @@ api.interceptors.response.use(
         const token = await refreshAccessToken()
         original.headers.Authorization = `Bearer ${token}`
         return await api(original)
-      } catch {
-        useAuthStore.getState().logout()
-        void router.navigate("/login", { replace: true })
-        return Promise.reject(error)
+      } catch (refreshError) {
+        hardLogout(
+          isHardLogoutError(refreshError)
+            ? (
+                (refreshError as AxiosError).response?.data as
+                  | { message?: string }
+                  | undefined
+              )?.message
+            : undefined
+        )
+        return Promise.reject(toApiError(refreshError))
       }
     }
     return Promise.reject(toApiError(error))

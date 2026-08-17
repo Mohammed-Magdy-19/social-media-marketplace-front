@@ -3,10 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Link, useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 import type { z } from "zod"
-import {
-  useLoginMutation,
-  useRegisterMutation,
-} from "@/features/auth/mutations"
+import { useRegisterMutation } from "@/features/auth/mutations"
 import { registerSchema } from "@/features/auth/schemas"
 import { applyFieldErrors, getErrorMessage } from "@/lib/api/errors"
 import { Logo } from "@/components/shared/Logo"
@@ -27,34 +24,21 @@ type RegisterValues = z.infer<typeof registerSchema>
 export default function RegisterPage() {
   const navigate = useNavigate()
   const register = useRegisterMutation()
-  const login = useLoginMutation()
 
   const form = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      name: "",
       username: "",
       email: "",
       password: "",
-      confirmPassword: "",
     },
   })
 
   const onSubmit = (values: RegisterValues) => {
     register.mutate(values, {
-      onSuccess: () => {
-          toast.success("Account created")
-        login.mutate(
-          { email: values.email, password: values.password },
-          {
-            onSuccess: () => {
-              void navigate("/", { replace: true })
-            },
-            onError: () => {
-              void navigate("/login", { replace: true })
-            },
-          }
-        )
+      onSuccess: (data) => {
+        toast.success(data.message ?? "Account created")
+        void navigate("/login", { replace: true })
       },
       onError: (error) => {
         const applied = applyFieldErrors(
@@ -80,19 +64,6 @@ export default function RegisterPage() {
               onSubmit={form.handleSubmit(onSubmit)}
               className="flex flex-col gap-4"
             >
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem className="grid">
-                    <FormLabel>Full name</FormLabel>
-                    <FormControl>
-                      <Input {...field} autoComplete="name" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
               <FormField
                 control={form.control}
                 name="username"
@@ -130,23 +101,6 @@ export default function RegisterPage() {
                 render={({ field }) => (
                   <FormItem className="grid">
                     <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="password"
-                        autoComplete="new-password"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem className="grid">
-                    <FormLabel>Confirm password</FormLabel>
                     <FormControl>
                       <Input
                         {...field}

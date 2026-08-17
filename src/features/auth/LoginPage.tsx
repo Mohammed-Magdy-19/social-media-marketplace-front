@@ -5,8 +5,10 @@ import { toast } from "sonner"
 import type { z } from "zod"
 import { useLoginMutation } from "@/features/auth/mutations"
 import { loginSchema } from "@/features/auth/schemas"
+import { useAuthStore } from "@/stores/authStore"
 import { applyFieldErrors, getErrorMessage } from "@/lib/api/errors"
 import { Logo } from "@/components/shared/Logo"
+import { Alert, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -25,6 +27,7 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const login = useLoginMutation()
+  const notice = useAuthStore((s) => s.notice)
   const from =
     (location.state as { from?: string } | null)?.from ?? "/"
 
@@ -58,6 +61,11 @@ export default function LoginPage() {
           <CardTitle className="mt-2">Welcome back</CardTitle>
         </CardHeader>
         <CardContent>
+          {notice ? (
+            <Alert variant="destructive" className="mb-4">
+              <AlertTitle>{notice}</AlertTitle>
+            </Alert>
+          ) : null}
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(onSubmit)}

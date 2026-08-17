@@ -8,20 +8,26 @@ import { Toaster } from "@/components/ui/sonner"
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary"
 import { useSocketLifecycle } from "@/lib/socket/lifecycle"
 import { useAuthStore } from "@/stores/authStore"
-import { refreshAccessToken } from "@/lib/api/client"
+import { useAuthBootstrap } from "@/features/auth/queries"
 
 function useSessionRestore() {
-  const isHydrated = useAuthStore((s) => s.isHydrated)
-  const hasAccount = useAuthStore((s) => s.hasAccount)
-  const accessToken = useAuthStore((s) => s.accessToken)
+  const status = useAuthStore((s) => s.status)
+  const bootstrap = useAuthBootstrap()
 
   useEffect(() => {
-    if (!isHydrated || hasAccount === false || accessToken) return
-    useAuthStore.getState().setRestoringSession(true)
-    refreshAccessToken()
-      .catch(() => useAuthStore.getState().logout())
-      .finally(() => useAuthStore.getState().setRestoringSession(false))
-  }, [isHydrated, hasAccount, accessToken])
+    if (status !== "idle") return
+    useAuthStore.getState().setStatus("authenticating")
+  }, [status])
+
+  useEffect(() => {
+    if (status !== "authenticating") return
+    if (bootstrap.data) {
+      useAuthStore.getState().setUser(bootstrap.data)
+      useAuthStore.getState().setStatus("authenticated")
+    } else if (bootstrap.isError) {
+      useAuthStore.getState().setStatus("unauthenticated")
+    }
+  }, [status, bootstrap.data, bootstrap.isError])
 }
 
 function App() {

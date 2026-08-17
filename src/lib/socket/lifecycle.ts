@@ -31,12 +31,13 @@ import type {
  * unauthenticated; re-join the active conversation room on reconnect.
  */
 export function useSocketLifecycle() {
-  const isHydrated = useAuthStore((s) => s.isHydrated)
+  const status = useAuthStore((s) => s.status)
   const accessToken = useAuthStore((s) => s.accessToken)
 
   useEffect(() => {
-    if (!isHydrated || !accessToken) return
+    if (status !== "authenticated" || !accessToken) return
 
+    socket.auth = { token: accessToken }
     if (!socket.connected) socket.connect()
 
     const onReceiveMessage = (message: Message) => bridgeReceiveMessage(message)
@@ -81,22 +82,27 @@ export function useSocketLifecycle() {
       })
     }
 
-    const registerUserRoom = () => {
-      const user = useAuthStore.getState().user
-      if (user?.id) socket.emit("register_user", user.id)
-    }
-
     const registerFollowingRooms = () => {
       const authorIds = collectFeedAuthorIds()
       if (authorIds.length > 0) socket.emit("register_following_rooms", authorIds)
     }
 
     const onConnect = () => {
-      registerUserRoom()
       registerFollowingRooms()
       const active = useNegotiationUiStore.getState().activeConversationId
       if (active) {
         socket.emit("join_conversation", { conversationId: active })
+      }
+    }
+
+    const onConnectError = (err: Error) => {
+      const message = err?.message ?? ""
+      if (
+        message.includes("This account has been banned. Access denied.") ||
+        message.includes("This account is currently suspended.")
+      ) {
+        useAuthStore.getState().clear()
+        useAuthStore.getState().setNotice(message)
       }
     }
 
@@ -114,6 +120,7 @@ export function useSocketLifecycle() {
     socket.on("offer_updated", onOfferUpdated)
     socket.on("payment_updated", onPaymentUpdated)
     socket.on("connect", onConnect)
+    socket.on("connect_error", onConnectError)
 
     return () => {
       socket.off("receive_message", onReceiveMessage)
@@ -130,9 +137,10 @@ export function useSocketLifecycle() {
       socket.off("offer_updated", onOfferUpdated)
       socket.off("payment_updated", onPaymentUpdated)
       socket.off("connect", onConnect)
+      socket.off("connect_error", onConnectError)
       if (socket.connected) socket.disconnect()
     }
-  }, [isHydrated, accessToken])
+  }, [status, accessToken])
 }
 
 /** Unique post author IDs currently cached in any post/feed list page. */

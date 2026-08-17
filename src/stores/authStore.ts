@@ -1,67 +1,52 @@
 import { create } from "zustand"
-import { persist } from "zustand/middleware"
 import type { PublicUser } from "@/types"
 import { queryClient } from "@/lib/queryClient"
+import { socket } from "@/lib/socket/client"
+
+export type AuthStatus =
+  | "idle"
+  | "authenticating"
+  | "authenticated"
+  | "unauthenticated"
 
 interface AuthState {
   user: PublicUser | null
   accessToken: string | null
-  refreshToken: string | null
-  isHydrated: boolean
-  hasAccount: boolean
-  restoringSession: boolean
-  setSession: (
-    user: PublicUser | null,
-    accessToken: string | null,
-    refreshToken?: string | null
-  ) => void
+  status: AuthStatus
+  notice: string | null
+  setSession: (user: PublicUser, accessToken: string) => void
+  setAccessToken: (token: string) => void
   setUser: (user: PublicUser | null) => void
-  setRestoringSession: (restoring: boolean) => void
+  setStatus: (status: AuthStatus) => void
+  setNotice: (notice: string | null) => void
+  clear: () => void
   logout: () => void
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      user: null,
-      accessToken: null,
-      refreshToken: null,
-      isHydrated: false,
-      hasAccount: false,
-      restoringSession: false,
-      setSession: (user, accessToken, refreshToken = null) =>
-        set((state) => ({
-          user,
-          accessToken,
-          refreshToken,
-          isHydrated: true,
-          hasAccount: state.hasAccount || !!user || !!accessToken,
-        })),
-      setUser: (user) => set({ user }),
-      setRestoringSession: (restoringSession) => set({ restoringSession }),
-      logout: () => {
-        set({
-          user: null,
-          accessToken: null,
-          refreshToken: null,
-          isHydrated: true,
-          hasAccount: false,
-        })
-        queryClient.clear()
-      },
-    }),
-    {
-      name: "vendo-session",
-      partialize: (state) => ({
-        hasAccount: state.hasAccount,
-        refreshToken: state.refreshToken,
-      }),
-      onRehydrateStorage: () => (state) => {
-        state?.setSession(null, null, state.refreshToken ?? null)
-        if (state?.hasAccount) {
-          state.setRestoringSession(true)
-        }
-      },
-    }
-  )
-)
+export const useAuthStore = create<AuthState>((set) => ({
+  user: null,
+  accessToken: null,
+  status: "idle",
+  notice: null,
+  setSession: (user, accessToken) => {
+    set({ user, accessToken, status: "authenticated", notice: null })
+    socket.auth = { token: accessToken }
+    if (socket.connected) socket.disconnect().connect()
+  },
+  setAccessToken: (token) => {
+    set({ accessToken: token })
+    socket.auth = { token }
+    if (socket.connected) socket.disconnect().connect()
+  },
+  setUser: (user) => set({ user }),
+  setStatus: (status) => set({ status }),
+  setNotice: (notice) => set({ notice }),
+  clear: () => {
+    set({ user: null, accessToken: null, status: "unauthenticated" })
+    queryClient.clear()
+  },
+  logout: () => {
+    set({ user: null, accessToken: null, status: "unauthenticated" })
+    queryClient.clear()
+  },
+}))
