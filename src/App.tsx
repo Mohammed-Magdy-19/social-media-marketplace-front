@@ -30,10 +30,14 @@ function useSessionRestore() {
   }, [status, bootstrap.data, bootstrap.isError])
 }
 
-function App() {
+function AppRoot() {
   useSessionRestore()
   useSocketLifecycle()
 
+  return <RouterProvider router={router} />
+}
+
+function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider
@@ -43,7 +47,7 @@ function App() {
         disableTransitionOnChange
       >
         <QueryClientProvider client={queryClient}>
-          <RouterProvider router={router} />
+          <AppRoot />
           <Toaster position="top-center" richColors closeButton />
         </QueryClientProvider>
       </ThemeProvider>
