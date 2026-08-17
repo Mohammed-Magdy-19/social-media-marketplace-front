@@ -124,18 +124,41 @@ Key details pulled straight from the backend:
 
 ### 4.3 Boot-time session restore
 
-On app mount (before rendering protected routes), attempt a silent session restore:
+On app mount (before rendering protected routes), attempt a silent session restore — **gated by a `hasSession` cookie check first**, per the dedicated fix doc `frontend-fix-boot-401.md`. The backend now sets a readable (non-`httpOnly`), non-sensitive `hasSession=1` cookie alongside the real refresh cookie, on the same set/clear lifecycle. Check it via `document.cookie` before firing anything:
+
 ```ts
-// once, at app root
-useQuery({
-  queryKey: ['auth', 'me'],
-  queryFn: () => apiClient.get('/auth/me').then(r => r.data.data.user),
-  retry: false,
-  // on success: useAuthStore.setState({ user, status: 'authenticated' })
-  // on 401: attempt one refresh-token call; if that also fails, status: 'unauthenticated'
-});
+// lib/session-hint.ts
+export function hasSessionHint(): boolean {
+  return document.cookie.split('; ').some((c) => c === 'hasSession=1');
+}
 ```
-Show an app-level splash/skeleton while this resolves — don't flash the login page before this check completes, and don't flash protected content before it resolves either (§6 covers the guard component this feeds).
+
+```ts
+// hooks/useAuthBootstrap.ts
+useEffect(() => {
+  if (!hasSessionHint()) {
+    setStatus('unauthenticated'); // no request fired — nothing to restore
+    return;
+  }
+  setStatus('authenticating');
+  apiClient.get('/auth/me')
+    .then(({ data }) => setSession(data.data.user, /* access token from the refresh below */ null))
+    .catch(async () => {
+      try {
+        const { data } = await apiClient.post('/auth/refresh-token');
+        useAuthStore.getState().setAccessToken(data.data.accessToken);
+        const me = await apiClient.get('/auth/me');
+        setSession(me.data.data.user, data.data.accessToken);
+      } catch {
+        setStatus('unauthenticated');
+      }
+    });
+}, []);
+```
+
+**Why this exists:** without the hint check, every anonymous page load fired two *guaranteed*-to-fail requests (`/auth/me` → 401, since there's never an access token in memory on boot; then `/refresh-token` → 401, since there's no refresh cookie for a genuinely anonymous visitor) — visible as red errors in DevTools and, more importantly, false-positive noise in error monitoring on every anonymous session. The hint cookie lets the frontend skip both calls entirely when there's nothing to restore, at zero security cost — `hasSession` carries no sensitive value and is never treated as proof of anything by itself; the real gate remains the `httpOnly` refresh cookie the backend actually checks. See `frontend-fix-boot-401.md` for the full rationale, drift-prevention rules, and a testing checklist.
+
+Show an app-level splash/skeleton while this resolves — don't flash the login page before this check completes, and don't flash protected content before it resolves either (§6 covers the guard component this feeds). With the hint check in place, the "no session" case now resolves synchronously (no network wait at all), so the splash only meaningfully appears for visitors who actually have a session to restore.
 
 ### 4.4 Banned/suspended mid-session
 
@@ -348,6 +371,7 @@ A UI nicety worth building given the multi-regex password rules: a live checklis
 7. `isVerified` is not currently a route-level access gate anywhere in this backend — treat it as a UX nudge only, not a wall.
 8. Login's password field has no client-side complexity validation (matches backend); register/reset both do, with the exact 5-rule regex set in §7.
 9. Never store either token in `localStorage`/`sessionStorage`. Access token in memory (Zustand, non-persisted); refresh token is invisible to JS by design (httpOnly cookie) — don't work around that.
+10. A readable, non-`httpOnly` `hasSession` cookie mirrors the refresh cookie's presence (not its value) and exists solely so the frontend can skip a guaranteed-to-fail boot-time request for anonymous visitors — it is a UX/telemetry optimization, never a credential, and is never checked anywhere except the boot-time gate in §4.3.
 
 ---
 
@@ -373,6 +397,7 @@ src/
     auth.schema.ts
   lib/
     api-client.ts             # withCredentials: true, request/response interceptors
+    session-hint.ts            # hasSessionHint() — reads the hasSession cookie, §4.3
   api/
     auth.api.ts                # thin axios wrappers per endpoint
   store/
