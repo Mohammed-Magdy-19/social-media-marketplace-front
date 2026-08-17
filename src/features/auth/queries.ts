@@ -1,6 +1,7 @@
 import { useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { apiGet, refreshAccessToken } from "@/lib/api/client"
+import { hasSessionHint } from "@/lib/session-hint"
 import { useAuthStore } from "@/stores/authStore"
 import { queryKeys } from "@/api/queryKeys"
 import type { ApiResponse, PublicUser } from "@/types"
@@ -28,20 +29,32 @@ export function useCurrentUser() {
 }
 
 export function useAuthBootstrap() {
-  const status = useAuthStore((s) => s.status)
-  return useQuery({
-    queryKey: queryKeys.auth.bootstrap(),
-    queryFn: async ({ signal }) => {
-      if (!useAuthStore.getState().accessToken) {
-        await refreshAccessToken()
-      }
-      const res = await apiGet<ApiResponse<{ user: PublicUser }>>("/auth/me", {
-        signal,
+  const setStatus = useAuthStore((s) => s.setStatus)
+  const setSession = useAuthStore((s) => s.setSession)
+
+  useEffect(() => {
+    if (useAuthStore.getState().status !== "idle") return
+
+    if (!hasSessionHint()) {
+      setStatus("unauthenticated")
+      return
+    }
+
+    setStatus("authenticating")
+
+    apiGet<ApiResponse<{ user: PublicUser }>>("/auth/me")
+      .then((res) => {
+        const store = useAuthStore.getState()
+        setSession(res.data.user, store.accessToken ?? "")
       })
-      return res.data.user
-    },
-    enabled: status === "idle",
-    retry: false,
-    staleTime: Number.POSITIVE_INFINITY,
-  })
+      .catch(async () => {
+        try {
+          await refreshAccessToken()
+          const me = await apiGet<ApiResponse<{ user: PublicUser }>>("/auth/me")
+          setSession(me.data.user, useAuthStore.getState().accessToken ?? "")
+        } catch {
+          setStatus("unauthenticated")
+        }
+      })
+  }, [setStatus, setSession])
 }

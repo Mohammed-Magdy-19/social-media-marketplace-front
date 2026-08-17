@@ -11,7 +11,6 @@
 export const queryKeys = {
     auth: {
         me: () => ["auth", "me"] as const,
-        bootstrap: () => ["auth", "bootstrap"] as const,
     },
     users: {
         all: ["users"] as const,
