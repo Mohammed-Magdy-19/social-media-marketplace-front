@@ -9,6 +9,10 @@ export const adminUserStatusSchema = z.object({
   status: z.enum(["active", "suspended", "banned"]),
 })
 
+export const adminUserRoleSchema = z.object({
+  role: z.enum(["user", "moderator", "admin"]),
+})
+
 export const adminReportActionSchema = z.object({
   action: z.enum(["resolved", "dismissed"]),
   note: z.string().max(300).optional(),

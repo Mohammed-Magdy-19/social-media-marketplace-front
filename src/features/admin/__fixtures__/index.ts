@@ -87,12 +87,12 @@ export const fixtureConversations: Conversation[] = [
 ]
 
 export const fixtureAuditLogs: AuditLog[] = [
-  { id: "a1", actorName: "Amara Okafor", action: "REPORT_RESOLVE", target: "r1", ip: "10.0.0.8", createdAt: "2026-08-12T09:00:00Z" },
-  { id: "a2", actorName: "Amara Okafor", action: "USER_STATUS_CHANGE", target: "u3", ip: "10.0.0.8", createdAt: "2026-08-11T16:00:00Z" },
-  { id: "a3", actorName: "Oliver Grant", action: "POST_CREATE", target: "p4", ip: "10.0.0.21", createdAt: "2026-08-11T10:00:00Z" },
-  { id: "a4", actorName: "Amara Okafor", action: "POST_FLAG", target: "p5", ip: "10.0.0.8", createdAt: "2026-08-10T14:00:00Z" },
-  { id: "a5", actorName: "System", action: "PAYMENT_REFUND", target: "pay6", ip: "", createdAt: "2026-08-09T11:00:00Z" },
-  { id: "a6", actorName: "Diego Ramos", action: "AUTH_LOGIN", target: "u4", ip: "10.0.0.42", createdAt: "2026-08-09T08:30:00Z" },
+  { id: "a1", actor: fixtureUsers[0], action: "REPORT_RESOLVE", targetType: "report", targetId: "r1", details: { status: "resolved" }, ipAddress: "10.0.0.8", userAgent: "Mozilla/5.0", createdAt: "2026-08-12T09:00:00Z", updatedAt: "2026-08-12T09:00:00Z" },
+  { id: "a2", actor: fixtureUsers[0], action: "USER_SUSPEND", targetType: "user", targetId: "u3", details: { previousStatus: "active", newStatus: "suspended" }, ipAddress: "10.0.0.8", userAgent: "Mozilla/5.0", createdAt: "2026-08-11T16:00:00Z", updatedAt: "2026-08-11T16:00:00Z" },
+  { id: "a3", actor: fixtureUsers[7], action: "POST_DELETE", targetType: "post", targetId: "p4", details: { reason: "spam" }, ipAddress: "10.0.0.21", userAgent: null, createdAt: "2026-08-11T10:00:00Z", updatedAt: "2026-08-11T10:00:00Z" },
+  { id: "a4", actor: fixtureUsers[0], action: "CATEGORY_UPDATE", targetType: "category", targetId: "c1", details: { previousName: "Clothing", newName: "Apparel" }, ipAddress: "10.0.0.8", userAgent: "Mozilla/5.0", createdAt: "2026-08-10T14:00:00Z", updatedAt: "2026-08-10T14:00:00Z" },
+  { id: "a5", actor: fixtureUsers[0], action: "ROLE_CHANGE", targetType: "user", targetId: "u7", details: { previousRole: "user", newRole: "moderator" }, ipAddress: "10.0.0.8", userAgent: "Mozilla/5.0", createdAt: "2026-08-09T11:00:00Z", updatedAt: "2026-08-09T11:00:00Z" },
+  { id: "a6", actor: fixtureUsers[3], action: "USER_REACTIVATE", targetType: "user", targetId: "u4", details: { previousStatus: "banned", newStatus: "active" }, ipAddress: "10.0.0.42", userAgent: null, createdAt: "2026-08-09T08:30:00Z", updatedAt: "2026-08-09T08:30:00Z" },
 ]
 
 export const fixtureUploads: Upload[] = [

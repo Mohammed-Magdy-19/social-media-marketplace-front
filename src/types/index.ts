@@ -196,14 +196,41 @@ export interface AppNotification {
   transport: "socket" | "hybrid"
 }
 
+/** Fixed enum of audit actions written by backend controllers (spec §6.2). */
+export type AuditAction =
+  | "USER_BAN"
+  | "USER_SUSPEND"
+  | "USER_REACTIVATE"
+  | "ROLE_CHANGE"
+  | "CATEGORY_CREATE"
+  | "CATEGORY_UPDATE"
+  | "CATEGORY_DELETE"
+  | "REPORT_RESOLVE"
+  | "REPORT_DISMISS"
+  | "POST_DELETE"
+  | "COMMENT_DELETE"
+
+export type AuditTargetType =
+  | "user"
+  | "post"
+  | "comment"
+  | "category"
+  | "report"
+  | "system"
+
 export interface AuditLog {
   id: string
-  actorName: string
-  action: string
-  target?: string
-  ip?: string
-  meta?: Record<string, string>
+  /** Populated user (via `.populate`) or a bare id string. */
+  actor: PublicUser | string
+  action: AuditAction
+  targetType: AuditTargetType
+  targetId: string | null
+  /** `Schema.Types.Mixed` — shape varies per action (see spec §6.3). */
+  details: Record<string, unknown>
+  ipAddress: string | null
+  userAgent: string | null
   createdAt: string
+  updatedAt: string
 }
 
 export type UploadKind = "image" | "video" | "avatar" | "document"

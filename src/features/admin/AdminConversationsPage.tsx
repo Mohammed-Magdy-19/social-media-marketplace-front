@@ -100,7 +100,7 @@ export default function AdminConversationsPage() {
   const typingUserIds = useNegotiationUiStore((s) => s.typingUserIds)
 
   const conversations = React.useMemo(() => {
-    const list = data ?? []
+    const list = data?.data ?? []
     const sorted = [...list].sort((a, b) => {
       const aTyping = (typingUserIds[a.id]?.length ?? 0) > 0 ? 1 : 0
       const bTyping = (typingUserIds[b.id]?.length ?? 0) > 0 ? 1 : 0

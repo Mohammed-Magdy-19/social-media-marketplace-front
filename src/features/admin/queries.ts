@@ -5,14 +5,18 @@ import { queryKeys } from "@/api/queryKeys"
 import type {
   AdminDashboard,
   ApiResponse,
+  AuditAction,
   AuditLog,
   Conversation,
   PaginatedResponse,
   Payment,
+  PaymentStatus,
   Post,
   PublicUser,
   Report,
   Upload,
+  UserRole,
+  UserStatus,
 } from "@/types"
 
 export interface AdminPostsFilters {
@@ -21,13 +25,18 @@ export interface AdminPostsFilters {
 }
 
 export interface AdminUsersFilters {
-  status?: string
   search?: string
+  role?: UserRole
+  status?: UserStatus
 }
 
 export interface AdminPaymentsFilters {
-  status?: string
-  search?: string
+  status?: PaymentStatus
+}
+
+export interface AuditLogsFilters {
+  actor?: string
+  action?: AuditAction
 }
 
 export interface ReportsFilters {
@@ -61,7 +70,7 @@ export function useAdminDashboard(enabled = true) {
       return res.data
     },
     enabled,
-    staleTime: 20_000,
+    staleTime: 60_000,
   })
 }
 
@@ -81,14 +90,25 @@ export function useAdminPosts(filters: AdminPostsFilters = {}) {
   })
 }
 
-export function useAdminUsers(filters: AdminUsersFilters = {}) {
+/**
+ * Offset-paginated admin user list (spec §3.1 / api §5.11). `search` is
+ * sent as raw, unescaped text — the backend escapes regex metacharacters
+ * server-side, so any client-side escaping would double-escape and corrupt
+ * searches containing `.`, `+`, etc.
+ */
+export function useAdminUsers(
+  page = 1,
+  filters: AdminUsersFilters = {}
+) {
   return useQuery({
-    queryKey: queryKeys.admin.users(filters),
+    queryKey: queryKeys.admin.users({ page, ...filters }),
     queryFn: ({ signal }) =>
       apiGet<PaginatedResponse<PublicUser>>("/admin/users", {
         params: {
-          status: filters.status ?? undefined,
           search: filters.search ?? undefined,
+          role: filters.role ?? undefined,
+          status: filters.status ?? undefined,
+          page,
         },
         signal,
       }),
@@ -104,26 +124,29 @@ export function useAdminUsers(filters: AdminUsersFilters = {}) {
 export function useAdminConversations() {
   return useQuery({
     queryKey: queryKeys.admin.conversations(),
-    queryFn: async ({ signal }) => {
-      const res = await apiGet<ApiResponse<{ conversations: Conversation[] }>>(
-        "/admin/conversations",
-        { signal }
-      )
-      return res.data.conversations ?? []
-    },
+    queryFn: ({ signal }) =>
+      apiGet<PaginatedResponse<Conversation>>("/admin/conversations", {
+        signal,
+      }),
     placeholderData: keepPreviousData,
   })
 }
 
-export function useAdminPayments(filters: AdminPaymentsFilters = {}) {
+/**
+ * Global transaction ledger for admins — NOT the self-scoped `/payments/me`
+ * route. Gated entirely by `restrictTo('admin')` at the route layer.
+ */
+export function useAdminPayments(
+  page = 1,
+  filters: AdminPaymentsFilters = {}
+) {
   return useQuery({
-    queryKey: queryKeys.admin.payments(filters),
+    queryKey: queryKeys.admin.payments({ page, ...filters }),
     queryFn: ({ signal }) =>
-      apiGet<PaginatedResponse<Payment>>("/payments/me", {
+      apiGet<PaginatedResponse<Payment>>("/admin/payments", {
         params: {
           status: filters.status ?? undefined,
-          search: filters.search ?? undefined,
-          scope: "admin",
+          page,
         },
         signal,
       }),
@@ -132,14 +155,25 @@ export function useAdminPayments(filters: AdminPaymentsFilters = {}) {
 }
 
 /**
- * Assumed endpoint — PSD §6.9 specifies the Audit Logs UI but not the
- * literal route. Confirm with backend before shipping.
+ * Offset-paginated, immutable audit trail (spec §3.1 / api §5.11).
+ * Read-only — there is no mutation counterpart and there must never be
+ * edit/delete UI for these rows (spec §7 rule 5).
  */
-export function useAuditLogs() {
+export function useAuditLogs(
+  page = 1,
+  filters: AuditLogsFilters = {}
+) {
   return useQuery({
-    queryKey: queryKeys.admin.auditLogs(),
+    queryKey: queryKeys.admin.auditLogs({ page, ...filters }),
     queryFn: ({ signal }) =>
-      apiGet<AuditLog[]>("/admin/audit-logs", { signal }),
+      apiGet<PaginatedResponse<AuditLog>>("/admin/audit-logs", {
+        params: {
+          actor: filters.actor ?? undefined,
+          action: filters.action ?? undefined,
+          page,
+        },
+        signal,
+      }),
     placeholderData: keepPreviousData,
   })
 }

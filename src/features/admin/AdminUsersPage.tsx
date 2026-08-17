@@ -1,13 +1,14 @@
 import * as React from "react"
+import { useSearchParams } from "react-router-dom"
 import { toast } from "sonner"
-import { Check, ShieldCheck, Trash2 } from "lucide-react"
+import { Check, ShieldCheck } from "lucide-react"
 import { useAdminUsers } from "@/features/admin/queries"
-import { useSetUserStatus, useDelRow } from "@/features/admin/mutations"
+import { useSetUserStatus, useUpdateUserRole } from "@/features/admin/mutations"
 import { AdminPageHeader } from "@/features/admin/components/AdminPageHeader"
-import { FilterPills } from "@/features/admin/components/FilterPills"
 import { StatusPill } from "@/features/admin/components/StatusPill"
+import { TablePagination } from "@/features/admin/components/TablePagination"
 import { VirtualTable, type VirtualColumn } from "@/features/admin/components/VirtualTable"
-import { useAdminUiStore } from "@/stores/adminUiStore"
+import { useAuthStore } from "@/stores/authStore"
 import { AvatarWithFallback } from "@/components/shared/AvatarWithFallback"
 import {
   AlertDialog,
@@ -22,6 +23,13 @@ import {
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   DropdownMenu,
@@ -31,11 +39,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { cn, formatRelativeTime } from "@/lib/utils"
+import { formatRelativeTime } from "@/lib/utils"
 import { getErrorMessage } from "@/lib/api/errors"
-import type { PublicUser, UserStatus } from "@/types"
+import type { PublicUser, UserRole, UserStatus } from "@/types"
 
-const USER_PILLS = ["All", "active", "suspended", "banned"] as const
+const STATUS_FILTER_OPTIONS: { value: "all" | UserStatus; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "active", label: "Active" },
+  { value: "suspended", label: "Suspended" },
+  { value: "banned", label: "Banned" },
+]
 
 const STATUS_OPTIONS: { value: UserStatus; label: string }[] = [
   { value: "active", label: "Active" },
@@ -43,28 +56,84 @@ const STATUS_OPTIONS: { value: UserStatus; label: string }[] = [
   { value: "banned", label: "Banned" },
 ]
 
-export default function AdminUsersPage() {
-  const [search, setSearch] = React.useState("")
-  const [debounced, setDebounced] = React.useState("")
-  const [banTarget, setBanTarget] = React.useState<PublicUser | null>(null)
-  const [deleteTarget, setDeleteTarget] = React.useState<PublicUser | null>(null)
+const ROLE_FILTER_OPTIONS: { value: "all" | UserRole; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "user", label: "User" },
+  { value: "moderator", label: "Moderator" },
+  { value: "admin", label: "Admin" },
+]
 
-  const activePill = useAdminUiStore((s) => s.activeFilterPill.users) ?? "All"
-  const setFilterPill = useAdminUiStore((s) => s.setFilterPill)
+const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
+  { value: "user", label: "User" },
+  { value: "moderator", label: "Moderator" },
+  { value: "admin", label: "Admin" },
+]
+
+function validParam<T extends string>(
+  value: string | null,
+  options: readonly { value: T }[],
+  fallback: T
+): T {
+  return options.some((o) => o.value === value) ? (value as T) : fallback
+}
+
+export default function AdminUsersPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [banTarget, setBanTarget] = React.useState<PublicUser | null>(null)
+
+  const currentUser = useAuthStore((s) => s.user)
+
+  const rawPage = Number(searchParams.get("page"))
+  const page = Number.isFinite(rawPage) && rawPage >= 1 ? Math.floor(rawPage) : 1
+  const activeStatus = validParam(
+    searchParams.get("status"),
+    STATUS_FILTER_OPTIONS,
+    "all"
+  )
+  const activeRole = validParam(
+    searchParams.get("role"),
+    ROLE_FILTER_OPTIONS,
+    "all"
+  )
+  const searchFromUrl = searchParams.get("search") ?? ""
+  const [search, setSearch] = React.useState(searchFromUrl)
+
   const setStatus = useSetUserStatus()
-  const delRow = useDelRow()
+  const updateRole = useUpdateUserRole()
 
   React.useEffect(() => {
-    const t = setTimeout(() => setDebounced(search.trim()), 250)
+    const t = setTimeout(() => {
+      setParam("search", search.trim())
+    }, 300)
     return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search])
 
-  const { data, isLoading } = useAdminUsers({
-    status: activePill === "All" ? undefined : activePill,
-    search: debounced || undefined,
+  function setParam(key: string, value: string) {
+    const next = new URLSearchParams(searchParams)
+    if (value === "all" || value === "") {
+      next.delete(key)
+    } else {
+      next.set(key, value)
+    }
+    next.delete("page")
+    setSearchParams(next, { replace: true })
+  }
+
+  const goToPage = (p: number) => {
+    const next = new URLSearchParams(searchParams)
+    next.set("page", String(p))
+    setSearchParams(next, { replace: true })
+  }
+
+  const { data, isLoading } = useAdminUsers(page, {
+    search: searchFromUrl || undefined,
+    role: activeRole === "all" ? undefined : activeRole,
+    status: activeStatus === "all" ? undefined : activeStatus,
   })
 
   const rows = data?.data ?? []
+  const hasMore = data?.pagination.hasMore ?? false
 
   const columns = React.useMemo<VirtualColumn<PublicUser>[]>(
     () => [
@@ -124,56 +193,68 @@ export default function AdminUsersPage() {
         header: "Actions",
         className: "w-36",
         align: "center",
-        cell: (u: PublicUser) => (
-          <div className="flex items-center justify-center gap-1">
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button variant="outline" size="xs" aria-label="Change status">
-                    <span className="text-[11px]">Moderate</span>
-                  </Button>
-                }
-              />
-              <DropdownMenuContent align="end" className="min-w-44">
-                <DropdownMenuLabel className="text-xs text-muted-foreground">
-                  Set account status
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {STATUS_OPTIONS.map((option) => (
-                  <DropdownMenuItem
-                    key={option.value}
-                    disabled={u.status === option.value}
-                    onSelect={() =>
-                      setStatus.mutate({ id: u.id, status: option.value })
-                    }
-                  >
-                    <span className="flex-1">{option.label}</span>
-                    {u.status === option.value && <Check className="size-3.5" />}
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  variant="destructive"
-                  onSelect={() => setBanTarget(u)}
-                >
-                  Ban permanently
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              aria-label="Delete user"
-              className="text-err hover:bg-err-soft"
-              onClick={() => setDeleteTarget(u)}
-            >
-              <Trash2 />
-            </Button>
-          </div>
-        ),
+        cell: (u: PublicUser) => {
+          const isSelf = u.id === currentUser?.id
+          return (
+            <div className="flex items-center justify-center gap-1">
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <Button
+                      variant="outline"
+                      size="xs"
+                      aria-label="Change role or status"
+                      disabled={isSelf}
+                    >
+                      <span className="text-[11px]">Moderate</span>
+                    </Button>
+                  }
+                />
+                <DropdownMenuContent align="end" className="min-w-44">
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">
+                    Change role
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {ROLE_OPTIONS.map((option) => (
+                    <DropdownMenuItem
+                      key={option.value}
+                      disabled={u.role === option.value}
+                      onSelect={() =>
+                        updateRole.mutate({ id: u.id, role: option.value })
+                      }
+                    >
+                      <span className="flex-1">{option.label}</span>
+                      {u.role === option.value && <Check className="size-3.5" />}
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">
+                    Set account status
+                  </DropdownMenuLabel>
+                  {STATUS_OPTIONS.map((option) => (
+                    <DropdownMenuItem
+                      key={option.value}
+                      disabled={u.status === option.value}
+                      onSelect={() => {
+                        if (option.value === "banned") {
+                          setBanTarget(u)
+                          return
+                        }
+                        setStatus.mutate({ id: u.id, status: option.value })
+                      }}
+                    >
+                      <span className="flex-1">{option.label}</span>
+                      {u.status === option.value && <Check className="size-3.5" />}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )
+        },
       },
     ],
-    [setStatus]
+    [currentUser?.id, setStatus, updateRole]
   )
 
   return (
@@ -191,17 +272,48 @@ export default function AdminUsersPage() {
         />
       </AdminPageHeader>
 
-      <FilterPills
-        pills={[...USER_PILLS]}
-        value={activePill}
-        onChange={(pill) => setFilterPill("users", pill)}
-      />
+      <div className="flex flex-wrap items-center gap-2">
+        <Select
+          value={activeRole}
+          onValueChange={(value) => {
+            if (value) setParam("role", value)
+          }}
+        >
+          <SelectTrigger size="sm" aria-label="Filter by role">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {ROLE_FILTER_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-      <div className="flex items-center gap-2">
+        <Select
+          value={activeStatus}
+          onValueChange={(value) => {
+            if (value) setParam("status", value)
+          }}
+        >
+          <SelectTrigger size="sm" aria-label="Filter by status">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {STATUS_FILTER_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         <span className="font-mono text-xs text-muted-foreground">
           {rows.length} user{rows.length === 1 ? "" : "s"}
-          {activePill !== "All" && ` · ${activePill}`}
-          {debounced && ` · “${debounced}”`}
+          {activeRole !== "all" && ` · ${activeRole}`}
+          {activeStatus !== "all" && ` · ${activeStatus}`}
+          {searchFromUrl && ` · “${searchFromUrl}”`}
         </span>
       </div>
 
@@ -224,6 +336,8 @@ export default function AdminUsersPage() {
         </CardContent>
       </Card>
 
+      <TablePagination page={page} hasMore={hasMore} onPageChange={goToPage} />
+
       <AlertDialog
         open={banTarget !== null}
         onOpenChange={(open) => !open && setBanTarget(null)}
@@ -232,8 +346,9 @@ export default function AdminUsersPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Ban {banTarget?.name}?</AlertDialogTitle>
             <AlertDialogDescription>
-              Banned accounts are immediately locked out and their listings are
-              hidden from the marketplace. This can be reversed later.
+              Banned accounts are immediately locked out and their listings
+              are hidden from the marketplace. They will be signed out of all
+              devices immediately. This can be reversed later.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -254,38 +369,6 @@ export default function AdminUsersPage() {
               }}
             >
               Ban user
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog
-        open={deleteTarget !== null}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
-      >
-        <AlertDialogContent size="sm">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete user?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This permanently removes the account for{" "}
-              <span className={cn("font-medium text-foreground")}>
-                {deleteTarget?.name}
-              </span>{" "}
-              and all of its content.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              disabled={delRow.isPending}
-              onClick={() => {
-                if (!deleteTarget) return
-                delRow.mutate({ table: "users", id: deleteTarget.id })
-                setDeleteTarget(null)
-              }}
-            >
-              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

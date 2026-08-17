@@ -1,12 +1,13 @@
 import * as React from "react"
+import { useSearchParams } from "react-router-dom"
 import { RotateCcw } from "lucide-react"
 import { useAdminPayments } from "@/features/admin/queries"
 import { useRefundPayment } from "@/features/payments/mutations"
 import { AdminPageHeader } from "@/features/admin/components/AdminPageHeader"
 import { FilterPills } from "@/features/admin/components/FilterPills"
 import { StatusPill } from "@/features/admin/components/StatusPill"
+import { TablePagination } from "@/features/admin/components/TablePagination"
 import { VirtualTable } from "@/features/admin/components/VirtualTable"
-import { useAdminUiStore } from "@/stores/adminUiStore"
 import { AvatarWithFallback } from "@/components/shared/AvatarWithFallback"
 import {
   AlertDialog,
@@ -20,7 +21,6 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatCurrency, formatRelativeTime } from "@/lib/utils"
 import type { Payment } from "@/types"
@@ -32,25 +32,38 @@ function buyerLabel(buyer: Payment["buyer"]): string {
 }
 
 export default function AdminPaymentsPage() {
-  const [search, setSearch] = React.useState("")
-  const [debounced, setDebounced] = React.useState("")
+  const [searchParams, setSearchParams] = useSearchParams()
   const [refundTarget, setRefundTarget] = React.useState<Payment | null>(null)
 
-  const activePill = useAdminUiStore((s) => s.activeFilterPill.payments) ?? "All"
-  const setFilterPill = useAdminUiStore((s) => s.setFilterPill)
+  const rawPage = Number(searchParams.get("page"))
+  const page = Number.isFinite(rawPage) && rawPage >= 1 ? Math.floor(rawPage) : 1
+  const rawStatus = searchParams.get("status")
+  const activeStatus = PAYMENT_PILLS.some((p) => p === rawStatus)
+    ? (rawStatus as string)
+    : "All"
+
   const refundPayment = useRefundPayment()
 
-  React.useEffect(() => {
-    const t = setTimeout(() => setDebounced(search.trim()), 250)
-    return () => clearTimeout(t)
-  }, [search])
+  const setStatusFilter = (pill: string) => {
+    const next = new URLSearchParams(searchParams)
+    if (pill === "All") next.delete("status")
+    else next.set("status", pill)
+    next.delete("page")
+    setSearchParams(next, { replace: true })
+  }
 
-  const { data, isLoading } = useAdminPayments({
-    status: activePill === "All" ? undefined : activePill,
-    search: debounced || undefined,
+  const goToPage = (p: number) => {
+    const next = new URLSearchParams(searchParams)
+    next.set("page", String(p))
+    setSearchParams(next, { replace: true })
+  }
+
+  const { data, isLoading } = useAdminPayments(page, {
+    status: activeStatus === "All" ? undefined : (activeStatus as Payment["status"]),
   })
 
   const rows = data?.data ?? []
+  const hasMore = data?.pagination.hasMore ?? false
 
   const columns = React.useMemo(
     () => [
@@ -129,21 +142,19 @@ export default function AdminPaymentsPage() {
       <AdminPageHeader
         title="Payments"
         subtitle="Ledger of all marketplace transactions"
-      >
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search payments…"
-          className="h-8 w-48"
-          aria-label="Search payments"
-        />
-      </AdminPageHeader>
-
-      <FilterPills
-        pills={[...PAYMENT_PILLS]}
-        value={activePill}
-        onChange={(pill) => setFilterPill("payments", pill)}
       />
+
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <FilterPills
+          pills={[...PAYMENT_PILLS]}
+          value={activeStatus}
+          onChange={setStatusFilter}
+        />
+        <span className="font-mono text-xs text-muted-foreground">
+          {rows.length} payment{rows.length === 1 ? "" : "s"}
+          {activeStatus !== "All" && ` · ${activeStatus}`}
+        </span>
+      </div>
 
       <Card className="rounded-card border-border">
         <CardContent className="p-2">
@@ -163,6 +174,8 @@ export default function AdminPaymentsPage() {
           )}
         </CardContent>
       </Card>
+
+      <TablePagination page={page} hasMore={hasMore} onPageChange={goToPage} />
 
       <AlertDialog
         open={refundTarget !== null}

@@ -9,7 +9,13 @@ import {
   updateAdminListItem,
 } from "./adminCache"
 import { queryKeys, queryKeyPrefixes } from "@/api/queryKeys"
-import type { AppNotification, Post, PublicUser, Report } from "@/types"
+import type {
+  ApiResponse,
+  AppNotification,
+  Post,
+  PublicUser,
+  Report,
+} from "@/types"
 
 const REPORTS_PREFIX = queryKeyPrefixes.reports
 const ADMIN_USERS_PREFIX = queryKeyPrefixes.adminUsers
@@ -85,7 +91,10 @@ export function useSetUserStatus() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ id, status }: { id: string; status: PublicUser["status"] }) =>
-      apiPatch<PublicUser>(`/admin/users/${id}/status`, { status }),
+      apiPatch<ApiResponse<{ user: PublicUser }>>(
+        `/admin/users/${id}/status`,
+        { status }
+      ),
     onMutate: async ({ id, status }) => {
       await queryClient.cancelQueries({ queryKey: ADMIN_USERS_PREFIX })
       const snapshot = snapshotAdminLists(queryClient, ADMIN_USERS_PREFIX)
@@ -103,6 +112,39 @@ export function useSetUserStatus() {
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.admin.dashboard() })
+    },
+  })
+}
+
+/**
+ * Change a user's role (PATCH /admin/users/:id/role). The role is the only
+ * field that changes, so the row is patched in-place on the currently-cached
+ * page rather than invalidating the whole list (spec §3.1). Self-role-change
+ * is blocked server-side; the UI additionally disables the control on the
+ * admin's own row (§4.2, §7 rule 2).
+ */
+export function useUpdateUserRole() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, role }: { id: string; role: PublicUser["role"] }) =>
+      apiPatch<ApiResponse<{ user: PublicUser }>>(
+        `/admin/users/${id}/role`,
+        { role }
+      ),
+    onMutate: async ({ id, role }) => {
+      await queryClient.cancelQueries({ queryKey: ADMIN_USERS_PREFIX })
+      const snapshot = snapshotAdminLists(queryClient, ADMIN_USERS_PREFIX)
+      updateAdminListItem<PublicUser>(
+        queryClient,
+        ADMIN_USERS_PREFIX,
+        id,
+        (u) => ({ ...u, role })
+      )
+      return snapshot
+    },
+    onError: (error, _v, snapshot) => {
+      if (snapshot) restoreAdminLists(queryClient, snapshot)
+      toast.error(getErrorMessage(error))
     },
   })
 }
@@ -133,7 +175,6 @@ export function useTogglePostStatus() {
 
 const DEL_TABLE_KEY: Record<string, readonly string[]> = {
   posts: queryKeyPrefixes.adminPosts,
-  users: queryKeyPrefixes.adminUsers,
   reports: queryKeyPrefixes.reports,
   payments: queryKeyPrefixes.adminPayments,
   notifications: queryKeyPrefixes.notificationsList,
