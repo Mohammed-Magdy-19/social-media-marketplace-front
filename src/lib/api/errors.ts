@@ -28,7 +28,10 @@ export function getErrorMessage(error: unknown): string {
       case status === 0:
         return NETWORK_MESSAGE
       case status === 401:
-        return "Your session has expired. Please sign in again."
+        return (
+          serverMessage ??
+          "Your session has expired. Please sign in again."
+        )
       case status === 403:
         return "You don't have permission to do this."
       case status === 404:

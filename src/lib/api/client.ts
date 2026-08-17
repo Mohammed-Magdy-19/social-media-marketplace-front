@@ -95,13 +95,16 @@ api.interceptors.response.use(
       return Promise.reject(toApiError(error))
     }
 
-    const isRefreshCall = original?.url?.includes("/auth/refresh-token")
+    // Never retry `/auth/*` requests themselves on a 401 — a wrong-password
+    // login response (401) must not trigger a refresh-and-retry, and the
+    // boot-time restore handles `/auth/me` explicitly (§4.2).
+    const isAuthRequest = original?.url?.includes("/auth/")
     const wasAuthenticated = !!original?.headers?.Authorization
     if (
       status === 401 &&
       original &&
       !original._retried &&
-      !isRefreshCall &&
+      !isAuthRequest &&
       wasAuthenticated
     ) {
       original._retried = true
