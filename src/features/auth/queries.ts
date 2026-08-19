@@ -4,6 +4,7 @@ import { apiGet, refreshAccessToken } from "@/lib/api/client"
 import { hasSessionHint } from "@/lib/session-hint"
 import { getStoredRefreshToken } from "@/lib/refresh-storage"
 import { useAuthStore } from "@/stores/authStore"
+import { queryClient } from "@/lib/queryClient"
 import { queryKeys } from "@/api/queryKeys"
 import type { ApiResponse, PublicUser } from "@/types"
 
@@ -47,19 +48,20 @@ export function useAuthBootstrap() {
 
     setStatus("authenticating")
 
-    apiGet<ApiResponse<{ user: PublicUser }>>("/auth/me")
-      .then((res) => {
-        const store = useAuthStore.getState()
-        setSession(res.data.user, store.accessToken ?? "")
-      })
-      .catch(async () => {
-        try {
-          await refreshAccessToken()
-          const me = await apiGet<ApiResponse<{ user: PublicUser }>>("/auth/me")
-          setSession(me.data.user, useAuthStore.getState().accessToken ?? "")
-        } catch {
-          setStatus("unauthenticated")
+    const restoreSession = async () => {
+      try {
+        let token = useAuthStore.getState().accessToken
+        if (!token) {
+          token = await refreshAccessToken()
         }
-      })
+        const me = await apiGet<ApiResponse<{ user: PublicUser }>>("/auth/me")
+        queryClient.setQueryData(queryKeys.auth.me(), me.data.user)
+        setSession(me.data.user, token)
+      } catch {
+        setStatus("unauthenticated")
+      }
+    }
+
+    void restoreSession()
   }, [setStatus, setSession])
 }
