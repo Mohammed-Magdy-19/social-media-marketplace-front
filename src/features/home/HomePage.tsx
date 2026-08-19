@@ -208,13 +208,23 @@ function Composer() {
             render={({ field }) => (
               <FormItem className="grid">
                 <FormControl>
-                  <Select value={field.value} onValueChange={(v) => v && field.onChange(v)}>
+                  <Select
+                    value={field.value}
+                    onValueChange={(v) => v && field.onChange(v)}
+                    itemToStringLabel={(id) =>
+                      categories?.find((c) => c.id === id)?.name ?? ""
+                    }
+                  >
                     <SelectTrigger className="w-36">
-                      <SelectValue placeholder="Category" />
+                      <SelectValue placeholder="Category">
+                        {(val) =>
+                          categories?.find((c) => c.id === val)?.name ?? "Category"
+                        }
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {(categories ?? []).map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
+                        <SelectItem key={c.id} value={c.id} label={c.name}>
                           {c.name}
                         </SelectItem>
                       ))}
