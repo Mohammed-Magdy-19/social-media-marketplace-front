@@ -1,6 +1,7 @@
 import { useMutation } from "@tanstack/react-query"
 import { apiPost } from "@/lib/api/client"
 import { useAuthStore } from "@/stores/authStore"
+import { setStoredRefreshToken } from "@/lib/refresh-storage"
 import { queryClient } from "@/lib/queryClient"
 import { queryKeys } from "@/api/queryKeys"
 import type { ApiResponse, PublicUser } from "@/types"
@@ -25,7 +26,8 @@ export function useLoginMutation() {
     mutationFn: (input: LoginInput) =>
       apiPost<ApiResponse<AuthSessionData>>("/auth/login", input),
     onSuccess: (data) => {
-      const { user, accessToken } = data.data
+      const { user, accessToken, refreshToken } = data.data
+      if (refreshToken) setStoredRefreshToken(refreshToken)
       useAuthStore.getState().setSession(user, accessToken)
       void queryClient.invalidateQueries({ queryKey: queryKeys.auth.me() })
     },

@@ -124,7 +124,7 @@ export default function AdminPostsPage() {
                 {(["active", "hidden", "flagged"] as const).map((s) => (
                   <DropdownMenuItem
                     key={s}
-                    onSelect={() =>
+                    onClick={() =>
                       toggleStatus.mutate(
                         { id: post.id, status: s },
                         {

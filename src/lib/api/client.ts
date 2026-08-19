@@ -6,6 +6,11 @@ import axios, {
 import { useAuthStore } from "@/stores/authStore"
 import { ApiError, type ApiErrorBody, type ApiResponse } from "@/types"
 import { router } from "@/router"
+import {
+  clearStoredRefreshToken,
+  getStoredRefreshToken,
+  setStoredRefreshToken,
+} from "@/lib/refresh-storage"
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api"
 
@@ -45,13 +50,25 @@ const refreshClient = axios.create({
 export async function refreshAccessToken(): Promise<string> {
   if (refreshPromise) return refreshPromise
   refreshPromise = (async () => {
-    const res = await refreshClient.post<{
-      status: string
-      data: { accessToken: string }
-    }>("/auth/refresh-token")
-    const { accessToken } = res.data.data
-    useAuthStore.getState().setAccessToken(accessToken)
-    return accessToken
+    try {
+      const stored = getStoredRefreshToken()
+      const body = stored ? { refreshToken: stored } : {}
+      const res = await refreshClient.post<{
+        status: string
+        data: { accessToken: string; refreshToken?: string }
+      }>("/auth/refresh-token", body)
+      const { accessToken, refreshToken } = res.data.data
+      // The backend rotates the refresh token on every refresh and returns the
+      // new one in the body; mirror it so the localStorage fallback stays in
+      // sync with the cookie lifecycle (§refresh-storage).
+      if (refreshToken) setStoredRefreshToken(refreshToken)
+      useAuthStore.getState().setAccessToken(accessToken)
+      return accessToken
+    } catch (error) {
+      // The stored copy is stale/invalidated — stop trying to restore with it.
+      clearStoredRefreshToken()
+      throw error
+    }
   })().finally(() => {
     refreshPromise = null
   })

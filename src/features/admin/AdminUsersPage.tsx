@@ -219,7 +219,7 @@ export default function AdminUsersPage() {
                     <DropdownMenuItem
                       key={option.value}
                       disabled={u.role === option.value}
-                      onSelect={() =>
+                      onClick={() =>
                         updateRole.mutate({ id: u.id, role: option.value })
                       }
                     >
@@ -235,7 +235,7 @@ export default function AdminUsersPage() {
                     <DropdownMenuItem
                       key={option.value}
                       disabled={u.status === option.value}
-                      onSelect={() => {
+                      onClick={() => {
                         if (option.value === "banned") {
                           setBanTarget(u)
                           return

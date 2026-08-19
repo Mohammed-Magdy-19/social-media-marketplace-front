@@ -2,6 +2,7 @@ import { useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { apiGet, refreshAccessToken } from "@/lib/api/client"
 import { hasSessionHint } from "@/lib/session-hint"
+import { getStoredRefreshToken } from "@/lib/refresh-storage"
 import { useAuthStore } from "@/stores/authStore"
 import { queryKeys } from "@/api/queryKeys"
 import type { ApiResponse, PublicUser } from "@/types"
@@ -35,7 +36,11 @@ export function useAuthBootstrap() {
   useEffect(() => {
     if (useAuthStore.getState().status !== "idle") return
 
-    if (!hasSessionHint()) {
+    // Gate the restore attempt on any signal that a session may exist: the
+    // readable `hasSession` cookie (top-level origins) OR the localStorage
+    // refresh-token fallback (cross-site preview iframes, where SameSite=Strict
+    // cookies are never stored). Absent both, skip the guaranteed 401s.
+    if (!hasSessionHint() && !getStoredRefreshToken()) {
       setStatus("unauthenticated")
       return
     }

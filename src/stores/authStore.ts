@@ -2,6 +2,7 @@ import { create } from "zustand"
 import type { PublicUser } from "@/types"
 import { queryClient } from "@/lib/queryClient"
 import { socket } from "@/lib/socket/client"
+import { clearStoredRefreshToken } from "@/lib/refresh-storage"
 
 export type AuthStatus =
   | "idle"
@@ -42,10 +43,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   setStatus: (status) => set({ status }),
   setNotice: (notice) => set({ notice }),
   clear: () => {
+    clearStoredRefreshToken()
     set({ user: null, accessToken: null, status: "unauthenticated" })
     queryClient.clear()
   },
   logout: () => {
+    clearStoredRefreshToken()
     set({ user: null, accessToken: null, status: "unauthenticated" })
     queryClient.clear()
   },

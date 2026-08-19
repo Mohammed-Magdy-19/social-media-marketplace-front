@@ -253,7 +253,7 @@ export default function AdminReportsPage() {
                   <DropdownMenuItem
                     key={option.value}
                     disabled={r.status === option.value}
-                    onSelect={() =>
+                    onClick={() =>
                       setModerateTarget({ report: r, status: option.value })
                     }
                   >
