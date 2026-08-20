@@ -19,6 +19,8 @@ import {
   useMessagesInfinite,
   useOffers,
   offerProposerId,
+  offerBuyerId,
+  offerPostId,
 } from "@/features/conversations/queries"
 import { usePost } from "@/features/posts/queries"
 import {
@@ -63,6 +65,7 @@ import type {
   Offer,
   OfferAction,
   OfferStatus,
+  Post,
 } from "@/types"
 
 type OfferValues = z.infer<typeof createOfferFormSchema>
@@ -99,7 +102,7 @@ const MessageBubble = React.memo(function MessageBubble({
           isMine ? "bg-brand text-white" : "bg-card"
         )}
       >
-        <p className="leading-relaxed whitespace-pre-wrap break-words">
+        <p className="leading-relaxed whitespace-pre-wrap wrap-break-word">
           {message.body}
         </p>
         <p
@@ -218,16 +221,9 @@ function OfferCard({
       : "They"
   const actionable = offer.status === "pending" && !isMine
 
-  const buyerId =
-    typeof offer.buyer === "object" && offer.buyer
-      ? offer.buyer.id || (offer.buyer as unknown as { _id?: string })?._id
-      : String(offer.buyer ?? "")
+  const buyerId = offerBuyerId(offer)
   const isBuyer = buyerId === meId
-
-  const offerPostId =
-    typeof offer.post === "object" && offer.post
-      ? offer.post.id || (offer.post as unknown as { _id?: string })?._id
-      : String(offer.post ?? "")
+  const currentOfferPostId = offerPostId(offer)
 
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-border bg-card/80 p-3 shadow-xs">
@@ -281,14 +277,14 @@ function OfferCard({
         />
       )}
 
-      {offer.status === "accepted" && isBuyer && offerPostId && (
+      {offer.status === "accepted" && isBuyer && currentOfferPostId && (
         <div className="flex items-center justify-between gap-2 pt-2 border-t border-border">
-          <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Offer accepted!</span>
+          <span className="text-xs font-medium text-ok">Offer accepted!</span>
           <Button
             size="sm"
             onClick={() => {
               createIntent.mutate({
-                postId: offerPostId,
+                postId: currentOfferPostId,
                 amount: offer.amount,
                 currency: "USD",
               })
@@ -524,18 +520,15 @@ function Thread({ conversationId }: { conversationId: string }) {
 
   const [searchParams] = useSearchParams()
   const queryPostId = searchParams.get("postId")
-  const firstOfferPostId =
-    offers && offers.length > 0
-      ? typeof offers[0].post === "object" && offers[0].post
-        ? (offers[0].post as { id?: string; _id?: string })?.id || (offers[0].post as { id?: string; _id?: string })?._id
-        : typeof offers[0].post === "string"
-          ? offers[0].post
-          : undefined
-      : undefined
+  const firstOffer = offers?.[0]
+  const firstOfferPostId = firstOffer ? offerPostId(firstOffer) : undefined
 
   const activePostId = queryPostId || firstOfferPostId || meta?.post?.id
   const { data: activePostData } = usePost(activePostId ?? "")
-  const activePost = activePostData || meta?.post || (offers?.[0]?.post as Post | undefined)
+  const activePost: Post | undefined =
+    activePostData ||
+    meta?.post ||
+    (firstOffer && typeof firstOffer.post === "object" ? (firstOffer.post as Post) : undefined)
 
   const onOffer = (values: OfferValues) => {
     const targetPostId = activePost?.id || activePostId

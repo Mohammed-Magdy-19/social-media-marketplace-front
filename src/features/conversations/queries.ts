@@ -134,6 +134,13 @@ export function offerProposerId(offer: Offer): string {
     : offer.proposedBy.id
 }
 
+export function offerBuyerId(offer: Offer): string {
+  if (typeof offer.buyer === "string") return offer.buyer
+  return (offer.buyer as unknown as { id?: string; _id?: string })?.id ||
+    (offer.buyer as unknown as { id?: string; _id?: string })?._id ||
+    ""
+}
+
 export function useOffers(conversationId: string) {
   return useQuery({
     queryKey: queryKeys.conversations.offers(conversationId),

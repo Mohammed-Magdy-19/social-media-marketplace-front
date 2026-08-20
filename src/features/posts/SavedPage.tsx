@@ -24,7 +24,7 @@ function SavedGrid() {
 
   if (isLoading) {
     return (
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
           <Skeleton key={i} className="aspect-square w-full rounded-card" />
         ))}
@@ -45,7 +45,7 @@ function SavedGrid() {
   }
 
   return (
-    <div ref={parentRef} className="mt-4 max-h-[calc(100svh-10rem)] overflow-y-auto pr-1">
+    <div ref={parentRef} className="mt-4 max-h-[calc(100svh-10rem)] overflow-y-auto no-scrollbar">
       <div className="relative" style={{ height: virtualizer.getTotalSize() }}>
         {virtualizer.getVirtualItems().map((item) => {
           const rowStart = item.index * COLUMNS
@@ -55,7 +55,7 @@ function SavedGrid() {
               key={`row-${item.index}`}
               ref={virtualizer.measureElement}
               data-index={item.index}
-              className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3"
+              className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
             >
               {rowPosts.map((post) => (
                 <ProductCard key={post.id} post={post} />
