@@ -53,12 +53,14 @@ function isForbidden(error: unknown): boolean {
 }
 
 function reporterLabel(report: Report): string {
-  return typeof report.reporter === "string" ? report.reporter : report.reporter.name
+  if (typeof report.reporter === "string") return report.reporter
+  return report.reporter?.name || report.reporter?.username || "Unknown"
 }
 
 function resolvedByLabel(report: Report): string | null {
   if (!report.resolvedBy) return null
-  return typeof report.resolvedBy === "string" ? report.resolvedBy : report.resolvedBy.name
+  if (typeof report.resolvedBy === "string") return report.resolvedBy
+  return report.resolvedBy?.name || report.resolvedBy?.username || "Unknown"
 }
 
 function shortId(id: string): string {

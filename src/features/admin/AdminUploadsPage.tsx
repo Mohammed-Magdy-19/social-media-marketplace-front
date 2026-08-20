@@ -154,7 +154,7 @@ export default function AdminUploadsPage() {
                           </div>
                           <div className="flex items-center justify-between gap-1">
                             <span className="truncate text-[10px] text-muted-foreground">
-                              {upload.owner.name}
+                              {upload.owner?.name || upload.owner?.username || "Unknown"}
                             </span>
                             <div className="flex items-center gap-1">
                               <StatusPill status={upload.kind} />

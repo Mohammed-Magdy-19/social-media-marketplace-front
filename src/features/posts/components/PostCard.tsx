@@ -26,13 +26,14 @@ export function PostCard({ post }: { post: Post }) {
 
   const mediaList = Array.isArray(post?.media) ? post.media : []
   const tagsList = Array.isArray(post?.tags) ? post.tags : []
+  const authorName = post.author?.name || post.author?.username || "User"
 
   return (
     <article className="flex flex-col gap-3 rounded-card bg-card p-4 ring-1 ring-foreground/10">
       <div className="flex items-center gap-3">
-        <AvatarWithFallback name={post.author?.name ?? "User"} src={post.author?.avatar} />
+        <AvatarWithFallback name={authorName} src={post.author?.avatar} />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold">{post.author?.name ?? "User"}</p>
+          <p className="truncate text-sm font-semibold">{authorName}</p>
           <p className="text-xs text-muted-foreground">
             {formatRelativeTime(post.createdAt)}
             {post.category?.name && ` · ${post.category.name}`}

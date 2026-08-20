@@ -109,6 +109,9 @@ function normalizeIds(obj: unknown): unknown {
   if (record._id && !record.id) {
     record.id = String(record._id)
   }
+  if (record.username && !record.name) {
+    record.name = record.username
+  }
   for (const key of Object.keys(record)) {
     if (record[key] && typeof record[key] === "object") {
       normalizeIds(record[key])

@@ -338,7 +338,7 @@ function FeedColumn() {
         <Composer />
       </ErrorBoundary>
       <ErrorBoundary fallback={<SectionFallback />}>
-        <div ref={parentRef} className="max-h-[calc(100svh-8rem)] overflow-y-auto pr-1">
+        <div ref={parentRef} className="max-h-[calc(100svh-8rem)] overflow-y-auto pr-1.5 modern-scrollbar">
           <div
             className="relative flex flex-col gap-3"
             style={{ height: virtualizer.getTotalSize() }}

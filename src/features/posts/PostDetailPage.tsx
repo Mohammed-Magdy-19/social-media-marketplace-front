@@ -91,11 +91,16 @@ export default function PostDetailPage() {
       <ErrorBoundary fallback={<SectionFallback />}>
       <article className="flex flex-col gap-4 rounded-card bg-card p-4 ring-1 ring-foreground/10">
         <div className="flex items-center gap-3">
-          <AvatarWithFallback name={post.author.name} src={post.author.avatar} />
+          <AvatarWithFallback
+            name={post.author?.name || post.author?.username || "User"}
+            src={post.author?.avatar}
+          />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">{post.author.name}</p>
+            <p className="truncate text-sm font-semibold">
+              {post.author?.name || post.author?.username || "User"}
+            </p>
             <p className="text-xs text-muted-foreground">
-              @{post.author.username} · {formatRelativeTime(post.createdAt)}
+              @{post.author?.username} · {formatRelativeTime(post.createdAt)}
             </p>
           </div>
           <Button

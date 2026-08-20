@@ -183,3 +183,28 @@
     display: none;
   }
 }
+
+@utility modern-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--foreground) 20%, transparent) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: color-mix(in srgb, var(--foreground) 15%, transparent);
+    border-radius: 9999px;
+    transition: background-color 0.2s ease;
+  }
+
+  &:hover::-webkit-scrollbar-thumb {
+    background-color: color-mix(in srgb, var(--foreground) 30%, transparent);
+  }
+}
+

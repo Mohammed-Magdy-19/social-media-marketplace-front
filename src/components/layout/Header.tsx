@@ -161,25 +161,35 @@ export function Header() {
             <DropdownMenuContent align="end" className="w-80">
               <DropdownMenuLabel>Notifications</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {(notifications ?? []).slice(0, 5).map((n, idx) => (
-                <DropdownMenuItem
-                  key={n.id || (n as unknown as { _id?: string })._id || `${idx}-${n.createdAt}`}
-                  className="flex items-start gap-2 whitespace-normal py-2"
-                  disabled
-                >
-                  <span className="flex min-w-0 flex-col gap-0.5">
-                    <span className="text-sm font-medium text-foreground">
-                      {n.title}
+              {notifications && notifications.length > 0 ? (
+                notifications.slice(0, 5).map((n, idx) => (
+                  <DropdownMenuItem
+                    key={n.id || `${idx}-${n.createdAt}`}
+                    className="flex items-start gap-2 whitespace-normal py-2 cursor-pointer"
+                    onClick={() =>
+                      void navigate(
+                        user.role === "admin" ? "/admin/notifications" : "/profile"
+                      )
+                    }
+                  >
+                    <span className="flex min-w-0 flex-col gap-0.5">
+                      <span className="text-sm font-medium text-foreground">
+                        {n.title}
+                      </span>
+                      <span className="line-clamp-2 text-xs text-muted-foreground">
+                        {n.body}
+                      </span>
                     </span>
-                    <span className="line-clamp-2 text-xs text-muted-foreground">
-                      {n.body}
-                    </span>
-                  </span>
-                  {!n.read && (
-                    <span className="mt-1.5 ml-auto size-2 shrink-0 rounded-full bg-brand" />
-                  )}
-                </DropdownMenuItem>
-              ))}
+                    {!n.read && (
+                      <span className="mt-1.5 ml-auto size-2 shrink-0 rounded-full bg-brand" />
+                    )}
+                  </DropdownMenuItem>
+                ))
+              ) : (
+                <div className="p-4 text-center text-xs text-muted-foreground">
+                  No notifications yet
+                </div>
+              )}
               {notifications && notifications.length > 0 && (
                 <>
                   <DropdownMenuSeparator />

@@ -65,7 +65,7 @@ export default function AdminPostsPage() {
         className: "min-w-56",
         cell: (post: Post) => (
           <div className="flex items-center gap-2">
-            <AvatarWithFallback name={post.title} src={post.media[0] ?? null} size="sm" />
+            <AvatarWithFallback name={post.title} src={post.media?.[0] ?? null} size="sm" />
             <div className="min-w-0">
               <p className="truncate text-sm font-medium text-foreground">{post.title}</p>
               <p className="font-mono text-[10px] text-muted-foreground">{post.id}</p>
@@ -78,7 +78,7 @@ export default function AdminPostsPage() {
         header: "Seller",
         className: "min-w-32",
         cell: (post: Post) => (
-          <span className="text-sm text-foreground">{post.author.name}</span>
+          <span className="text-sm text-foreground">{post.author?.name || post.author?.username || "Unknown"}</span>
         ),
       },
       {

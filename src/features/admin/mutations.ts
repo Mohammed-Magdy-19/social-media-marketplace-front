@@ -201,7 +201,7 @@ export function useDelRow() {
 export function useMarkAllRead() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: () => apiPost<{ ok: true }>("/notifications/read-all"),
+    mutationFn: () => apiPatch<{ ok: true }>("/notifications/read-all"),
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: NOTIFICATIONS_PREFIX })
       const key = queryKeys.notifications.all()
