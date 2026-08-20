@@ -63,7 +63,25 @@ export function usePost(postId: string) {
 export function useSavedPosts() {
   return useQuery({
     queryKey: queryKeys.users.savedPosts(),
-    queryFn: ({ signal }) =>
-      apiGet<PaginatedResponse<Post>>("/users/me/saved-posts", { signal }),
+    queryFn: async ({ signal }) => {
+      const res = await apiGet<
+        PaginatedResponse<Post | { _id?: string; id?: string; post: Post }>
+      >("/users/me/saved-posts", { signal })
+      const unwrapped: Post[] = (res.data ?? [])
+        .map((item) => {
+          if ("post" in item && item.post && typeof item.post === "object") {
+            return {
+              ...item.post,
+              isSaved: true,
+            }
+          }
+          return item as Post
+        })
+        .filter((p): p is Post => Boolean(p && p.id))
+      return {
+        ...res,
+        data: unwrapped,
+      }
+    },
   })
 }

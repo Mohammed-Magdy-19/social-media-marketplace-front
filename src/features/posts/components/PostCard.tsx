@@ -24,16 +24,18 @@ export function PostCard({ post }: { post: Post }) {
     savePost.mutate({ postId: post.id, isSaved: post.isSaved })
   }
 
+  const mediaList = Array.isArray(post?.media) ? post.media : []
+  const tagsList = Array.isArray(post?.tags) ? post.tags : []
+
   return (
     <article className="flex flex-col gap-3 rounded-card bg-card p-4 ring-1 ring-foreground/10">
       <div className="flex items-center gap-3">
-        <AvatarWithFallback name={post.author.name} src={post.author.avatar} />
+        <AvatarWithFallback name={post.author?.name ?? "User"} src={post.author?.avatar} />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold">{post.author.name}</p>
+          <p className="truncate text-sm font-semibold">{post.author?.name ?? "User"}</p>
           <p className="text-xs text-muted-foreground">
             {formatRelativeTime(post.createdAt)}
-            {" · "}
-            {post.category.name}
+            {post.category?.name && ` · ${post.category.name}`}
           </p>
         </div>
         {post.price != null && (
@@ -54,10 +56,10 @@ export function PostCard({ post }: { post: Post }) {
         className="block"
         aria-label="View post media"
       >
-        {post.media.length > 0 ? (
+        {mediaList.length > 0 ? (
           <img
-            src={post.media[0]}
-            alt={post.title}
+            src={mediaList[0]}
+            alt={post.title ?? "Post"}
             loading="lazy"
             className="aspect-video w-full rounded-lg object-cover"
           />
@@ -66,10 +68,10 @@ export function PostCard({ post }: { post: Post }) {
         )}
       </Link>
 
-      {post.tags.length > 0 && (
+      {tagsList.length > 0 && (
         <div className="flex flex-wrap items-center gap-1">
           <Tag className="size-3 text-muted-foreground" />
-          {post.tags.map((tag) => (
+          {tagsList.map((tag) => (
             <Badge key={tag} variant="outline" className="text-xs">
               #{tag}
             </Badge>

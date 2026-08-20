@@ -17,8 +17,9 @@ export function ProductCard({ post }: { post: Post }) {
   const createIntent = useCreatePaymentIntent()
   const hasToken = useAuthStore((s) => !!s.accessToken)
 
-  const price = post.price
-  const discount = price != null && post.saveCount > 0 ? "-15%" : undefined
+  const price = post?.price
+  const discount = price != null && (post?.saveCount ?? 0) > 0 ? "-15%" : undefined
+  const mediaList = Array.isArray(post?.media) ? post.media : []
 
   const onBuy = () => {
     if (!hasToken || price == null || post.status !== "active") return
@@ -27,17 +28,17 @@ export function ProductCard({ post }: { post: Post }) {
 
   const onNegotiate = () => {
     if (!hasToken || price == null || post.status !== "active") return
-    startNegotiation.mutate({ sellerId: post.author.id })
+    startNegotiation.mutate({ sellerId: post.author?.id ?? "" })
   }
 
   return (
     <article className="flex flex-col overflow-hidden rounded-card bg-card ring-1 ring-foreground/10">
       <div className="relative">
         <Link to={`/posts/${post.id}`} aria-label="View product">
-          {post.media.length > 0 ? (
+          {mediaList.length > 0 ? (
             <img
-              src={post.media[0]}
-              alt={post.title}
+              src={mediaList[0]}
+              alt={post.title ?? "Product"}
               loading="lazy"
               className="aspect-square w-full object-cover"
             />
@@ -52,7 +53,7 @@ export function ProductCard({ post }: { post: Post }) {
               {discount}
             </Badge>
           )}
-          <Badge variant="secondary">{post.category.name}</Badge>
+          {post.category?.name && <Badge variant="secondary">{post.category.name}</Badge>}
         </div>
         <div className="absolute right-2 bottom-2 flex gap-1">
           <Button

@@ -108,10 +108,10 @@ export default function PostDetailPage() {
           </Button>
         </div>
 
-        {post.media.length > 0 ? (
+        {(post.media?.length ?? 0) > 0 ? (
           <img
             src={post.media[0]}
-            alt={post.title}
+            alt={post.title ?? "Post"}
             className="aspect-video w-full rounded-lg object-cover"
           />
         ) : (
@@ -126,7 +126,7 @@ export default function PostDetailPage() {
           </p>
         )}
 
-        {post.tags.length > 0 && (
+        {(post.tags?.length ?? 0) > 0 && (
           <div className="flex flex-wrap gap-1">
             {post.tags.map((tag) => (
               <Badge key={tag} variant="outline">
