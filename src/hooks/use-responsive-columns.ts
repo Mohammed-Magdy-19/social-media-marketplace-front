@@ -6,7 +6,7 @@ import * as React from "react"
  * count or rows misalign at each breakpoint.
  */
 const BREAKPOINTS: { min: number; columns: number }[] = [
-  { min: 1280, columns: 3 },
+  { min: 1024, columns: 3 },
   { min: 640, columns: 2 },
   { min: 0, columns: 1 },
 ]
@@ -19,8 +19,8 @@ export function useResponsiveColumns() {
       window.matchMedia(`(min-width: ${b.min}px)`)
     )
     const update = () => {
-      const matched = BREAKPOINTS.filter((b) => b.min <= window.innerWidth)
-      setColumns(matched[matched.length - 1]?.columns ?? 1)
+      const matched = BREAKPOINTS.find((b) => window.innerWidth >= b.min)
+      setColumns(matched?.columns ?? 1)
     }
     update()
     mqls.forEach((mql) => mql.addEventListener("change", update))

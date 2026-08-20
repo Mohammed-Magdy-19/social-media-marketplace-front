@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import type { z } from "zod"
-import { ImagePlus, Loader2, Plus, X } from "lucide-react"
+import { ArrowUp, ImagePlus, Loader2, Plus, X } from "lucide-react"
 import { useAuthStore } from "@/stores/authStore"
 import { useCategories } from "@/features/categories/queries"
 import { useFeedInfinite } from "@/features/feed/queries"
@@ -315,6 +315,7 @@ function FeedColumn() {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useFeedInfinite()
   const parentRef = useRef<HTMLDivElement>(null)
+  const [showScrollTop, setShowScrollTop] = useState(false)
 
   const posts = data?.pages.flatMap((p) => p.data) ?? []
 
@@ -332,51 +333,81 @@ function FeedColumn() {
     }
   }, [virtualizer, posts.length, hasNextPage, isFetchingNextPage, fetchNextPage])
 
+  const handleScroll = () => {
+    if (parentRef.current) {
+      setShowScrollTop(parentRef.current.scrollTop > 320)
+    }
+  }
+
+  const scrollToTop = () => {
+    parentRef.current?.scrollTo({ top: 0, behavior: "smooth" })
+  }
+
   return (
-    <div className="flex flex-col gap-3">
-      <ErrorBoundary fallback={<SectionFallback />}>
-        <Composer />
-      </ErrorBoundary>
-      <ErrorBoundary fallback={<SectionFallback />}>
-        <div ref={parentRef} className="max-h-[calc(100svh-8rem)] overflow-y-auto pr-1.5 modern-scrollbar">
-          <div
-            className="relative flex flex-col gap-3"
-            style={{ height: virtualizer.getTotalSize() }}
-          >
-            {virtualizer.getVirtualItems().map((item) => {
-              const post = posts[item.index]
-              if (!post) {
+    <div className="relative">
+      <div
+        ref={parentRef}
+        onScroll={handleScroll}
+        className="max-h-[calc(100svh-5rem)] overflow-y-auto no-scrollbar"
+      >
+        <div className="flex flex-col gap-3 pb-6">
+          <ErrorBoundary fallback={<SectionFallback />}>
+            <Composer />
+          </ErrorBoundary>
+
+          <ErrorBoundary fallback={<SectionFallback />}>
+            <div
+              className="relative flex flex-col gap-3"
+              style={{ height: virtualizer.getTotalSize() }}
+            >
+              {virtualizer.getVirtualItems().map((item) => {
+                const post = posts[item.index]
+                if (!post) {
+                  return (
+                    <div
+                      key={`load-${item.index}`}
+                      ref={virtualizer.measureElement}
+                      data-index={item.index}
+                      className="flex justify-center py-4"
+                    >
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void fetchNextPage()}
+                        disabled={isFetchingNextPage}
+                      >
+                        Load more
+                      </Button>
+                    </div>
+                  )
+                }
                 return (
                   <div
-                    key={`load-${item.index}`}
+                    key={post.id || (post as unknown as { _id?: string })._id || item.index}
                     ref={virtualizer.measureElement}
                     data-index={item.index}
-                    className="flex justify-center py-4"
                   >
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => void fetchNextPage()}
-                      disabled={isFetchingNextPage}
-                    >
-                      Load more
-                    </Button>
+                    <PostCard post={post} />
                   </div>
                 )
-              }
-              return (
-                <div
-                  key={post.id || (post as unknown as { _id?: string })._id || item.index}
-                  ref={virtualizer.measureElement}
-                  data-index={item.index}
-                >
-                  <PostCard post={post} />
-                </div>
-              )
-            })}
-          </div>
+              })}
+            </div>
+          </ErrorBoundary>
         </div>
-      </ErrorBoundary>
+      </div>
+
+      {showScrollTop && (
+        <Button
+          type="button"
+          variant="secondary"
+          size="icon-sm"
+          onClick={scrollToTop}
+          aria-label="Scroll to top"
+          className="fixed bottom-6 right-6 z-50 rounded-full shadow-lg ring-1 ring-foreground/15 hover:bg-brand hover:text-brand-foreground transition-all duration-200"
+        >
+          <ArrowUp className="size-4" />
+        </Button>
+      )}
     </div>
   )
 }

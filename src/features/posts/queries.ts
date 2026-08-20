@@ -3,7 +3,7 @@ import { keepPreviousData } from "@tanstack/react-query"
 import { apiGet } from "@/lib/api/client"
 import { useFilterStore, type FeedSort } from "@/stores/filterStore"
 import { queryKeys } from "@/api/queryKeys"
-import type { ApiResponse, PaginatedResponse, Post } from "@/types"
+import type { ApiResponse, PaginatedResponse, Post, PostComment } from "@/types"
 
 export const POSTS_PAGE_SIZE = 12
 
@@ -60,6 +60,20 @@ export function usePost(postId: string) {
   })
 }
 
+export function usePostComments(postId: string) {
+  return useQuery({
+    queryKey: queryKeys.posts.comments(postId),
+    queryFn: async ({ signal }) => {
+      const res = await apiGet<ApiResponse<{ comments: PostComment[] }>>(
+        `/posts/${postId}/comments`,
+        { signal }
+      )
+      return res.data.comments ?? []
+    },
+    enabled: Boolean(postId),
+  })
+}
+
 export function useSavedPosts() {
   return useQuery({
     queryKey: queryKeys.users.savedPosts(),
@@ -85,3 +99,4 @@ export function useSavedPosts() {
     },
   })
 }
+

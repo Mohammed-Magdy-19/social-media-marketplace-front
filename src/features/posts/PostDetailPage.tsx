@@ -5,7 +5,7 @@ import { Link, useParams } from "react-router-dom"
 import { toast } from "sonner"
 import { ArrowLeft, Flag, Heart, Bookmark, MessageCircle } from "lucide-react"
 import type { z } from "zod"
-import { usePost } from "@/features/posts/queries"
+import { usePost, usePostComments } from "@/features/posts/queries"
 import { useToggleLike, useSavePost, useCreateComment } from "@/features/posts/mutations"
 import { commentSchema } from "@/features/posts/schemas"
 import { useStartNegotiation } from "@/features/conversations/mutations"
@@ -13,6 +13,8 @@ import { useCreatePaymentIntent } from "@/features/payments/mutations"
 import { ReportDialog } from "@/features/reports/ReportDialog"
 import { useAuthStore } from "@/stores/authStore"
 import { socket } from "@/lib/socket/client"
+import { queryClient } from "@/lib/queryClient"
+import { queryKeys } from "@/api/queryKeys"
 import { getErrorMessage } from "@/lib/api/errors"
 import { ErrorBoundary, SectionFallback } from "@/components/shared/ErrorBoundary"
 import { AvatarWithFallback } from "@/components/shared/AvatarWithFallback"
@@ -20,6 +22,7 @@ import { MediaPlaceholder } from "@/components/shared/MediaPlaceholder"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Form,
   FormControl,
@@ -34,6 +37,7 @@ type CommentValues = z.infer<typeof commentSchema>
 export default function PostDetailPage() {
   const { postId = "" } = useParams()
   const { data: post, isLoading } = usePost(postId)
+  const { data: comments = [], isLoading: isLoadingComments } = usePostComments(postId)
   const toggleLike = useToggleLike()
   const savePost = useSavePost()
   const createComment = useCreateComment()
@@ -50,8 +54,25 @@ export default function PostDetailPage() {
   React.useEffect(() => {
     if (!postId) return
     socket.emit("join_post_room", postId)
+
+    const onCommentEvent = () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.posts.comments(postId),
+      })
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.posts.detail(postId),
+      })
+    }
+
+    socket.on("new_comment", onCommentEvent)
+    socket.on("comment_deleted", onCommentEvent)
+    socket.on("comment_updated", onCommentEvent)
+
     return () => {
       socket.emit("leave_post_room", postId)
+      socket.off("new_comment", onCommentEvent)
+      socket.off("comment_deleted", onCommentEvent)
+      socket.off("comment_updated", onCommentEvent)
     }
   }, [postId])
 
@@ -77,6 +98,9 @@ export default function PostDetailPage() {
   }
 
   const price = post.price
+  const authorName = post.author?.name || post.author?.username || "User"
+  const authorId = post.author?.id || (post.author as unknown as { _id?: string })?._id
+  const authorProfileLink = authorId ? `/users/${authorId}` : undefined
 
   return (
     <div className="flex flex-col gap-4">
@@ -91,14 +115,32 @@ export default function PostDetailPage() {
       <ErrorBoundary fallback={<SectionFallback />}>
       <article className="flex flex-col gap-4 rounded-card bg-card p-4 ring-1 ring-foreground/10">
         <div className="flex items-center gap-3">
-          <AvatarWithFallback
-            name={post.author?.name || post.author?.username || "User"}
-            src={post.author?.avatar}
-          />
+          {authorProfileLink ? (
+            <Link to={authorProfileLink} className="transition-opacity hover:opacity-85">
+              <AvatarWithFallback
+                name={authorName}
+                src={post.author?.avatar}
+              />
+            </Link>
+          ) : (
+            <AvatarWithFallback
+              name={authorName}
+              src={post.author?.avatar}
+            />
+          )}
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">
-              {post.author?.name || post.author?.username || "User"}
-            </p>
+            {authorProfileLink ? (
+              <Link
+                to={authorProfileLink}
+                className="inline-block max-w-full truncate text-sm font-semibold hover:underline hover:text-brand transition-colors"
+              >
+                {authorName}
+              </Link>
+            ) : (
+              <p className="truncate text-sm font-semibold">
+                {authorName}
+              </p>
+            )}
             <p className="text-xs text-muted-foreground">
               @{post.author?.username} · {formatRelativeTime(post.createdAt)}
             </p>
@@ -180,7 +222,7 @@ export default function PostDetailPage() {
                   if (hasToken && post.status === "active") {
                     createIntent.mutate({
                       postId: post.id,
-                      amount: price,
+                      amount: Math.round(price * 100),
                       currency: post.currency ?? "USD",
                     })
                   }
@@ -193,10 +235,10 @@ export default function PostDetailPage() {
                 size="sm"
                 variant="outline"
                 onClick={() => {
-                  if (hasToken)
-                    startNegotiation.mutate({ sellerId: post.author.id })
+                  if (hasToken && authorId)
+                    startNegotiation.mutate({ sellerId: authorId, postId: post.id })
                 }}
-                disabled={!hasToken}
+                disabled={!hasToken || !authorId}
               >
                 Negotiate
               </Button>
@@ -212,13 +254,57 @@ export default function PostDetailPage() {
           <CardTitle>Comments</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          {post.commentsCount > 0 ? (
+          {isLoadingComments ? (
             <div className="flex flex-col gap-3">
-              {post.commentsCount > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  {post.commentsCount} comment{post.commentsCount === 1 ? "" : "s"}
-                </p>
-              )}
+              <Skeleton className="h-14 w-full rounded-lg" />
+              <Skeleton className="h-14 w-full rounded-lg" />
+            </div>
+          ) : comments.length > 0 ? (
+            <div className="flex flex-col gap-3">
+              <p className="text-xs font-medium text-muted-foreground">
+                {comments.length} comment{comments.length === 1 ? "" : "s"}
+              </p>
+              <div className="flex flex-col gap-2.5">
+                {comments.map((c) => {
+                  const commentAuthorName = c.author?.name || c.author?.username || "User"
+                  const commentAuthorId = c.author?.id || (c.author as unknown as { _id?: string })?._id
+                  const commentAuthorLink = commentAuthorId ? `/users/${commentAuthorId}` : undefined
+                  return (
+                    <div
+                      key={c.id || (c as unknown as { _id?: string })._id}
+                      className="flex items-start gap-2.5 rounded-lg bg-soft/60 p-3 ring-1 ring-foreground/5"
+                    >
+                      {commentAuthorLink ? (
+                        <Link to={commentAuthorLink} className="transition-opacity hover:opacity-85">
+                          <AvatarWithFallback name={commentAuthorName} src={c.author?.avatar} size="sm" />
+                        </Link>
+                      ) : (
+                        <AvatarWithFallback name={commentAuthorName} src={c.author?.avatar} size="sm" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {commentAuthorLink ? (
+                            <Link
+                              to={commentAuthorLink}
+                              className="text-xs font-semibold text-foreground hover:underline hover:text-brand"
+                            >
+                              {commentAuthorName}
+                            </Link>
+                          ) : (
+                            <span className="text-xs font-semibold text-foreground">{commentAuthorName}</span>
+                          )}
+                          <span className="text-[10px] text-muted-foreground">
+                            {formatRelativeTime(c.createdAt)}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-sm text-foreground/90 whitespace-pre-wrap break-words">
+                          {c.text}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
@@ -273,3 +359,4 @@ export default function PostDetailPage() {
     </div>
   )
 }
+

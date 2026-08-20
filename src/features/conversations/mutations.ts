@@ -19,12 +19,15 @@ import type {
  */
 export function useStartNegotiation() {
   return useMutation({
-    mutationFn: ({ sellerId }: { sellerId: string }) =>
-      apiPost<ApiResponse<{ conversation: Conversation }>>("/conversations", {
+    mutationFn: async ({ sellerId, postId }: { sellerId: string; postId?: string }) => {
+      const res = await apiPost<ApiResponse<{ conversation: Conversation }>>("/conversations", {
         participantIds: [sellerId],
-      }),
-    onSuccess: (data) => {
-      void router.navigate(`/messages/${data.data.conversation.id}`)
+      })
+      return { conversation: res.data.conversation, postId }
+    },
+    onSuccess: ({ conversation, postId }) => {
+      const query = postId ? `?postId=${encodeURIComponent(postId)}` : ""
+      void router.navigate(`/messages/${conversation.id}${query}`)
     },
   })
 }

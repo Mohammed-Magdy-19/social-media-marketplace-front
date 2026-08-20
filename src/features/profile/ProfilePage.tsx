@@ -58,7 +58,7 @@ function MyPostsGrid({ author }: { author: string }) {
   }
 
   return (
-    <div ref={parentRef} className="max-h-96 overflow-y-auto pr-1">
+    <div ref={parentRef} className="max-h-96 overflow-y-auto no-scrollbar">
       <div className="relative" style={{ height: virtualizer.getTotalSize() }}>
         {virtualizer.getVirtualItems().map((item) => {
           const rowStart = item.index * COLUMNS

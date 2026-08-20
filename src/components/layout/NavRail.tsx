@@ -131,7 +131,7 @@ export function NavRail() {
   const user = useAuthStore((s) => s.user)
 
   return (
-    <aside className="sticky top-14 hidden h-[calc(100svh-3.5rem)] w-60 shrink-0 flex-col gap-4 overflow-y-auto border-r border-border p-3 md:flex">
+    <aside className="sticky top-14 hidden h-[calc(100svh-3.5rem)] w-60 shrink-0 flex-col gap-4 overflow-y-auto modern-scrollbar border-r border-border p-3 md:flex">
       <NavLinks />
       <Separator />
       <VipProfileCard user={user} />

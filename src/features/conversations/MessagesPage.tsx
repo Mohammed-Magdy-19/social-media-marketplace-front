@@ -8,6 +8,7 @@ import {
   Link,
   useNavigate,
   useParams,
+  useSearchParams,
 } from "react-router-dom"
 import { toast } from "sonner"
 import { ArrowLeft, BadgePercent, Send } from "lucide-react"
@@ -19,12 +20,14 @@ import {
   useOffers,
   offerProposerId,
 } from "@/features/conversations/queries"
+import { usePost } from "@/features/posts/queries"
 import {
   useCreateOffer,
   useMarkMessagesRead,
   useRespondToOffer,
   useSendMessage,
 } from "@/features/conversations/mutations"
+import { useCreatePaymentIntent } from "@/features/payments/mutations"
 import { createOfferFormSchema } from "@/features/conversations/schemas"
 import { useNegotiationUiStore } from "@/stores/negotiationUiStore"
 import { socket } from "@/lib/socket/client"
@@ -207,18 +210,30 @@ function OfferCard({
   onAction: (offerId: string, action: OfferAction, amount?: number) => void
 }) {
   const [counterOpen, setCounterOpen] = React.useState(false)
+  const createIntent = useCreatePaymentIntent()
   const isMine = offerProposerId(offer) === meId
   const proposerName =
     typeof offer.proposedBy === "object" && offer.proposedBy
-      ? offer.proposedBy.name
+      ? offer.proposedBy.name || offer.proposedBy.username
       : "They"
   const actionable = offer.status === "pending" && !isMine
 
+  const buyerId =
+    typeof offer.buyer === "object" && offer.buyer
+      ? offer.buyer.id || (offer.buyer as unknown as { _id?: string })?._id
+      : String(offer.buyer ?? "")
+  const isBuyer = buyerId === meId
+
+  const offerPostId =
+    typeof offer.post === "object" && offer.post
+      ? offer.post.id || (offer.post as unknown as { _id?: string })?._id
+      : String(offer.post ?? "")
+
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-border bg-soft p-3">
+    <div className="flex flex-col gap-2 rounded-lg border border-border bg-card/80 p-3 shadow-xs">
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <p className="font-mono text-sm font-semibold">
+          <p className="font-mono text-sm font-semibold text-foreground">
             {formatCurrency(offer.amount / 100)}
           </p>
           <p className="truncate text-xs text-muted-foreground">
@@ -227,7 +242,7 @@ function OfferCard({
         </div>
         <Badge
           variant="outline"
-          className={cn("border-transparent", OFFER_STATUS_TONE[offer.status])}
+          className={cn("border-transparent font-medium", OFFER_STATUS_TONE[offer.status])}
         >
           {OFFER_STATUS_LABEL[offer.status]}
         </Badge>
@@ -238,7 +253,7 @@ function OfferCard({
       )}
 
       {actionable && !counterOpen && (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1.5 pt-1">
           <Button size="sm" onClick={() => onAction(offer.id, "accept")}>
             Accept
           </Button>
@@ -262,8 +277,27 @@ function OfferCard({
       {actionable && counterOpen && (
         <CounterOfferForm
           pending={false}
-          onCounter={(amount) => onAction(offer.id, "counter", amount)}
+          onCounter={(amount) => onAction(offer.id, "counter", Math.round(amount * 100))}
         />
+      )}
+
+      {offer.status === "accepted" && isBuyer && offerPostId && (
+        <div className="flex items-center justify-between gap-2 pt-2 border-t border-border">
+          <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Offer accepted!</span>
+          <Button
+            size="sm"
+            onClick={() => {
+              createIntent.mutate({
+                postId: offerPostId,
+                amount: offer.amount,
+                currency: "USD",
+              })
+            }}
+            disabled={createIntent.isPending}
+          >
+            Pay {formatCurrency(offer.amount / 100)}
+          </Button>
+        </div>
       )}
     </div>
   )
@@ -488,10 +522,29 @@ function Thread({ conversationId }: { conversationId: string }) {
     )
   }
 
+  const [searchParams] = useSearchParams()
+  const queryPostId = searchParams.get("postId")
+  const firstOfferPostId =
+    offers && offers.length > 0
+      ? typeof offers[0].post === "object" && offers[0].post
+        ? (offers[0].post as { id?: string; _id?: string })?.id || (offers[0].post as { id?: string; _id?: string })?._id
+        : typeof offers[0].post === "string"
+          ? offers[0].post
+          : undefined
+      : undefined
+
+  const activePostId = queryPostId || firstOfferPostId || meta?.post?.id
+  const { data: activePostData } = usePost(activePostId ?? "")
+  const activePost = activePostData || meta?.post || (offers?.[0]?.post as Post | undefined)
+
   const onOffer = (values: OfferValues) => {
-    if (!meta?.post) return
+    const targetPostId = activePost?.id || activePostId
+    if (!targetPostId) {
+      toast.error("No listing associated with this negotiation.")
+      return
+    }
     createOffer.mutate(
-      { postId: meta.post.id, amount: values.amount },
+      { postId: targetPostId, amount: Math.round(values.amount * 100) },
       {
         onSuccess: () => {
           toast.success("Offer sent")
@@ -524,9 +577,8 @@ function Thread({ conversationId }: { conversationId: string }) {
     meta?.participants.find((p) => p.id !== me?.id) ??
     meta?.participants[0]
 
-  // Negotiation affordances live only in 1:1 conversations anchored to a
-  // priced listing (spec §5.2/§5.8); hide them in group/plain chats.
-  const isNegotiation = !!meta?.post && meta?.isGroup !== true
+  // Negotiation affordances live in conversations with an associated listing or existing offers
+  const isNegotiation = Boolean(activePost || (offers && offers.length > 0))
   const hasPendingOffer = (offers ?? []).some((o) => o.status === "pending")
 
   return (
@@ -548,12 +600,12 @@ function Thread({ conversationId }: { conversationId: string }) {
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold">{other?.name ?? "Conversation"}</p>
           <p className="truncate text-xs text-muted-foreground">
-            {meta?.post?.title ?? "Negotiation"}
+            {activePost?.title ? `Listing: ${activePost.title}` : "Chat"}
           </p>
         </div>
-        {meta?.post?.price != null && (
+        {activePost?.price != null && (
           <Badge variant="outline" className="font-mono">
-            {formatCurrency(meta.post.price, meta.post.currency)}
+            {formatCurrency(activePost.price, activePost.currency)}
           </Badge>
         )}
         {isNegotiation && (

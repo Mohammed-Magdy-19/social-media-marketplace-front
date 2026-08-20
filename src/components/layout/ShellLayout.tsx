@@ -28,7 +28,7 @@ function NavRailContent() {
   const setNavDrawerOpen = useLayoutStore((s) => s.setNavDrawerOpen)
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-y-auto p-3">
+    <div className="flex h-full flex-col gap-4 overflow-y-auto modern-scrollbar p-3">
       <NavLinks onNavigate={() => setNavDrawerOpen(false)} />
       <VipProfileCard user={user} />
     </div>

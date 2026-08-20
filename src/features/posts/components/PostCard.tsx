@@ -27,13 +27,30 @@ export function PostCard({ post }: { post: Post }) {
   const mediaList = Array.isArray(post?.media) ? post.media : []
   const tagsList = Array.isArray(post?.tags) ? post.tags : []
   const authorName = post.author?.name || post.author?.username || "User"
+  const authorId = post.author?.id || (post.author as unknown as { _id?: string })?._id
+  const authorProfileLink = authorId ? `/users/${authorId}` : undefined
 
   return (
     <article className="flex flex-col gap-3 rounded-card bg-card p-4 ring-1 ring-foreground/10">
       <div className="flex items-center gap-3">
-        <AvatarWithFallback name={authorName} src={post.author?.avatar} />
+        {authorProfileLink ? (
+          <Link to={authorProfileLink} className="transition-opacity hover:opacity-85">
+            <AvatarWithFallback name={authorName} src={post.author?.avatar} />
+          </Link>
+        ) : (
+          <AvatarWithFallback name={authorName} src={post.author?.avatar} />
+        )}
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold">{authorName}</p>
+          {authorProfileLink ? (
+            <Link
+              to={authorProfileLink}
+              className="inline-block max-w-full truncate text-sm font-semibold hover:underline hover:text-brand transition-colors"
+            >
+              {authorName}
+            </Link>
+          ) : (
+            <p className="truncate text-sm font-semibold">{authorName}</p>
+          )}
           <p className="text-xs text-muted-foreground">
             {formatRelativeTime(post.createdAt)}
             {post.category?.name && ` · ${post.category.name}`}

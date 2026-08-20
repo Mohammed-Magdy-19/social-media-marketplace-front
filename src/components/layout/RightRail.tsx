@@ -90,7 +90,7 @@ function AdminDesk() {
 
 export function RightRail() {
   return (
-    <aside className="sticky top-14 hidden h-[calc(100svh-3.5rem)] w-72 shrink-0 flex-col gap-4 overflow-y-auto border-l border-border p-3 xl:flex">
+    <aside className="sticky top-14 hidden h-[calc(100svh-3.5rem)] w-72 shrink-0 flex-col gap-4 overflow-y-auto modern-scrollbar border-l border-border p-3 xl:flex">
       <ErrorBoundary fallback={<SectionFallback />}>
         <TopDeals />
       </ErrorBoundary>
