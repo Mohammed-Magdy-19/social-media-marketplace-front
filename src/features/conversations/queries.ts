@@ -35,7 +35,7 @@ export function useConversationMeta(conversationId: string) {
       >(`/conversations/${conversationId}`, { signal })
       return res.data.conversation
     },
-    enabled: !!conversationId,
+    enabled: !!conversationId && conversationId !== "undefined",
   })
 }
 
@@ -54,7 +54,7 @@ export function useMessagesInfinite(conversationId: string) {
     },
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
-    enabled: !!conversationId,
+    enabled: !!conversationId && conversationId !== "undefined",
   })
 }
 
@@ -89,6 +89,6 @@ export function useOffers(conversationId: string) {
       )
       return res.data.offers ?? []
     },
-    enabled: !!conversationId,
+    enabled: !!conversationId && conversationId !== "undefined",
   })
 }

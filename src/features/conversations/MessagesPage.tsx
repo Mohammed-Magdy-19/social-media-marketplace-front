@@ -371,11 +371,13 @@ function Thread({ conversationId }: { conversationId: string }) {
   // Mark inbound messages read once on chat open, and again when the tab
   // regains focus (spec §5.9) — never on every scroll or incoming message.
   React.useEffect(() => {
+    if (!conversationId || conversationId === "undefined") return
     markRead.mutate()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId])
 
   React.useEffect(() => {
+    if (!conversationId || conversationId === "undefined") return
     const onFocus = () => markRead.mutate()
     window.addEventListener("focus", onFocus)
     return () => window.removeEventListener("focus", onFocus)
@@ -383,6 +385,7 @@ function Thread({ conversationId }: { conversationId: string }) {
   }, [conversationId])
 
   React.useEffect(() => {
+    if (!conversationId || conversationId === "undefined") return
     setActiveConversation(conversationId)
     didInitialScroll.current = false
     stickToBottom.current = true
@@ -737,8 +740,10 @@ function ConversationList({
 
 export default function MessagesPage() {
   const { conversationId } = useParams<{ conversationId?: string }>()
+  const validConversationId =
+    conversationId && conversationId !== "undefined" ? conversationId : undefined
 
-  if (!conversationId) {
+  if (!validConversationId) {
     return (
       <div className="flex flex-col gap-4">
         <div className="mt-4">
@@ -765,12 +770,12 @@ export default function MessagesPage() {
       <Card className="hidden max-h-[calc(100svh-6rem)] overflow-y-auto rounded-card md:block">
         <CardContent className="p-2">
           <ErrorBoundary fallback={<SectionFallback />}>
-            <ConversationList activeId={conversationId} />
+            <ConversationList activeId={validConversationId} />
           </ErrorBoundary>
         </CardContent>
       </Card>
       <ErrorBoundary fallback={<SectionFallback />}>
-        <Thread conversationId={conversationId} />
+        <Thread conversationId={validConversationId} />
       </ErrorBoundary>
     </div>
   )

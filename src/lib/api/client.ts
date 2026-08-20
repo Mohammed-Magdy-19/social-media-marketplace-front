@@ -97,8 +97,33 @@ function hardLogout(message?: string) {
   void router.navigate("/login", { replace: true })
 }
 
+function normalizeIds(obj: unknown): unknown {
+  if (!obj || typeof obj !== "object") return obj
+  if (Array.isArray(obj)) {
+    for (let i = 0; i < obj.length; i++) {
+      normalizeIds(obj[i])
+    }
+    return obj
+  }
+  const record = obj as Record<string, unknown>
+  if (record._id && !record.id) {
+    record.id = String(record._id)
+  }
+  for (const key of Object.keys(record)) {
+    if (record[key] && typeof record[key] === "object") {
+      normalizeIds(record[key])
+    }
+  }
+  return record
+}
+
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (response.data) {
+      normalizeIds(response.data)
+    }
+    return response
+  },
   async (error: AxiosError) => {
     const original = error.config as
       | (InternalAxiosRequestConfig & { _retried?: boolean })

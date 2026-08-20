@@ -8,6 +8,8 @@ export const postComposerSchema = z.object({
   tags: z.array(z.string().min(1).max(24)).max(20, "Up to 20 tags"),
 })
 
+export type PostComposerValues = z.infer<typeof postComposerSchema>
+
 export const commentSchema = z.object({
   text: z.string().min(1, "Write a comment").max(500),
 })

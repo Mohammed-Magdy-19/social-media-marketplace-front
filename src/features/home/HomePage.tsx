@@ -9,8 +9,8 @@ import { ImagePlus, Loader2, Plus, X } from "lucide-react"
 import { useAuthStore } from "@/stores/authStore"
 import { useCategories } from "@/features/categories/queries"
 import { useFeedInfinite } from "@/features/feed/queries"
-import { useCreatePost } from "@/features/posts/mutations"
-import { postComposerSchema } from "@/features/posts/schemas"
+import { useCreatePost, type CreatePostInput } from "@/features/posts/mutations"
+import { postComposerSchema, type PostComposerValues } from "@/features/posts/schemas"
 import { getErrorMessage } from "@/lib/api/errors"
 import {
   POST_MEDIA_MAX_BYTES,
@@ -26,7 +26,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-type ComposerValues = z.infer<typeof postComposerSchema>
+type ComposerValues = PostComposerValues
 
 function Composer() {
   const user = useAuthStore((s) => s.user)
@@ -88,7 +88,13 @@ function Composer() {
   }
 
   const onSubmit = async (values: ComposerValues) => {
-    const payload = { ...values, tags: values.tags.filter(Boolean) }
+    const payload: CreatePostInput = {
+      title: values.title,
+      content: values.content,
+      categoryId: values.categoryId,
+      price: values.price,
+      tags: values.tags.filter(Boolean),
+    }
     setUploading(true)
     setUploadProgress(0)
     try {
@@ -360,7 +366,7 @@ function FeedColumn() {
               }
               return (
                 <div
-                  key={post.id}
+                  key={post.id || (post as unknown as { _id?: string })._id || item.index}
                   ref={virtualizer.measureElement}
                   data-index={item.index}
                 >

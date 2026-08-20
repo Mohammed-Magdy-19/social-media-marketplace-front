@@ -101,16 +101,18 @@ export function useCreateReply() {
   })
 }
 
+export interface CreatePostInput {
+  title: string
+  content: string
+  categoryId: string
+  price?: number
+  tags: string[]
+}
+
 export function useCreatePost() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: {
-      title: string
-      content: string
-      categoryId: string
-      price?: number
-      tags: string[]
-    }) =>
+    mutationFn: (input: CreatePostInput) =>
       apiPost<ApiResponse<{ post: Post }>>("/posts", input),
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.posts.all })

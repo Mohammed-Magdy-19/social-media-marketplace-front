@@ -161,9 +161,9 @@ export function Header() {
             <DropdownMenuContent align="end" className="w-80">
               <DropdownMenuLabel>Notifications</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {(notifications ?? []).slice(0, 5).map((n) => (
+              {(notifications ?? []).slice(0, 5).map((n, idx) => (
                 <DropdownMenuItem
-                  key={n.id}
+                  key={n.id || (n as unknown as { _id?: string })._id || `${idx}-${n.createdAt}`}
                   className="flex items-start gap-2 whitespace-normal py-2"
                   disabled
                 >
