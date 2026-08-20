@@ -19,6 +19,7 @@ import {
   Pencil,
   Reply,
   Send,
+  Tag,
   Trash2,
   X,
 } from "lucide-react"
@@ -325,9 +326,11 @@ function TypingBadge() {
 function CounterOfferForm({
   pending,
   onCounter,
+  onCancel,
 }: {
   pending: boolean
   onCounter: (amountCents: number) => void
+  onCancel: () => void
 }) {
   const form = useForm<OfferValues>({
     resolver: zodResolver(createOfferFormSchema),
@@ -337,7 +340,7 @@ function CounterOfferForm({
   return (
     <form
       onSubmit={form.handleSubmit((v) => onCounter(v.amount))}
-      className="flex items-center gap-2"
+      className="flex items-center gap-2 rounded-xl bg-background/80 p-2 ring-1 ring-border/60"
     >
       <Form {...form}>
         <FormField
@@ -346,29 +349,36 @@ function CounterOfferForm({
           render={({ field }) => (
             <FormItem className="grid flex-1">
               <FormControl>
-                <Input
-                  {...field}
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  inputMode="decimal"
-                  placeholder="Counter amount (USD)"
-                  autoFocus
-                  value={field.value ?? ""}
-                  onChange={(e) =>
-                    field.onChange(
-                      e.target.value === "" ? undefined : Number(e.target.value)
-                    )
-                  }
-                />
+                <div className="relative">
+                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">$</span>
+                  <Input
+                    {...field}
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    inputMode="decimal"
+                    placeholder="Counter offer amount"
+                    autoFocus
+                    className="h-8 pl-6 text-xs"
+                    value={field.value ?? ""}
+                    onChange={(e) =>
+                      field.onChange(
+                        e.target.value === "" ? undefined : Number(e.target.value)
+                      )
+                    }
+                  />
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
       </Form>
-      <Button type="submit" size="sm" disabled={pending}>
-        Send counter
+      <Button type="button" variant="ghost" size="sm" className="h-8 rounded-full text-xs" onClick={onCancel}>
+        Cancel
+      </Button>
+      <Button type="submit" size="sm" className="h-8 rounded-full text-xs font-medium" disabled={pending}>
+        Send Counter
       </Button>
     </form>
   )
@@ -396,63 +406,103 @@ function OfferCard({
   const isBuyer = buyerId === meId
   const currentOfferPostId = offerPostId(offer)
 
+  const isAccepted = offer.status === "accepted"
+
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-border bg-card/80 p-3 shadow-xs">
-      <div className="flex items-center justify-between gap-2">
-        <div className="min-w-0">
-          <p className="font-mono text-sm font-semibold text-foreground">
-            {formatCurrency(offer.amount / 100)}
-          </p>
-          <p className="truncate text-xs text-muted-foreground">
-            {isMine ? "You" : proposerName} · {formatRelativeTime(offer.createdAt)}
-          </p>
+    <div
+      className={cn(
+        "flex flex-col gap-2 rounded-xl border p-3 shadow-xs transition-all",
+        isAccepted
+          ? "border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20"
+          : "border-border/60 bg-card/90 backdrop-blur-xs hover:border-border"
+      )}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground/80 font-mono text-xs font-bold">
+            <Tag className="size-4 text-brand" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-base font-bold tracking-tight text-foreground">
+                {formatCurrency(offer.amount / 100)}
+              </span>
+              <Badge
+                variant="outline"
+                className={cn("border-transparent px-2 py-0.5 text-[11px] font-medium", OFFER_STATUS_TONE[offer.status])}
+              >
+                <span
+                  className={cn(
+                    "mr-1.5 inline-block size-1.5 rounded-full",
+                    offer.status === "pending" && "bg-amber-500 animate-pulse",
+                    offer.status === "accepted" && "bg-emerald-500",
+                    offer.status === "rejected" && "bg-rose-500",
+                    offer.status === "countered" && "bg-blue-500"
+                  )}
+                />
+                {OFFER_STATUS_LABEL[offer.status]}
+              </Badge>
+            </div>
+            <p className="truncate text-[11px] text-muted-foreground">
+              {isMine ? "Proposed by You" : `Proposed by ${proposerName}`} · {formatRelativeTime(offer.createdAt)}
+            </p>
+          </div>
         </div>
-        <Badge
-          variant="outline"
-          className={cn("border-transparent font-medium", OFFER_STATUS_TONE[offer.status])}
-        >
-          {OFFER_STATUS_LABEL[offer.status]}
-        </Badge>
+
+        {actionable && !counterOpen && (
+          <div className="flex items-center gap-1 shrink-0">
+            <Button
+              size="sm"
+              className="h-7.5 rounded-full px-3 text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+              onClick={() => onAction(offer.id, "accept")}
+            >
+              <Check className="mr-1 size-3.5" />
+              Accept
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7.5 rounded-full px-2.5 text-xs text-muted-foreground hover:text-destructive hover:border-destructive/30"
+              onClick={() => onAction(offer.id, "reject")}
+            >
+              <X className="mr-1 size-3.5" />
+              Reject
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7.5 rounded-full px-2.5 text-xs font-medium"
+              onClick={() => setCounterOpen(true)}
+            >
+              Counter
+            </Button>
+          </div>
+        )}
       </div>
 
       {offer.status === "pending" && isMine && (
-        <p className="text-xs text-muted-foreground">Waiting for a response…</p>
-      )}
-
-      {actionable && !counterOpen && (
-        <div className="flex flex-wrap gap-1.5 pt-1">
-          <Button size="sm" onClick={() => onAction(offer.id, "accept")}>
-            Accept
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onAction(offer.id, "reject")}
-          >
-            Reject
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setCounterOpen(true)}
-          >
-            Counter
-          </Button>
-        </div>
+        <p className="text-xs text-muted-foreground">
+          Waiting for response from seller…
+        </p>
       )}
 
       {actionable && counterOpen && (
         <CounterOfferForm
           pending={false}
           onCounter={(amount) => onAction(offer.id, "counter", Math.round(amount * 100))}
+          onCancel={() => setCounterOpen(false)}
         />
       )}
 
-      {offer.status === "accepted" && isBuyer && currentOfferPostId && (
-        <div className="flex items-center justify-between gap-2 pt-2 border-t border-border">
-          <span className="text-xs font-medium text-ok">Offer accepted!</span>
+      {isAccepted && isBuyer && currentOfferPostId && (
+        <div className="flex items-center justify-between gap-3 pt-2.5 border-t border-emerald-500/20">
+          <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+            <Check className="size-3.5" />
+            <span>Offer accepted! Proceed to checkout:</span>
+          </div>
           <Button
             size="sm"
+            className="h-8 rounded-full px-4 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
             onClick={() => {
               createIntent.mutate({
                 postId: currentOfferPostId,
@@ -475,11 +525,13 @@ function MakeOfferDialog({
   onOpenChange,
   onOffer,
   pending,
+  originalPrice,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   onOffer: (values: OfferValues) => void
   pending: boolean
+  originalPrice?: number
 }) {
   const form = useForm<OfferValues>({
     resolver: zodResolver(createOfferFormSchema),
@@ -490,42 +542,85 @@ function MakeOfferDialog({
     if (open) form.reset({ amount: undefined })
   }, [open, form])
 
+  const applyDiscount = (percent: number) => {
+    if (!originalPrice) return
+    const discounted = Math.max(1, Math.round(originalPrice * (1 - percent / 100) * 100) / 100)
+    form.setValue("amount", discounted)
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Make an offer</DialogTitle>
-          <DialogDescription>
-            Propose a price for this listing. Amounts are in dollars.
-          </DialogDescription>
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand/10 text-brand">
+              <BadgePercent className="size-5" />
+            </div>
+            <div>
+              <DialogTitle className="text-base font-bold">Make an Offer</DialogTitle>
+              <DialogDescription className="text-xs">
+                Propose a custom price to the seller.
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
+
+        {originalPrice != null && originalPrice > 0 && (
+          <div className="flex flex-col gap-2 rounded-xl bg-muted/40 p-3">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>Listing Price:</span>
+              <span className="font-mono font-bold text-foreground">{formatCurrency(originalPrice)}</span>
+            </div>
+            <div className="flex items-center gap-1.5 pt-1">
+              <span className="text-[11px] text-muted-foreground mr-1">Quick:</span>
+              {[5, 10, 15, 20].map((pct) => (
+                <Button
+                  key={pct}
+                  type="button"
+                  variant="outline"
+                  size="xs"
+                  className="h-6 rounded-full px-2 text-[11px] hover:bg-brand/10 hover:text-brand hover:border-brand/40"
+                  onClick={() => applyDiscount(pct)}
+                >
+                  -{pct}%
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <Form {...form}>
           <form
             id="offer-form"
             onSubmit={form.handleSubmit(onOffer)}
-            className="flex flex-col gap-4"
+            className="flex flex-col gap-4 pt-1"
           >
             <FormField
               control={form.control}
               name="amount"
               render={({ field }) => (
                 <FormItem className="grid">
-                  <FormLabel>Offer price (USD)</FormLabel>
+                  <FormLabel className="text-xs font-semibold">Your Offer Price (USD)</FormLabel>
                   <FormControl>
-                    <Input
-                      {...field}
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      inputMode="decimal"
-                      placeholder="0.00"
-                      value={field.value ?? ""}
-                      onChange={(e) =>
-                        field.onChange(
-                          e.target.value === "" ? undefined : Number(e.target.value)
-                        )
-                      }
-                    />
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">$</span>
+                      <Input
+                        {...field}
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        inputMode="decimal"
+                        placeholder="0.00"
+                        className="pl-7 font-mono font-semibold"
+                        autoFocus
+                        value={field.value ?? ""}
+                        onChange={(e) =>
+                          field.onChange(
+                            e.target.value === "" ? undefined : Number(e.target.value)
+                          )
+                        }
+                      />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -533,13 +628,18 @@ function MakeOfferDialog({
             />
           </form>
         </Form>
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <div className="flex justify-end gap-2 pt-2">
+          <Button variant="ghost" className="rounded-full text-xs" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button type="submit" form="offer-form" disabled={pending}>
-            <BadgePercent />
-            Send offer
+          <Button
+            type="submit"
+            form="offer-form"
+            className="rounded-full text-xs font-semibold shadow-xs"
+            disabled={pending}
+          >
+            <BadgePercent className="mr-1.5 size-4" />
+            Send Offer
           </Button>
         </div>
       </DialogContent>
@@ -762,46 +862,60 @@ function Thread({ conversationId }: { conversationId: string }) {
   const hasPendingOffer = (offers ?? []).some((o) => o.status === "pending")
 
   return (
-    <div className="flex h-[calc(100svh-8.5rem)] flex-col overflow-hidden rounded-card bg-card ring-1 ring-foreground/10 md:h-[calc(100svh-6rem)]">
-      <div className="flex items-center gap-3 border-b border-border px-3 py-2.5">
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="md:hidden"
-          onClick={() => void navigate("/messages")}
-          aria-label="Back to conversations"
-        >
-          <ArrowLeft />
-        </Button>
-        <AvatarWithFallback
-          name={other?.name ?? "Unknown"}
-          src={other?.avatar ?? null}
-        />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold">{other?.name ?? "Conversation"}</p>
-          <p className="truncate text-xs text-muted-foreground">
-            {activePost?.title ? `Listing: ${activePost.title}` : "Chat"}
-          </p>
-        </div>
-        {activePost?.price != null && (
-          <Badge variant="outline" className="font-mono">
-            {formatCurrency(activePost.price, activePost.currency)}
-          </Badge>
-        )}
-        {isNegotiation && (
+    <div className="flex h-[calc(100svh-8.5rem)] flex-col overflow-hidden rounded-card bg-card/95 shadow-sm ring-1 ring-foreground/10 backdrop-blur-md md:h-[calc(100svh-6rem)]">
+      {/* Modern Header */}
+      <div className="flex items-center justify-between gap-3 border-b border-border/70 bg-card/80 px-3.5 py-2.5 backdrop-blur-xs">
+        <div className="flex items-center gap-2.5 min-w-0">
           <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setOfferOpen(true)}
-            disabled={hasPendingOffer}
+            variant="ghost"
+            size="icon-xs"
+            className="md:hidden -ml-1 text-muted-foreground"
+            onClick={() => void navigate("/messages")}
+            aria-label="Back to conversations"
           >
-            {hasPendingOffer ? "Offer pending" : "Make offer"}
+            <ArrowLeft className="size-4" />
           </Button>
-        )}
+          <AvatarWithFallback
+            name={other?.name ?? "Unknown"}
+            src={other?.avatar ?? null}
+          />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-bold tracking-tight text-foreground">
+              {other?.name ?? "Conversation"}
+            </p>
+            <p className="truncate text-[11px] text-muted-foreground">
+              {activePost?.title ? `Listing: ${activePost.title}` : "Chat"}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {activePost?.price != null && (
+            <Badge variant="outline" className="font-mono text-xs font-semibold px-2 py-0.5 border-border/80 bg-muted/30">
+              {formatCurrency(activePost.price, activePost.currency)}
+            </Badge>
+          )}
+          {isNegotiation && (
+            <Button
+              size="sm"
+              variant={hasPendingOffer ? "outline" : "default"}
+              className={cn(
+                "h-8 rounded-full px-3 text-xs font-semibold shadow-xs transition-all",
+                !hasPendingOffer && "bg-brand hover:bg-brand/90 text-white"
+              )}
+              onClick={() => setOfferOpen(true)}
+              disabled={hasPendingOffer}
+            >
+              <BadgePercent className="mr-1.5 size-3.5" />
+              {hasPendingOffer ? "Offer Pending" : "Make Offer"}
+            </Button>
+          )}
+        </div>
       </div>
 
+      {/* Offers Tray (no scrollbar) */}
       {(offers?.length ?? 0) > 0 && (
-        <div className="flex max-h-48 flex-col gap-2 overflow-y-auto border-b border-border p-3">
+        <div className="flex max-h-56 flex-col gap-2.5 overflow-y-auto no-scrollbar border-b border-border/70 bg-muted/20 p-3">
           {offers!.map((offer) => (
             <OfferCard
               key={offer.id}
@@ -813,18 +927,23 @@ function Thread({ conversationId }: { conversationId: string }) {
         </div>
       )}
 
+      {/* Messages Scroll Stream (no scrollbar) */}
       <div
         ref={parentRef}
         onScroll={onScroll}
-        className="flex-1 overflow-y-auto overscroll-contain"
+        className="flex-1 overflow-y-auto overscroll-contain no-scrollbar p-3.5"
       >
         {messages.length === 0 ? (
-          <div className="flex h-full items-center justify-center p-6 text-center text-sm text-muted-foreground">
-            Start the conversation — send a message or make an offer.
+          <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center text-sm text-muted-foreground">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted/60 text-muted-foreground">
+              <BadgePercent className="size-6" />
+            </div>
+            <p className="font-medium text-foreground">Start the conversation</p>
+            <p className="text-xs max-w-xs">Send a direct message or make a negotiation offer on this listing.</p>
           </div>
         ) : (
           <div
-            className="relative flex flex-col gap-2 p-3"
+            className="relative flex flex-col gap-2.5"
             style={{ height: virtualizer.getTotalSize() }}
           >
             {virtualizer.getVirtualItems().map((item) => {
@@ -871,8 +990,8 @@ function Thread({ conversationId }: { conversationId: string }) {
 
       {/* Reply bar when replying to a message */}
       {replyingTo && (
-        <div className="flex items-center justify-between gap-2 border-t border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1.5 min-w-0">
+        <div className="flex items-center justify-between gap-2 border-t border-border/70 bg-muted/50 px-3.5 py-2 text-xs text-muted-foreground backdrop-blur-xs">
+          <div className="flex items-center gap-2 min-w-0">
             <CornerDownRight className="size-3.5 text-brand shrink-0" />
             <span className="font-semibold text-foreground">
               Replying to {replyingTo.senderId === me?.id ? "yourself" : other?.name ?? "User"}:
@@ -882,7 +1001,7 @@ function Thread({ conversationId }: { conversationId: string }) {
           <Button
             variant="ghost"
             size="icon-xs"
-            className="h-5 w-5 shrink-0"
+            className="h-5 w-5 shrink-0 rounded-full hover:bg-muted"
             onClick={() => setReplyingTo(null)}
           >
             <X className="size-3" />
@@ -890,30 +1009,34 @@ function Thread({ conversationId }: { conversationId: string }) {
         </div>
       )}
 
-      <div className="flex items-center gap-2 border-t border-border p-2.5">
-        <Input
-          value={draft}
-          onChange={(e) => {
-            setDraft(e.target.value)
-            if (e.target.value.trim()) emitTyping()
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault()
-              onSend()
-            }
-          }}
-          placeholder="Write a message…"
-          aria-label="Message body"
-          className="flex-1"
-        />
+      {/* Modern Composer Bar */}
+      <div className="flex items-center gap-2 border-t border-border/70 bg-card/80 p-2.5 backdrop-blur-xs">
+        <div className="flex flex-1 items-center rounded-full bg-muted/40 px-3.5 py-1 ring-1 ring-border/60 focus-within:bg-card focus-within:ring-2 focus-within:ring-brand/30 transition-all">
+          <Input
+            value={draft}
+            onChange={(e) => {
+              setDraft(e.target.value)
+              if (e.target.value.trim()) emitTyping()
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault()
+                onSend()
+              }
+            }}
+            placeholder="Write a message…"
+            aria-label="Message body"
+            className="border-0 bg-transparent p-0 text-sm focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none"
+          />
+        </div>
         <Button
-          size="sm"
+          size="icon-sm"
           onClick={onSend}
           disabled={!draft.trim() || sendMessage.isPending}
           aria-label="Send message"
+          className="size-9 rounded-full bg-brand text-white hover:bg-brand/90 shadow-xs shrink-0 transition-transform active:scale-95"
         >
-          <Send />
+          <Send className="size-4" />
         </Button>
       </div>
 
@@ -922,6 +1045,7 @@ function Thread({ conversationId }: { conversationId: string }) {
         onOpenChange={setOfferOpen}
         onOffer={onOffer}
         pending={createOffer.isPending}
+        originalPrice={activePost?.price}
       />
     </div>
   )
@@ -940,7 +1064,7 @@ function ConversationList({
     return (
       <div className="flex flex-col gap-2">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-16 w-full rounded-lg" />
+          <Skeleton key={i} className="h-16 w-full rounded-xl" />
         ))}
       </div>
     )
@@ -963,7 +1087,7 @@ function ConversationList({
   )
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       {sorted.map((c) => {
         const other = c.participants[1]
         const active = c.id === activeId
@@ -973,8 +1097,8 @@ function ConversationList({
             to={`/messages/${c.id}`}
             onClick={onSelect}
             className={cn(
-              "flex items-center gap-3 rounded-lg p-2.5 transition-colors hover:bg-muted",
-              active && "bg-muted"
+              "flex items-center gap-3 rounded-xl p-2.5 transition-all hover:bg-muted/70",
+              active && "bg-muted shadow-2xs font-medium"
             )}
             aria-current={active ? "page" : undefined}
           >
@@ -1043,7 +1167,7 @@ export default function MessagesPage() {
 
   return (
     <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-[18rem_1fr]">
-      <Card className="hidden max-h-[calc(100svh-6rem)] overflow-y-auto rounded-card md:block">
+      <Card className="hidden max-h-[calc(100svh-6rem)] overflow-y-auto no-scrollbar rounded-card md:block">
         <CardContent className="p-2">
           <ErrorBoundary fallback={<SectionFallback />}>
             <ConversationList activeId={validConversationId} />

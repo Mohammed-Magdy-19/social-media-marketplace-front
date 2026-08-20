@@ -90,33 +90,70 @@ function CheckoutForm({
 }) {
   const stripe = useStripe()
   const elements = useElements()
+  const [isElementReady, setIsElementReady] = useState(false)
+  const [loadTimedOut, setLoadTimedOut] = useState(false)
+
   const form = useForm<CheckoutValues>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: { termsAccepted: false as never },
   })
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!isElementReady) setLoadTimedOut(true)
+    }, 5000)
+    return () => clearTimeout(timer)
+  }, [isElementReady])
+
   const handlePay = form.handleSubmit(async () => {
     if (!stripe || !elements) return
-    const { error } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: `${window.location.origin}${window.location.pathname}`,
-      },
-      redirect: "if_required",
-    })
-    if (error) {
-      toast.error(error.message ?? "Payment could not be confirmed.")
+    if (!isElementReady) {
+      toast.error(
+        "Payment form is still loading or could not connect to Stripe. Please verify your Stripe publishable key."
+      )
       return
     }
-    // Stripe accepted the confirmation attempt — the webhook is the source of
-    // truth for the final status, so move to the "confirming" state only.
-    onConfirmed()
+    try {
+      const { error } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: `${window.location.origin}${window.location.pathname}`,
+        },
+        redirect: "if_required",
+      })
+      if (error) {
+        toast.error(error.message ?? "Payment could not be confirmed.")
+        return
+      }
+      // Stripe accepted the confirmation attempt — the webhook is the source of
+      // truth for the final status, so move to the "confirming" state only.
+      onConfirmed()
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Payment processing error"
+      toast.error(message)
+    }
   })
 
   return (
     <Form {...form}>
       <form id="checkout-form" onSubmit={handlePay} className="flex flex-col gap-4">
-        <PaymentElement />
+        <PaymentElement
+          onReady={() => {
+            setIsElementReady(true)
+            setLoadTimedOut(false)
+          }}
+          onLoaderStart={() => setIsElementReady(false)}
+        />
+
+        {loadTimedOut && !isElementReady && (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-600 dark:text-amber-400">
+            <p className="font-semibold">Stripe element failed to load</p>
+            <p className="mt-0.5 opacity-90">
+              The Stripe publishable key may be invalid or mismatched with the secret key that generated this payment. Ensure <code className="font-mono bg-black/10 px-1 py-0.5 rounded">VITE_STRIPE_PUBLISHABLE_KEY</code> matches your Stripe account.
+            </p>
+          </div>
+        )}
+
         <FormField
           control={form.control}
           name="termsAccepted"
@@ -129,7 +166,7 @@ function CheckoutForm({
                 />
               </FormControl>
               <div className="flex flex-col gap-1">
-                <FormLabel className="font-normal leading-snug">
+                <FormLabel className="font-normal leading-snug text-xs text-muted-foreground">
                   I accept the NexMarket terms of service and escrow agreement.
                 </FormLabel>
                 <FormMessage />
@@ -137,11 +174,12 @@ function CheckoutForm({
             </FormItem>
           )}
         />
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2 pt-2">
           <Button
             type="submit"
             form="checkout-form"
-            disabled={!stripe || submitting || form.formState.isSubmitting}
+            disabled={!stripe || !isElementReady || submitting || form.formState.isSubmitting}
+            className="rounded-full px-6 font-semibold shadow-xs"
           >
             {form.formState.isSubmitting ? "Processing…" : "Confirm payment"}
           </Button>
@@ -206,7 +244,7 @@ export default function CheckoutPage() {
   const [timedOut, setTimedOut] = useState(false)
   const [stripeStatus, setStripeStatus] = useState<string | null>(null)
 
-  const { data: payment, isLoading } = usePayment(paymentId)
+  const { data: payment, isLoading, refetch: refetchPayment } = usePayment(paymentId)
 
   const redirectClientSecret = searchParams.get("payment_intent_client_secret")
   const hasRedirectBack = !!redirectClientSecret
@@ -346,14 +384,31 @@ export default function CheckoutPage() {
           </Card>
         ) : isConfirmed && payment?.status === "pending" ? (
           <Card className="rounded-card">
-            <CardContent className="flex flex-col gap-2 p-8 text-center">
-              <p className="text-sm font-medium">
+            <CardContent className="flex flex-col items-center gap-3 p-8 text-center">
+              <p className="text-sm font-semibold text-foreground">
                 Your payment is still processing.
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground max-w-md">
                 It may take a little longer than usual. We&apos;ll email you once
                 it completes — no need to keep this page open.
               </p>
+              <div className="flex gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void refetchPayment()}
+                  className="rounded-full text-xs"
+                >
+                  Check status again
+                </Button>
+                <Button
+                  size="sm"
+                  render={<Link to="/messages" />}
+                  className="rounded-full text-xs"
+                >
+                  Back to messages
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ) : !clientSecret ? (
