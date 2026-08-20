@@ -56,7 +56,7 @@ export function useSendMessage(conversationId: string) {
         }
         const pages = old.pages.map((page, index) =>
           index === 0
-            ? { ...page, messages: [...page.messages, optimistic] }
+            ? { ...page, messages: [...(page?.messages ?? []), optimistic] }
             : page
         )
         return { ...old, pages }
@@ -77,7 +77,7 @@ export function useSendMessage(conversationId: string) {
             index === 0
               ? {
                   ...page,
-                  messages: page.messages.map((m) =>
+                  messages: (page?.messages ?? []).map((m) =>
                     m.id === `client:${clientMessageId}`
                       ? { ...m, status: "failed" as const }
                       : m

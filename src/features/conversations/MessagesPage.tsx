@@ -401,7 +401,11 @@ function Thread({ conversationId }: { conversationId: string }) {
   const messages = React.useMemo(
     () =>
       data?.pages
-        ? [...data.pages].reverse().flatMap((p) => [...p.messages].reverse())
+        ? [...data.pages]
+            .reverse()
+            .flatMap((p) => [
+              ...(Array.isArray(p) ? p : (p?.messages ?? [])),
+            ].reverse())
         : [],
     [data]
   )
@@ -468,7 +472,10 @@ function Thread({ conversationId }: { conversationId: string }) {
       if (!old || old.pages.length === 0) return old
       const pages = old.pages.map((page, index) =>
         index === 0
-          ? { ...page, messages: page.messages.filter((m) => m.id !== failed.id) }
+          ? {
+              ...page,
+              messages: (page?.messages ?? []).filter((m) => m.id !== failed.id),
+            }
           : page
       )
       return { ...old, pages }

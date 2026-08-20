@@ -4,6 +4,7 @@ import { queryKeys } from "@/api/queryKeys"
 import type {
   ApiResponse,
   Conversation,
+  Message,
   MessageCursorPage,
   Offer,
   PaginatedResponse,
@@ -11,6 +12,45 @@ import type {
 } from "@/types"
 
 export const MESSAGES_PAGE_SIZE = 25
+
+interface RawBackendMessage {
+  id?: string
+  _id?: string
+  messageId?: string
+  conversation?: string | { id?: string; _id?: string }
+  conversationId?: string
+  sender?: string | { id?: string; _id?: string; username?: string; avatar?: string }
+  senderId?: string
+  text?: string
+  body?: string
+  createdAt: string
+  clientMessageId?: string
+  status?: "pending" | "failed"
+}
+
+export function normalizeMessage(raw: RawBackendMessage): Message {
+  const id = String(raw.id || raw._id || raw.messageId || "")
+  const conversationId =
+    typeof raw.conversation === "string"
+      ? raw.conversation
+      : raw.conversation?.id || raw.conversation?._id || raw.conversationId || ""
+  const senderId =
+    typeof raw.sender === "string"
+      ? raw.sender
+      : raw.sender?.id || raw.sender?._id || raw.senderId || ""
+  const body = raw.body ?? raw.text ?? ""
+
+  return {
+    id,
+    messageId: raw.messageId || id,
+    conversationId,
+    senderId,
+    body,
+    createdAt: raw.createdAt,
+    clientMessageId: raw.clientMessageId,
+    status: raw.status,
+  }
+}
 
 export function useConversations() {
   return useQuery({
@@ -43,17 +83,32 @@ export function useMessagesInfinite(conversationId: string) {
   return useInfiniteQuery({
     queryKey: queryKeys.conversations.messages(conversationId),
     queryFn: async ({ pageParam, signal }) => {
-      const res = await apiGet<ApiResponse<MessageCursorPage>>(
+      const res = await apiGet<{
+        status: string
+        results: number
+        data: RawBackendMessage[]
+        pagination?: {
+          limit?: number
+          hasMore?: boolean
+          nextCursor?: string | null
+        }
+      }>(
         `/conversations/${conversationId}/messages`,
         {
           params: { limit: MESSAGES_PAGE_SIZE, cursor: pageParam ?? undefined },
           signal,
         }
       )
-      return res.data
+      const rawList = Array.isArray(res.data) ? res.data : []
+      const messages = rawList.map(normalizeMessage)
+      const nextCursor = res.pagination?.nextCursor ?? null
+      return {
+        messages,
+        nextCursor,
+      } as MessageCursorPage
     },
     initialPageParam: null as string | null,
-    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    getNextPageParam: (lastPage) => lastPage?.nextCursor ?? null,
     enabled: !!conversationId && conversationId !== "undefined",
   })
 }

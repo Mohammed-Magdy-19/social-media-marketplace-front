@@ -185,7 +185,7 @@ function flushMessages() {
               .filter((m) => m.clientMessageId)
               .map((m) => `client:${m.clientMessageId}`)
           )
-          let messages = page.messages.filter(
+          let messages = (page?.messages ?? []).filter(
             (m) => !(optimisticIds.has(m.id) && m.id.startsWith("client:"))
           )
           const seen = new Set(messages.map((m) => m.messageId))
