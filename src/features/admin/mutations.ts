@@ -153,7 +153,7 @@ export function useTogglePostStatus() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ id, status }: { id: string; status: Post["status"] }) =>
-      apiPatch<Post>(`/posts/${id}`, { status }),
+      apiPatch<ApiResponse<{ post: Post }>>(`/posts/${id}`, { status }),
     onMutate: async ({ id, status }) => {
       await queryClient.cancelQueries({ queryKey: ADMIN_POSTS_PREFIX })
       const snapshot = snapshotAdminLists(queryClient, ADMIN_POSTS_PREFIX)
@@ -162,6 +162,10 @@ export function useTogglePostStatus() {
         status,
       }))
       return snapshot
+    },
+    onSuccess: (_res, { status }) => {
+      toast.success(`Post marked as ${status}`)
+      void queryClient.invalidateQueries({ queryKey: ADMIN_POSTS_PREFIX })
     },
     onError: (error, _v, snapshot) => {
       if (snapshot) restoreAdminLists(queryClient, snapshot)

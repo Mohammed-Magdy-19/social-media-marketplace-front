@@ -1,6 +1,7 @@
 import * as React from "react"
+import { Link } from "react-router-dom"
 import { toast } from "sonner"
-import { Eye, Trash2 } from "lucide-react"
+import { Check, ExternalLink, Trash2 } from "lucide-react"
 import { useAdminPosts } from "@/features/admin/queries"
 import { useTogglePostStatus, useDelRow } from "@/features/admin/mutations"
 import { AdminPageHeader } from "@/features/admin/components/AdminPageHeader"
@@ -27,6 +28,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { formatCurrency, formatRelativeTime } from "@/lib/utils"
@@ -64,11 +67,11 @@ export default function AdminPostsPage() {
         header: "Listing",
         className: "min-w-56",
         cell: (post: Post) => (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5 min-w-0 w-full overflow-hidden">
             <AvatarWithFallback name={post.title} src={post.media?.[0] ?? null} size="sm" />
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1 overflow-hidden">
               <p className="truncate text-sm font-medium text-foreground">{post.title}</p>
-              <p className="font-mono text-[10px] text-muted-foreground">{post.id}</p>
+              <p className="truncate font-mono text-[10px] text-muted-foreground">{post.id}</p>
             </div>
           </div>
         ),
@@ -78,7 +81,9 @@ export default function AdminPostsPage() {
         header: "Seller",
         className: "min-w-32",
         cell: (post: Post) => (
-          <span className="text-sm text-foreground">{post.author?.name || post.author?.username || "Unknown"}</span>
+          <span className="truncate text-sm text-foreground">
+            {post.author?.name || post.author?.username || "Unknown"}
+          </span>
         ),
       },
       {
@@ -106,24 +111,35 @@ export default function AdminPostsPage() {
       {
         key: "actions",
         header: "Actions",
-        className: "w-24 text-right",
+        className: "w-36 text-right",
         cell: (post: Post) => (
-          <div className="flex justify-end gap-1">
-            <Button variant="ghost" size="icon-xs" aria-label="Preview">
-              <Eye />
+          <div className="flex items-center justify-end gap-1">
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              aria-label="View listing"
+              title="View listing"
+              render={<Link to={`/posts/${post.id}`} target="_blank" rel="noreferrer" />}
+            >
+              <ExternalLink className="size-3.5 text-muted-foreground hover:text-foreground" />
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
-                  <Button variant="outline" size="xs" aria-label="Change status">
-                    <span className="text-[11px]">Status</span>
+                  <Button variant="outline" size="xs" aria-label="Change post status">
+                    <span className="text-[11px]">Moderate</span>
                   </Button>
                 }
               />
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="min-w-36">
+                <DropdownMenuLabel className="text-xs text-muted-foreground">
+                  Change status
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
                 {(["active", "hidden", "flagged"] as const).map((s) => (
                   <DropdownMenuItem
                     key={s}
+                    disabled={post.status === s || toggleStatus.isPending}
                     onClick={() =>
                       toggleStatus.mutate(
                         { id: post.id, status: s },
@@ -134,7 +150,10 @@ export default function AdminPostsPage() {
                       )
                     }
                   >
-                    Mark {s.charAt(0).toUpperCase() + s.slice(1)}
+                    <span className="flex-1">
+                      Mark {s.charAt(0).toUpperCase() + s.slice(1)}
+                    </span>
+                    {post.status === s && <Check className="size-3.5 text-brand" />}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
@@ -143,10 +162,11 @@ export default function AdminPostsPage() {
               variant="ghost"
               size="icon-xs"
               aria-label="Delete post"
-              className="text-err hover:bg-err-soft"
+              title="Delete post"
+              className="text-err hover:bg-err-soft hover:text-err"
               onClick={() => setDeleteTarget(post)}
             >
-              <Trash2 />
+              <Trash2 className="size-3.5" />
             </Button>
           </div>
         ),
@@ -215,11 +235,17 @@ export default function AdminPostsPage() {
               disabled={delRow.isPending}
               onClick={() => {
                 if (!deleteTarget) return
-                delRow.mutate({ table: "posts", id: deleteTarget.id })
-                setDeleteTarget(null)
+                delRow.mutate(
+                  { table: "posts", id: deleteTarget.id },
+                  {
+                    onSuccess: () => {
+                      setDeleteTarget(null)
+                    },
+                  }
+                )
               }}
             >
-              Delete
+              {delRow.isPending ? "Deleting…" : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

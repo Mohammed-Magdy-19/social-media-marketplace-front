@@ -31,7 +31,7 @@ const ALIGN_CLASSES: Record<NonNullable<VirtualColumn<never>["align"]>, string> 
 }
 
 const WIDTH_CLASSES: { regex: RegExp; track: (n: number) => string }[] = [
-  { regex: /min-w-(\d+)/, track: (n) => `minmax(${n / 4}rem, auto)` },
+  { regex: /min-w-(\d+)/, track: (n) => `minmax(${n / 4}rem, 1fr)` },
   { regex: /w-(\d+)/, track: (n) => `${n / 4}rem` },
 ]
 
@@ -108,7 +108,7 @@ export function VirtualTable<T>({
     <ErrorBoundary fallback={<SectionFallback />}>
       <div
         ref={parentRef}
-        className="relative overflow-auto rounded-card"
+        className="relative overflow-auto no-scrollbar rounded-card"
         style={{ maxHeight }}
       >
         <Table>
@@ -121,7 +121,7 @@ export function VirtualTable<T>({
                 <TableHead
                   key={col.key}
                   className={cn(
-                    "truncate px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground",
+                    "min-w-0 max-w-full truncate overflow-hidden text-ellipsis whitespace-nowrap px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground",
                     ALIGN_CLASSES[col.align ?? "left"]
                   )}
                 >
@@ -149,11 +149,13 @@ export function VirtualTable<T>({
                     <TableCell
                       key={col.key}
                       className={cn(
-                        "flex min-w-0 items-center overflow-hidden px-3",
+                        "flex min-w-0 max-w-full items-center overflow-hidden truncate px-3",
                         ALIGN_CLASSES[col.align ?? "left"]
                       )}
                     >
-                      {col.cell(row)}
+                      <div className="min-w-0 max-w-full w-full overflow-hidden truncate">
+                        {col.cell(row)}
+                      </div>
                     </TableCell>
                   ))}
                 </TableRow>

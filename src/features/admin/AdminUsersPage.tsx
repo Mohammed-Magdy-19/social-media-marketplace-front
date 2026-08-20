@@ -1,7 +1,7 @@
 import * as React from "react"
-import { useSearchParams } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 import { toast } from "sonner"
-import { Check, ShieldCheck } from "lucide-react"
+import { Check, ExternalLink, ShieldCheck } from "lucide-react"
 import { useAdminUsers } from "@/features/admin/queries"
 import { useSetUserStatus, useUpdateUserRole } from "@/features/admin/mutations"
 import { AdminPageHeader } from "@/features/admin/components/AdminPageHeader"
@@ -195,8 +195,19 @@ export default function AdminUsersPage() {
         align: "center",
         cell: (u: PublicUser) => {
           const isSelf = u.id === currentUser?.id
+          const profilePath = isSelf ? "/profile" : `/users/${u.id}`
+          const profileLabel = isSelf ? "View my profile" : "View user profile"
           return (
             <div className="flex items-center justify-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                aria-label={profileLabel}
+                title={profileLabel}
+                render={<Link to={profilePath} target="_blank" rel="noreferrer" />}
+              >
+                <ExternalLink className="size-3.5 text-muted-foreground hover:text-foreground" />
+              </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger
                   render={
