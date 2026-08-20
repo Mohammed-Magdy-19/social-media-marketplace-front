@@ -89,6 +89,13 @@ export interface MessageSummary {
   createdAt: string
 }
 
+export interface ReplyPreview {
+  id: string
+  body: string
+  senderId: string
+  senderName: string
+}
+
 export interface Message {
   id: string
   messageId: string
@@ -100,6 +107,12 @@ export interface Message {
   clientMessageId?: string
   /** Delivery state for locally-created (optimistic) messages only. */
   status?: "pending" | "failed"
+  /** Preview of the message this is replying to, if any. */
+  replyTo?: ReplyPreview | null
+  /** True if the message body was edited after sending. */
+  isEdited?: boolean
+  /** True if the message was soft-deleted by the sender. */
+  isDeleted?: boolean
 }
 
 /** Cursor-paginated page of messages (handbook §5.6 — `data.messages` + `nextCursor`). */

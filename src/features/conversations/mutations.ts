@@ -35,7 +35,15 @@ export function useStartNegotiation() {
 export function useSendMessage(conversationId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async ({ body }: { body: string }) => {
+    mutationFn: async ({
+      body,
+      replyTo,
+      replyPreview,
+    }: {
+      body: string
+      replyTo?: string
+      replyPreview?: Message["replyTo"]
+    }) => {
       const clientMessageId = crypto.randomUUID()
       const optimistic: Message = {
         id: `client:${clientMessageId}`,
@@ -45,6 +53,7 @@ export function useSendMessage(conversationId: string) {
         body,
         createdAt: new Date().toISOString(),
         clientMessageId,
+        replyTo: replyPreview ?? null,
         status: "pending",
       }
       queryClient.setQueryData<{
@@ -68,6 +77,7 @@ export function useSendMessage(conversationId: string) {
         conversationId,
         body,
         clientMessageId,
+        replyTo,
       })
       // Mark the optimistic bubble as failed if the server never echoes it
       // back (offline / connect_error). No-op once reconciled by the bridge.
@@ -91,6 +101,71 @@ export function useSendMessage(conversationId: string) {
           return { ...old, pages }
         })
       }, 8000)
+    },
+  })
+}
+
+export function useEditMessage(conversationId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      messageId,
+      newBody,
+    }: {
+      messageId: string
+      newBody: string
+    }) => {
+      // Optimistic update
+      queryClient.setQueryData<{
+        pages: MessageCursorPage[]
+        pageParams: (string | null)[]
+      }>(queryKeys.conversations.messages(conversationId), (old) => {
+        if (!old || old.pages.length === 0) return old
+        const pages = old.pages.map((page) => ({
+          ...page,
+          messages: (page?.messages ?? []).map((m) =>
+            m.messageId === messageId || m.id === messageId
+              ? { ...m, body: newBody, isEdited: true }
+              : m
+          ),
+        }))
+        return { ...old, pages }
+      })
+
+      socket.emit("edit_message", {
+        messageId,
+        conversationId,
+        newBody,
+      })
+    },
+  })
+}
+
+export function useDeleteMessage(conversationId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ messageId }: { messageId: string }) => {
+      // Optimistic update
+      queryClient.setQueryData<{
+        pages: MessageCursorPage[]
+        pageParams: (string | null)[]
+      }>(queryKeys.conversations.messages(conversationId), (old) => {
+        if (!old || old.pages.length === 0) return old
+        const pages = old.pages.map((page) => ({
+          ...page,
+          messages: (page?.messages ?? []).map((m) =>
+            m.messageId === messageId || m.id === messageId
+              ? { ...m, body: "", isDeleted: true }
+              : m
+          ),
+        }))
+        return { ...old, pages }
+      })
+
+      socket.emit("delete_message", {
+        messageId,
+        conversationId,
+      })
     },
   })
 }

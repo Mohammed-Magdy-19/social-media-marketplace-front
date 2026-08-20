@@ -9,6 +9,8 @@ import {
   bridgeCommentDelta,
   bridgeCommentUpdated,
   bridgeLikeDelta,
+  bridgeMessageDeleted,
+  bridgeMessageEdited,
   bridgeNewComment,
   bridgeNotification,
   bridgeOfferCreated,
@@ -41,6 +43,16 @@ export function useSocketLifecycle() {
     if (!socket.connected) socket.connect()
 
     const onReceiveMessage = (message: Message) => bridgeReceiveMessage(message)
+    const onMessageEdited = (payload: {
+      messageId: string
+      conversationId: string
+      body: string
+      isEdited: boolean
+    }) => bridgeMessageEdited(payload)
+    const onMessageDeleted = (payload: {
+      messageId: string
+      conversationId: string
+    }) => bridgeMessageDeleted(payload)
     const onTyping = (payload: { conversationId: string; userId: string }) =>
       useNegotiationUiStore
         .getState()
@@ -107,6 +119,8 @@ export function useSocketLifecycle() {
     }
 
     socket.on("receive_message", onReceiveMessage)
+    socket.on("message_edited", onMessageEdited)
+    socket.on("message_deleted", onMessageDeleted)
     socket.on("typing_message", onTyping)
     socket.on("stop_typing_message", onStopTyping)
     socket.on("notification_created", onNotification)
@@ -124,6 +138,8 @@ export function useSocketLifecycle() {
 
     return () => {
       socket.off("receive_message", onReceiveMessage)
+      socket.off("message_edited", onMessageEdited)
+      socket.off("message_deleted", onMessageDeleted)
       socket.off("typing_message", onTyping)
       socket.off("stop_typing_message", onStopTyping)
       socket.off("notification_created", onNotification)

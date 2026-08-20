@@ -30,6 +30,8 @@ type CommentEvent =
   | { kind: "deleted"; commentId: string; replyIds: string[] }
 
 const pendingMessages = new Map<string, Message>()
+const pendingMessageEdits = new Map<string, { messageId: string; conversationId: string; body: string; isEdited: boolean }>()
+const pendingMessageDeletions = new Map<string, { messageId: string; conversationId: string }>()
 const pendingNotifications = new Map<string, AppNotification>()
 const pendingLikeDeltas = new Map<string, { likesCount: number; isLiked: boolean }>()
 const pendingCommentDeltas = new Map<string, number>()
@@ -50,6 +52,24 @@ function scheduleFlush() {
 
 export function bridgeReceiveMessage(message: Message) {
   pendingMessages.set(message.messageId, message)
+  scheduleFlush()
+}
+
+export function bridgeMessageEdited(payload: {
+  messageId: string
+  conversationId: string
+  body: string
+  isEdited: boolean
+}) {
+  pendingMessageEdits.set(payload.messageId, payload)
+  scheduleFlush()
+}
+
+export function bridgeMessageDeleted(payload: {
+  messageId: string
+  conversationId: string
+}) {
+  pendingMessageDeletions.set(payload.messageId, payload)
   scheduleFlush()
 }
 
@@ -162,7 +182,7 @@ function isCommentsKey(key: unknown): boolean {
 }
 
 function flushMessages() {
-  if (pendingMessages.size === 0) return
+  if (pendingMessages.size === 0 && pendingMessageEdits.size === 0 && pendingMessageDeletions.size === 0) return
   const cache = queryClient.getQueryCache()
   const entries = cache.getAll().filter((q) => isMessagesKey(q.queryKey))
   const touchedConversations = new Set<string>()
@@ -171,26 +191,48 @@ function flushMessages() {
     const matching = [...pendingMessages.values()].filter(
       (m) => m.conversationId === conversationId
     )
-    if (matching.length === 0) continue
+    const edits = [...pendingMessageEdits.values()].filter(
+      (e) => e.conversationId === conversationId
+    )
+    const deletions = [...pendingMessageDeletions.values()].filter(
+      (d) => d.conversationId === conversationId
+    )
+
+    if (matching.length === 0 && edits.length === 0 && deletions.length === 0) continue
+
     queryClient.setQueryData<InfiniteData<MessageCursorPage>>(
       entry.queryKey,
       (old) => {
         if (!old || old.pages.length === 0) return old
         const pages = old.pages.map((page, index) => {
-          if (index !== 0) return page
-          // Reconcile optimistic inserts: drop the locally-created temp message
-          // once the authoritative echo (same clientMessageId) arrives.
-          const optimisticIds = new Set(
-            matching
-              .filter((m) => m.clientMessageId)
-              .map((m) => `client:${m.clientMessageId}`)
-          )
-          let messages = (page?.messages ?? []).filter(
-            (m) => !(optimisticIds.has(m.id) && m.id.startsWith("client:"))
-          )
-          const seen = new Set(messages.map((m) => m.messageId))
-          const added = matching.filter((m) => !seen.has(m.messageId))
-          if (added.length > 0) messages = [...messages, ...added]
+          let messages = (page?.messages ?? []).map((m) => {
+            const edit = edits.find((e) => e.messageId === m.messageId || e.messageId === m.id)
+            if (edit) {
+              return { ...m, body: edit.body, isEdited: true }
+            }
+            const deletion = deletions.find((d) => d.messageId === m.messageId || d.messageId === m.id)
+            if (deletion) {
+              return { ...m, body: "", isDeleted: true }
+            }
+            return m
+          })
+
+          if (index === 0 && matching.length > 0) {
+            // Reconcile optimistic inserts: drop the locally-created temp message
+            // once the authoritative echo (same clientMessageId) arrives.
+            const optimisticIds = new Set(
+              matching
+                .filter((m) => m.clientMessageId)
+                .map((m) => `client:${m.clientMessageId}`)
+            )
+            messages = messages.filter(
+              (m) => !(optimisticIds.has(m.id) && m.id.startsWith("client:"))
+            )
+            const seen = new Set(messages.map((m) => m.messageId))
+            const added = matching.filter((m) => !seen.has(m.messageId))
+            if (added.length > 0) messages = [...messages, ...added]
+          }
+
           return { ...page, messages }
         })
         return { ...old, pages }
@@ -199,7 +241,7 @@ function flushMessages() {
     touchedConversations.add(conversationId)
   }
 
-  if (touchedConversations.size > 0) {
+  if (touchedConversations.size > 0 && pendingMessages.size > 0) {
     patchConversationList([...touchedConversations])
   }
 }
@@ -471,6 +513,8 @@ function flush() {
   flushCommentEvents()
   flushOffers()
   pendingMessages.clear()
+  pendingMessageEdits.clear()
+  pendingMessageDeletions.clear()
   pendingNotifications.clear()
   pendingLikeDeltas.clear()
   pendingCommentDeltas.clear()
