@@ -146,11 +146,33 @@ function CheckoutForm({
         />
 
         {loadTimedOut && !isElementReady && (
-          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-600 dark:text-amber-400">
-            <p className="font-semibold">Stripe element failed to load</p>
-            <p className="mt-0.5 opacity-90">
-              The Stripe publishable key may be invalid or mismatched with the secret key that generated this payment. Ensure <code className="font-mono bg-black/10 px-1 py-0.5 rounded">VITE_STRIPE_PUBLISHABLE_KEY</code> matches your Stripe account.
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-amber-700 dark:text-amber-300 flex flex-col gap-2">
+            <p className="font-semibold text-sm">Stripe payment form is loading or session needs a refresh</p>
+            <p className="opacity-90 leading-relaxed">
+              If you just updated your Stripe API key, please hard-refresh the page (<kbd className="rounded bg-black/10 dark:bg-white/10 px-1 py-0.5 font-mono">Ctrl + Shift + R</kbd>) or restart a new checkout session.
             </p>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 rounded-full text-xs bg-card"
+                onClick={() => {
+                  useCheckoutStore.getState().clear()
+                  window.location.reload()
+                }}
+              >
+                Reload with New Key
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                className="h-8 rounded-full text-xs"
+                render={<Link to="/messages" />}
+              >
+                Back to Messages
+              </Button>
+            </div>
           </div>
         )}
 
