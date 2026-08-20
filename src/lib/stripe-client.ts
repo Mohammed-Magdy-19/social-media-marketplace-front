@@ -7,7 +7,7 @@ import { loadStripe } from "@stripe/stripe-js"
  */
 const PUBLISHABLE_KEY =
   (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined) ||
-  "pk_test_51U0PwuE9hM5oYTwwbKCSryayWuAleKWKxhvbVql4PobiyblYYV5W0GoNqldpeihOgq6rS49WCF2iPJ3OMek2nE4Z00xuM9kdMg"
+  "pk_test_51U0PwuE9hM5oYTwwZZKOZ0XV5kAUHqCYDs4QfsX4IGYf5Wlujq6bFRGY32c5OiOcBVbk0PufpWYBU8h2qJcrvXC800CWB55vvM"
 
 export const stripePromise = PUBLISHABLE_KEY
   ? loadStripe(PUBLISHABLE_KEY)
