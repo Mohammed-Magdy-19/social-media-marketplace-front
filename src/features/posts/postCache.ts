@@ -26,18 +26,33 @@ export function updatePostInCache(
   updater: (post: Post) => Post
 ) {
   for (const key of listKeys(queryClient)) {
-    queryClient.setQueryData<PostPageEnvelope>(key, (old) => {
+    queryClient.setQueryData<any>(key, (old: any) => {
       if (!old) return old
-      let changed = false
-      const pages = old.pages.map((page) => ({
-        ...page,
-        data: page.data.map((post) => {
+      if (Array.isArray(old.pages)) {
+        let changed = false
+        const pages = old.pages.map((page: any) => {
+          if (!page || !Array.isArray(page.data)) return page
+          return {
+            ...page,
+            data: page.data.map((post: Post) => {
+              if (post.id !== postId) return post
+              changed = true
+              return updater(post)
+            }),
+          }
+        })
+        return changed ? { ...old, pages } : old
+      }
+      if (Array.isArray(old.data)) {
+        let changed = false
+        const data = old.data.map((post: Post) => {
           if (post.id !== postId) return post
           changed = true
           return updater(post)
-        }),
-      }))
-      return changed ? { ...old, pages } : old
+        })
+        return changed ? { ...old, data } : old
+      }
+      return old
     })
   }
 }

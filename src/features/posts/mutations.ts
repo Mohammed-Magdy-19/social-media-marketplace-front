@@ -104,7 +104,8 @@ export function useCreateReply() {
 export interface CreatePostInput {
   title: string
   content: string
-  categoryId: string
+  categoryId?: string
+  category?: string
   price?: number
   tags: string[]
 }
@@ -112,8 +113,19 @@ export interface CreatePostInput {
 export function useCreatePost() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: CreatePostInput) =>
-      apiPost<ApiResponse<{ post: Post }>>("/posts", input),
+    mutationFn: (input: CreatePostInput) => {
+      const category = input.category || input.categoryId || ""
+      const payload: Record<string, unknown> = {
+        title: input.title,
+        content: input.content,
+        category,
+        tags: input.tags ?? [],
+      }
+      if (typeof input.price === "number" && !isNaN(input.price) && input.price > 0) {
+        payload.price = Math.round(input.price * 100)
+      }
+      return apiPost<ApiResponse<{ post: Post }>>("/posts", payload)
+    },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.posts.all })
       void queryClient.invalidateQueries({ queryKey: queryKeys.users.feed() })

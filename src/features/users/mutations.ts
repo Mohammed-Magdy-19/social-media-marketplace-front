@@ -22,7 +22,20 @@ export function useFollowUser() {
         queryKey: queryKeys.users.feed(),
       })
     },
-    onError: (error) => {
+    onError: (error: any, { userId }) => {
+      if (error?.response?.status === 409) {
+        // Already following — synchronize state
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.users.detail(userId),
+        })
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.users.followers(userId),
+        })
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.users.feed(),
+        })
+        return
+      }
       toast.error(getErrorMessage(error))
     },
   })
@@ -45,7 +58,20 @@ export function useUnfollowUser() {
         queryKey: queryKeys.users.feed(),
       })
     },
-    onError: (error) => {
+    onError: (error: any, { userId }) => {
+      if (error?.response?.status === 404) {
+        // Not following — synchronize state
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.users.detail(userId),
+        })
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.users.followers(userId),
+        })
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.users.feed(),
+        })
+        return
+      }
       toast.error(getErrorMessage(error))
     },
   })

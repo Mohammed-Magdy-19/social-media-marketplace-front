@@ -1,7 +1,14 @@
 import { useQuery } from "@tanstack/react-query"
 import { apiGet } from "@/lib/api/client"
 import { queryKeys } from "@/api/queryKeys"
-import type { AppNotification, NotificationType, PaginatedResponse } from "@/types"
+import type {
+  AppNotification,
+  NotificationType,
+  PaginatedResponse,
+  PublicUser,
+  UserRole,
+  UserStatus,
+} from "@/types"
 
 interface RawBackendNotification {
   id?: string
@@ -73,19 +80,24 @@ export function normalizeNotification(raw: RawBackendNotification): AppNotificat
     if (!body) body = raw.message || "You have a new update."
   }
 
+  const actorSource = raw.actor || raw.sender
+  const actor: PublicUser | null = actorSource
+    ? {
+        id: String(actorSource.id || actorSource._id || ""),
+        name: actorSource.name || actorSource.username || "User",
+        username: actorSource.username || "user",
+        email: ("email" in actorSource && typeof actorSource.email === "string") ? actorSource.email : "",
+        avatar: actorSource.avatar || null,
+        role: (("role" in actorSource && actorSource.role as UserRole) || "user"),
+        status: (("status" in actorSource && actorSource.status as UserStatus) || "active"),
+        createdAt: (("createdAt" in actorSource && typeof actorSource.createdAt === "string") ? actorSource.createdAt : new Date().toISOString()),
+      }
+    : null
+
   return {
     id: String(raw.id || raw._id || crypto.randomUUID()),
     type,
-    actor: raw.actor || (raw.sender ? {
-      id: String(raw.sender.id || raw.sender._id || ""),
-      name: raw.sender.name || raw.sender.username || "User",
-      username: raw.sender.username || "user",
-      email: raw.sender.email || "",
-      avatar: raw.sender.avatar || null,
-      role: (raw.sender.role as any) || "user",
-      status: (raw.sender.status as any) || "active",
-      createdAt: raw.sender.createdAt || raw.createdAt || new Date().toISOString(),
-    } : null),
+    actor,
     title,
     body,
     read: Boolean(raw.read ?? raw.isRead ?? false),

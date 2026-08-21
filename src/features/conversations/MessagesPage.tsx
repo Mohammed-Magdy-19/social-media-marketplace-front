@@ -815,9 +815,9 @@ function Thread({ conversationId }: { conversationId: string }) {
   const firstOfferPostId = firstOffer ? offerPostId(firstOffer) : undefined
 
   const activePostId = queryPostId || firstOfferPostId || meta?.post?.id
-  const { data: activePostData } = usePost(activePostId ?? "")
+  const { data: activePostData } = usePost(activePostId)
   const activePost: Post | undefined =
-    activePostData ||
+    (activePostData ?? undefined) ||
     meta?.post ||
     (firstOffer && typeof firstOffer.post === "object" ? (firstOffer.post as Post) : undefined)
 

@@ -315,15 +315,27 @@ function flushLikeDeltas() {
   const cache = queryClient.getQueryCache()
   for (const entry of cache.getAll()) {
     if (!isPostListKey(entry.queryKey)) continue
-    queryClient.setQueryData<InfiniteData<PaginatedResponse<Post>>>(
+    queryClient.setQueryData<any>(
       entry.queryKey,
-      (old) => {
+      (old: any) => {
         if (!old) return old
-        let pages = old.pages
-        for (const [postId, delta] of pendingLikeDeltas) {
-          pages = updatePostInPage(pages, postId, delta)
+        if (Array.isArray(old.pages)) {
+          let pages = old.pages
+          for (const [postId, delta] of pendingLikeDeltas) {
+            pages = updatePostInPage(pages, postId, delta)
+          }
+          return { ...old, pages }
         }
-        return { ...old, pages }
+        if (Array.isArray(old.data)) {
+          let data = old.data
+          for (const [postId, delta] of pendingLikeDeltas) {
+            data = data.map((post: Post) =>
+              post.id === postId ? { ...post, ...delta } : post
+            )
+          }
+          return { ...old, data }
+        }
+        return old
       }
     )
   }
@@ -334,15 +346,27 @@ function flushCommentDeltas() {
   const cache = queryClient.getQueryCache()
   for (const entry of cache.getAll()) {
     if (!isPostListKey(entry.queryKey)) continue
-    queryClient.setQueryData<InfiniteData<PaginatedResponse<Post>>>(
+    queryClient.setQueryData<any>(
       entry.queryKey,
-      (old) => {
+      (old: any) => {
         if (!old) return old
-        let pages = old.pages
-        for (const [postId, commentsCount] of pendingCommentDeltas) {
-          pages = updatePostInPage(pages, postId, { commentsCount })
+        if (Array.isArray(old.pages)) {
+          let pages = old.pages
+          for (const [postId, commentsCount] of pendingCommentDeltas) {
+            pages = updatePostInPage(pages, postId, { commentsCount })
+          }
+          return { ...old, pages }
         }
-        return { ...old, pages }
+        if (Array.isArray(old.data)) {
+          let data = old.data
+          for (const [postId, commentsCount] of pendingCommentDeltas) {
+            data = data.map((post: Post) =>
+              post.id === postId ? { ...post, commentsCount } : post
+            )
+          }
+          return { ...old, data }
+        }
+        return old
       }
     )
   }
@@ -386,30 +410,48 @@ function bumpCommentCount(postId: string, delta: number) {
   const cache = queryClient.getQueryCache()
   for (const entry of cache.getAll()) {
     if (isPostListKey(entry.queryKey)) {
-      queryClient.setQueryData<InfiniteData<PaginatedResponse<Post>>>(
+      queryClient.setQueryData<any>(
         entry.queryKey,
-        (old) => {
+        (old: any) => {
           if (!old) return old
-          let changed = false
-          const pages = old.pages.map((page) => ({
-            ...page,
-            data: page.data.map((post) => {
+          if (Array.isArray(old.pages)) {
+            let changed = false
+            const pages = old.pages.map((page: any) => {
+              if (!page || !Array.isArray(page.data)) return page
+              return {
+                ...page,
+                data: page.data.map((post: Post) => {
+                  if (post.id !== postId) return post
+                  changed = true
+                  return {
+                    ...post,
+                    commentsCount: Math.max(0, (post.commentsCount ?? 0) + delta),
+                  }
+                }),
+              }
+            })
+            return changed ? { ...old, pages } : old
+          }
+          if (Array.isArray(old.data)) {
+            let changed = false
+            const data = old.data.map((post: Post) => {
               if (post.id !== postId) return post
               changed = true
               return {
                 ...post,
-                commentsCount: Math.max(0, post.commentsCount + delta),
+                commentsCount: Math.max(0, (post.commentsCount ?? 0) + delta),
               }
-            }),
-          }))
-          return changed ? { ...old, pages } : old
+            })
+            return changed ? { ...old, data } : old
+          }
+          return old
         }
       )
     }
   }
   queryClient.setQueryData<Post>(queryKeys.posts.detail(postId), (old) =>
     old && old.id === postId
-      ? { ...old, commentsCount: Math.max(0, old.commentsCount + delta) }
+      ? { ...old, commentsCount: Math.max(0, (old.commentsCount ?? 0) + delta) }
       : old
   )
 }

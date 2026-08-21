@@ -11,7 +11,7 @@ export function useCategories() {
         "/categories",
         { signal }
       )
-      return res.data.categories
+      return res.data?.categories ?? []
     },
     staleTime: 5 * 60_000,
   })

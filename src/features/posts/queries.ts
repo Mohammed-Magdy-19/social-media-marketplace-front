@@ -47,30 +47,31 @@ export function useLivePostFilters() {
   return { category, tag, author, sort }
 }
 
-export function usePost(postId: string) {
+export function usePost(postId?: string | null) {
   return useQuery({
-    queryKey: queryKeys.posts.detail(postId),
+    queryKey: queryKeys.posts.detail(postId ?? ""),
     queryFn: async ({ signal }) => {
       const res = await apiGet<ApiResponse<{ post: Post }>>(
         `/posts/${postId}`,
         { signal }
       )
-      return res.data.post
+      return res.data?.post ?? null
     },
+    enabled: Boolean(postId && postId.trim().length > 0),
   })
 }
 
-export function usePostComments(postId: string) {
+export function usePostComments(postId?: string | null) {
   return useQuery({
-    queryKey: queryKeys.posts.comments(postId),
+    queryKey: queryKeys.posts.comments(postId ?? ""),
     queryFn: async ({ signal }) => {
       const res = await apiGet<ApiResponse<{ comments: PostComment[] }>>(
         `/posts/${postId}/comments`,
         { signal }
       )
-      return res.data.comments ?? []
+      return res.data?.comments ?? []
     },
-    enabled: Boolean(postId),
+    enabled: Boolean(postId && postId.trim().length > 0),
   })
 }
 
