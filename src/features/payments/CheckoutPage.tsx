@@ -112,7 +112,9 @@ function CheckoutForm({
       return
     }
     try {
-      const result = await checkoutResult.checkout.confirm()
+      const result = await checkoutResult.checkout.confirm({
+        returnUrl: window.location.href,
+      })
       if (result.type === "error") {
         toast.error(result.error.message ?? "Payment could not be confirmed.")
         return
