@@ -17,10 +17,6 @@ interface AuthSessionData {
   refreshToken: string
 }
 
-interface AuthMessageData {
-  message: string
-}
-
 export function useLoginMutation() {
   return useMutation({
     mutationFn: (input: LoginInput) =>
