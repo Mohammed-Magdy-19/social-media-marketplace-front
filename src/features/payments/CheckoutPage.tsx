@@ -255,7 +255,8 @@ function OrderSummary({
 export default function CheckoutPage() {
   const { intentId } = useParams<{ intentId: string }>()
   const [searchParams] = useSearchParams()
-  const paymentId = intentId ?? ""
+  const sessionId = searchParams.get("session_id")
+  const paymentId = intentId || sessionId || ""
   const intent = useCheckoutStore((s) => s.intent)
 
   const [submitted, setSubmitted] = useState(false)
@@ -265,7 +266,7 @@ export default function CheckoutPage() {
   const { data: payment, isLoading, refetch: refetchPayment } = usePayment(paymentId)
 
   const redirectClientSecret = searchParams.get("payment_intent_client_secret")
-  const hasRedirectBack = !!redirectClientSecret
+  const hasRedirectBack = !!redirectClientSecret || !!sessionId
   const clientSecret = redirectClientSecret ?? intent?.clientSecret ?? null
   const amount = intent?.amount ?? payment?.amount ?? 0
   const currency = intent?.currency ?? payment?.currency ?? "USD"

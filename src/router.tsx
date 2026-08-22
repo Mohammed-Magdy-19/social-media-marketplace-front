@@ -111,7 +111,7 @@ export const router = createBrowserRouter([
             ),
           },
           {
-            path: "checkout/:intentId",
+            path: "checkout/:intentId?",
             element: (
               <PageBoundary>
                 <CheckoutPage />
