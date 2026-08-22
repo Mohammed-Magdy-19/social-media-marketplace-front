@@ -4,10 +4,11 @@ import { Link } from "react-router-dom"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
-import { ArrowUp, ImagePlus, Loader2, Plus, X } from "lucide-react"
+import { ArrowUp, ImagePlus, Loader2, Plus, Compass, X } from "lucide-react"
 import { useAuthStore } from "@/stores/authStore"
 import { useCategories } from "@/features/categories/queries"
 import { useFeedInfinite } from "@/features/feed/queries"
+import { usePostsInfinite } from "@/features/posts/queries"
 import { useCreatePost, type CreatePostInput } from "@/features/posts/mutations"
 import { postComposerSchema, type PostComposerValues } from "@/features/posts/schemas"
 import { getErrorMessage } from "@/lib/api/errors"
@@ -310,13 +311,43 @@ function Composer() {
   )
 }
 
+/** Shown when the follow-based feed is empty — renders the global discover feed instead. */
+function DiscoverBanner() {
+  return (
+    <div className="flex items-start gap-3 rounded-card bg-card p-4 ring-1 ring-foreground/10">
+      <Compass className="mt-0.5 size-5 shrink-0 text-brand" />
+      <div>
+        <p className="text-sm font-medium">Discover posts</p>
+        <p className="text-xs text-muted-foreground">
+          Follow people to build your personal feed. Meanwhile, here are the latest posts from the community.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 function FeedColumn() {
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useFeedInfinite()
+  const feed = useFeedInfinite()
   const parentRef = useRef<HTMLDivElement>(null)
   const [showScrollTop, setShowScrollTop] = useState(false)
 
-  const posts = data?.pages.flatMap((p) => p.data) ?? []
+  const feedPosts = feed.data?.pages.flatMap((p) => p.data) ?? []
+  // The feed has settled (at least one page fetched) and is empty
+  const feedIsEmpty = !feed.isPending && feedPosts.length === 0
+
+  // Discover fallback — only fires when the personal feed is empty
+  const discover = usePostsInfinite(
+    { category: null, tag: null, author: null, sort: "newest" },
+  )
+  const discoverPosts = discover.data?.pages.flatMap((p) => p.data) ?? []
+
+  // Use whichever list has content
+  const posts = feedIsEmpty ? discoverPosts : feedPosts
+  const hasNextPage = feedIsEmpty ? discover.hasNextPage : feed.hasNextPage
+  const isFetchingNextPage = feedIsEmpty
+    ? discover.isFetchingNextPage
+    : feed.isFetchingNextPage
+  const fetchNextPage = feedIsEmpty ? discover.fetchNextPage : feed.fetchNextPage
 
   const virtualizer = useVirtualizer({
     count: posts.length + (hasNextPage ? 1 : 0),
@@ -353,6 +384,12 @@ function FeedColumn() {
           <ErrorBoundary fallback={<SectionFallback />}>
             <Composer />
           </ErrorBoundary>
+
+          {feedIsEmpty && (
+            <ErrorBoundary fallback={<SectionFallback />}>
+              <DiscoverBanner />
+            </ErrorBoundary>
+          )}
 
           <ErrorBoundary fallback={<SectionFallback />}>
             <div
