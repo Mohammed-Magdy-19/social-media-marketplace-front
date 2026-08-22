@@ -37,8 +37,8 @@ export default function RegisterPage() {
   const onSubmit = (values: RegisterValues) => {
     register.mutate(values, {
       onSuccess: (data) => {
-        toast.success(data.message ?? "Account created")
-        void navigate("/login", { replace: true })
+        toast.success(data.message ?? "Account created! Welcome aboard 🎉")
+        void navigate("/", { replace: true })
       },
       onError: (error) => {
         const applied = applyFieldErrors(
@@ -50,6 +50,7 @@ export default function RegisterPage() {
       },
     })
   }
+
 
   return (
     <div className="flex min-h-svh items-center justify-center p-4">

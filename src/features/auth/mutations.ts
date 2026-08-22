@@ -37,9 +37,16 @@ export function useLoginMutation() {
 export function useRegisterMutation() {
   return useMutation({
     mutationFn: (input: RegisterInput) =>
-      apiPost<AuthMessageData>("/auth/register", input),
+      apiPost<ApiResponse<AuthSessionData>>("/auth/register", input),
+    onSuccess: (data) => {
+      const { user, accessToken, refreshToken } = data.data
+      if (refreshToken) setStoredRefreshToken(refreshToken)
+      useAuthStore.getState().setSession(user, accessToken)
+      void queryClient.invalidateQueries({ queryKey: queryKeys.auth.me() })
+    },
   })
 }
+
 
 export function useLogoutMutation() {
   return useMutation({
