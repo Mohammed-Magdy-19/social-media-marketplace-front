@@ -3,11 +3,10 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Link, useParams, useSearchParams } from "react-router-dom"
 import {
-  Elements,
+  CheckoutElementsProvider,
   PaymentElement,
-  useElements,
-  useStripe,
-} from "@stripe/react-stripe-js"
+  useCheckoutElements,
+} from "@stripe/react-stripe-js/checkout"
 import { toast } from "sonner"
 import { CheckCircle2, Loader2, XCircle } from "lucide-react"
 import { stripePromise } from "@/lib/stripe-client"
@@ -78,8 +77,8 @@ function PaymentHistory() {
 }
 
 /**
- * Inner Stripe Elements form. Card data lives only inside Stripe's hosted
- * iframe — nothing here serializes raw card numbers into our API.
+ * Inner Stripe Checkout Elements form.
+ * Uses Stripe's modern Checkout Sessions Elements API (checkout.confirm()).
  */
 function CheckoutForm({
   onConfirmed,
@@ -88,8 +87,7 @@ function CheckoutForm({
   onConfirmed: () => void
   submitting: boolean
 }) {
-  const stripe = useStripe()
-  const elements = useElements()
+  const checkoutResult = useCheckoutElements()
   const [isElementReady, setIsElementReady] = useState(false)
   const [loadTimedOut, setLoadTimedOut] = useState(false)
 
@@ -106,7 +104,7 @@ function CheckoutForm({
   }, [isElementReady])
 
   const handlePay = form.handleSubmit(async () => {
-    if (!stripe || !elements) return
+    if (checkoutResult.type !== "success") return
     if (!isElementReady) {
       toast.error(
         "Payment form is still loading or could not connect to Stripe. Please verify your Stripe publishable key."
@@ -114,19 +112,13 @@ function CheckoutForm({
       return
     }
     try {
-      const { error } = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: `${window.location.origin}${window.location.pathname}`,
-        },
-        redirect: "if_required",
-      })
-      if (error) {
-        toast.error(error.message ?? "Payment could not be confirmed.")
+      const result = await checkoutResult.checkout.confirm()
+      if (result.type === "error") {
+        toast.error(result.error.message ?? "Payment could not be confirmed.")
         return
       }
       // Stripe accepted the confirmation attempt — the webhook is the source of
-      // truth for the final status, so move to the "confirming" state only.
+      // truth for the final status, so move to the "confirming" state.
       onConfirmed()
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Payment processing error"
@@ -200,7 +192,7 @@ function CheckoutForm({
           <Button
             type="submit"
             form="checkout-form"
-            disabled={!stripe || !isElementReady || submitting || form.formState.isSubmitting}
+            disabled={checkoutResult.type !== "success" || !isElementReady || submitting || form.formState.isSubmitting}
             className="rounded-full px-6 font-semibold shadow-xs"
           >
             {form.formState.isSubmitting ? "Processing…" : "Confirm payment"}
@@ -462,12 +454,12 @@ export default function CheckoutPage() {
         ) : (
           <Card className="rounded-card">
             <CardContent className="flex flex-col gap-4 p-6">
-              <Elements stripe={stripePromise} options={{ clientSecret }}>
+              <CheckoutElementsProvider stripe={stripePromise} options={{ clientSecret }}>
                 <CheckoutForm
                   submitting={submitted}
                   onConfirmed={() => setSubmitted(true)}
                 />
-              </Elements>
+              </CheckoutElementsProvider>
             </CardContent>
           </Card>
         )}
