@@ -10,6 +10,7 @@ import {
 import { toast } from "sonner"
 import { CheckCircle2, Loader2, XCircle } from "lucide-react"
 import { stripePromise } from "@/lib/stripe-client"
+import { useAuthStore } from "@/stores/authStore"
 import { useCheckoutStore } from "@/stores/checkoutStore"
 import { useMyPayments, usePayment } from "@/features/payments/queries"
 import { checkoutSchema, type CheckoutValues } from "@/features/payments/schemas"
@@ -88,6 +89,7 @@ function CheckoutForm({
   submitting: boolean
 }) {
   const checkoutResult = useCheckoutElements()
+  const user = useAuthStore((s) => s.user)
   const [isElementReady, setIsElementReady] = useState(false)
   const [loadTimedOut, setLoadTimedOut] = useState(false)
 
@@ -112,7 +114,9 @@ function CheckoutForm({
       return
     }
     try {
-      const result = await checkoutResult.checkout.confirm()
+      const result = await checkoutResult.checkout.confirm({
+        email: user?.email || undefined,
+      })
       if (result.type === "error") {
         toast.error(result.error.message ?? "Payment could not be confirmed.")
         return
