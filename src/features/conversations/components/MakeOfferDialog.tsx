@@ -1,7 +1,7 @@
 import * as React from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { BadgePercent } from "lucide-react"
+import { BadgePercent, ShieldAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -20,7 +20,8 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import {
-  createOfferFormSchema,
+  buildCreateOfferSchema,
+  MIN_OFFER_RATIO,
   type CreateOfferInput,
   type CreateOfferFormValues,
 } from "@/features/conversations/schemas"
@@ -41,8 +42,10 @@ export function MakeOfferDialog({
   pending,
   originalPrice,
 }: MakeOfferDialogProps) {
+  const minFloorCents = originalPrice ? Math.round(originalPrice * MIN_OFFER_RATIO) : 0
+
   const form = useForm<CreateOfferInput, unknown, CreateOfferFormValues>({
-    resolver: zodResolver(createOfferFormSchema),
+    resolver: zodResolver(buildCreateOfferSchema(originalPrice)),
     defaultValues: { amount: undefined },
   })
 
@@ -53,7 +56,10 @@ export function MakeOfferDialog({
   const applyDiscount = (percent: number) => {
     if (!originalPrice) return
     const originalDollars = originalPrice / 100
-    const discounted = Math.max(1, Math.round(originalDollars * (1 - percent / 100) * 100) / 100)
+    const discounted = Math.max(
+      minFloorCents / 100,
+      Math.round(originalDollars * (1 - percent / 100) * 100) / 100
+    )
     form.setValue("amount", discounted, { shouldValidate: true })
   }
 
@@ -80,9 +86,18 @@ export function MakeOfferDialog({
               <span>Listing Price:</span>
               <span className="font-mono font-bold text-foreground">{formatCurrency(originalPrice)}</span>
             </div>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                <ShieldAlert className="size-3.5" />
+                Floor Price (70%):
+              </span>
+              <span className="font-mono font-semibold text-amber-600 dark:text-amber-400">
+                {formatCurrency(minFloorCents)}
+              </span>
+            </div>
             <div className="flex items-center gap-1.5 pt-1">
               <span className="text-[11px] text-muted-foreground mr-1">Quick:</span>
-              {[5, 10, 15, 20].map((pct) => (
+              {[5, 10, 15, 20, 30].map((pct) => (
                 <Button
                   key={pct}
                   type="button"

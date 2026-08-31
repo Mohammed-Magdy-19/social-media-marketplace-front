@@ -250,6 +250,13 @@ export function useConversationThread(conversationId: string) {
 
   const isNegotiation = Boolean(activePost || (offers && offers.length > 0))
   const hasPendingOffer = (offers ?? []).some((o) => o.status === "pending")
+  const isSeller = Boolean(
+    activePost &&
+      me?.id &&
+      ((typeof activePost.author === "string" && activePost.author === me.id) ||
+        (typeof activePost.author === "object" &&
+          (activePost.author?.id === me.id || (activePost.author as unknown as { _id?: string })?._id === me.id)))
+  )
 
   return {
     me,
@@ -275,6 +282,7 @@ export function useConversationThread(conversationId: string) {
     setOfferOpen,
     isNegotiation,
     hasPendingOffer,
+    isSeller,
     isCreateOfferPending: createOffer.isPending,
     handleCreateOffer,
     handleRespondOffer,

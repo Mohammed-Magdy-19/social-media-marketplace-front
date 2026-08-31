@@ -3,6 +3,8 @@ import { z } from "zod"
 /** Convert a dollar-denominated input to integer cents before it hits the API. */
 export const toCents = (v: number) => Math.round(v * 100)
 
+export const MIN_OFFER_RATIO = 0.70 // 70% floor
+
 export const createOfferFormSchema = z.object({
   amount: z.coerce
     .number({ invalid_type_error: "Enter an offer price" })
@@ -11,6 +13,27 @@ export const createOfferFormSchema = z.object({
 })
 export type CreateOfferInput = z.input<typeof createOfferFormSchema>
 export type CreateOfferFormValues = z.output<typeof createOfferFormSchema>
+
+/** Builds a schema validating the initial offer against the 70% anti-lowball floor. */
+export function buildCreateOfferSchema(originalPriceCents?: number) {
+  const minCents = originalPriceCents ? Math.round(originalPriceCents * MIN_OFFER_RATIO) : 1
+  const maxCents = originalPriceCents ?? Infinity
+
+  return z.object({
+    amount: z.coerce
+      .number({ invalid_type_error: "Enter an offer price" })
+      .positive("Offer must be positive")
+      .refine(
+        (val) => toCents(val) >= minCents,
+        `Offer must be at least 70% of listing price ($${(minCents / 100).toFixed(2)})`
+      )
+      .refine(
+        (val) => toCents(val) <= maxCents,
+        `Offer cannot exceed listing price ($${(maxCents / 100).toFixed(2)})`
+      )
+      .transform(toCents),
+  })
+}
 
 export const respondOfferFormSchema = z
   .object({
@@ -27,3 +50,4 @@ export const respondOfferFormSchema = z
   })
 export type RespondOfferInput = z.input<typeof respondOfferFormSchema>
 export type RespondOfferFormValues = z.output<typeof respondOfferFormSchema>
+

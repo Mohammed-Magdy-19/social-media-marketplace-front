@@ -38,6 +38,7 @@ export function Thread({ conversationId }: ThreadProps) {
     setOfferOpen,
     isNegotiation,
     hasPendingOffer,
+    isSeller,
     isCreateOfferPending,
     handleCreateOffer,
     handleRespondOffer,
@@ -106,19 +107,25 @@ export function Thread({ conversationId }: ThreadProps) {
             </Badge>
           )}
           {isNegotiation && (
-            <Button
-              size="sm"
-              variant={hasPendingOffer ? "outline" : "default"}
-              className={cn(
-                "h-8 rounded-full px-3 text-xs font-semibold shadow-xs transition-all",
-                !hasPendingOffer && "bg-brand hover:bg-brand/90 text-white"
-              )}
-              onClick={() => setOfferOpen(true)}
-              disabled={hasPendingOffer}
-            >
-              <BadgePercent className="mr-1.5 size-3.5" />
-              {hasPendingOffer ? "Offer Pending" : "Make Offer"}
-            </Button>
+            isSeller ? (
+              <Badge variant="outline" className="font-semibold text-xs px-2.5 py-1 border-border/80 bg-muted/20 text-muted-foreground">
+                {hasPendingOffer ? "Offer Pending Response" : "Seller View"}
+              </Badge>
+            ) : (
+              <Button
+                size="sm"
+                variant={hasPendingOffer ? "outline" : "default"}
+                className={cn(
+                  "h-8 rounded-full px-3 text-xs font-semibold shadow-xs transition-all",
+                  !hasPendingOffer && "bg-brand hover:bg-brand/90 text-white"
+                )}
+                onClick={() => setOfferOpen(true)}
+                disabled={hasPendingOffer}
+              >
+                <BadgePercent className="mr-1.5 size-3.5" />
+                {hasPendingOffer ? "Offer Pending" : "Make Offer"}
+              </Button>
+            )
           )}
         </div>
       </div>

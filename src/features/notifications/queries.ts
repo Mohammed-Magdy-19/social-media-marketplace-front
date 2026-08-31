@@ -99,6 +99,35 @@ export function normalizeNotification(raw: RawBackendNotification): AppNotificat
         (raw.metadata?.resolutionNotes as string) ||
         raw.message ||
         "A moderation action was taken on your reported content."
+  } else if (rawType === "OFFER_RECEIVED") {
+    type = "offer"
+    if (!title) title = `New offer from ${senderName}`
+    const postTitle = (raw.metadata?.postTitle as string) || "your listing"
+    const amountStr = typeof raw.metadata?.amount === "number" ? ` for $${(raw.metadata.amount / 100).toFixed(2)}` : ""
+    if (!body) body = `${senderName} made an offer${amountStr} on ${postTitle}.`
+  } else if (rawType === "OFFER_ACCEPTED") {
+    type = "offer"
+    if (!title) title = `Offer Accepted!`
+    const postTitle = (raw.metadata?.postTitle as string) || "listing"
+    if (!body) body = `${senderName} accepted your offer on ${postTitle}. Proceed to checkout.`
+  } else if (rawType === "OFFER_DECLINED") {
+    type = "offer"
+    if (!title) title = `Offer Declined`
+    const postTitle = (raw.metadata?.postTitle as string) || "listing"
+    if (!body) body = `${senderName} declined your offer on ${postTitle}.`
+  } else if (rawType === "OFFER_COUNTERED") {
+    type = "offer"
+    if (!title) title = `Counter-Offer Received`
+    const amountStr = typeof raw.metadata?.amount === "number" ? ` of $${(raw.metadata.amount / 100).toFixed(2)}` : ""
+    if (!body) body = `${senderName} proposed a counter-offer${amountStr}.`
+  } else if (rawType === "OFFER_EXPIRED") {
+    type = "offer"
+    if (!title) title = `Offer Expired`
+    if (!body) body = "A negotiation offer has expired after 24 hours."
+  } else if (rawType === "OFFER_CANCELLED") {
+    type = "offer"
+    if (!title) title = `Negotiation Cancelled`
+    if (!body) body = "Negotiation was closed because the item was purchased."
   } else {
     if (!title) title = "Notification"
     if (!body) body = raw.message || "You have a new update."

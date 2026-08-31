@@ -124,7 +124,14 @@ export interface MessageCursorPage {
   nextCursor: string | null
 }
 
-export type OfferStatus = "pending" | "accepted" | "rejected" | "countered"
+export type OfferStatus =
+  | "pending"
+  | "accepted"
+  | "rejected"
+  | "countered"
+  | "expired"
+  | "system_cancelled"
+
 export type OfferAction = "accept" | "reject" | "counter"
 
 export interface Offer {
@@ -140,6 +147,9 @@ export interface Offer {
   amount: number
   status: OfferStatus
   previousOffer?: string | null
+  counterCountBuyer?: number
+  counterCountSeller?: number
+  expiresAt?: string
   createdAt: string
   updatedAt?: string
 }
@@ -169,15 +179,15 @@ export interface Payment {
   currency: string
   provider: PaymentProvider
   status: PaymentStatus
-  /** Stripe PaymentIntent id — opaque, display verbatim only, never parse. */
-  transactionId: string
-  buyer: PublicUser | string
-  buyerPhoneNumber?: string
-  shippingAddress?: ShippingAddress
+  buyer: string | PublicUser
   seller?: PublicUser | string | null
-  post?: { id: string; title: string; media?: string[] } | string | null
-  metadata?: Record<string, unknown>
+  post?: { id: string; title: string; media?: string[] } | string | Post | null
+  transactionId?: string
+  shippingAddress?: ShippingAddress
+  phoneNumber?: string
+  buyerPhoneNumber?: string
   clientSecret?: string
+  metadata?: Record<string, unknown>
   createdAt: string
   updatedAt: string
 }
@@ -212,6 +222,7 @@ export type NotificationType =
   | "message"
   | "system"
   | "moderation"
+  | "offer"
 
 export interface AppNotification {
   id: string
