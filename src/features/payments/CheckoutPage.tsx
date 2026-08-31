@@ -483,7 +483,8 @@ export default function CheckoutPage() {
   const { intentId } = useParams<{ intentId: string }>()
   const [searchParams] = useSearchParams()
   const sessionId = searchParams.get("session_id")
-  const paymentId = intentId || sessionId || ""
+  const isSpecialRoute = intentId === "success" || intentId === "cancel"
+  const paymentId = (!isSpecialRoute && intentId ? intentId : sessionId) || sessionId || ""
   const intent = useCheckoutStore((s) => s.intent)
 
   const [submitted, setSubmitted] = useState(false)
@@ -493,7 +494,7 @@ export default function CheckoutPage() {
   const { data: payment, isLoading, refetch: refetchPayment } = usePayment(paymentId)
 
   const redirectClientSecret = searchParams.get("payment_intent_client_secret")
-  const hasRedirectBack = !!redirectClientSecret || !!sessionId
+  const hasRedirectBack = !!redirectClientSecret || !!sessionId || isSpecialRoute
   const clientSecret = redirectClientSecret ?? intent?.clientSecret ?? payment?.clientSecret ?? null
   const amount = intent?.amount ?? payment?.amount ?? 0
   const currency = intent?.currency ?? payment?.currency ?? "USD"
