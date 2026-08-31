@@ -48,6 +48,8 @@ export function useConversationThread(conversationId: string) {
   const createOffer = useCreateOffer(conversationId)
   const respondToOffer = useRespondToOffer(conversationId)
   const markRead = useMarkMessagesRead(conversationId)
+  const markReadRef = useRef(markRead.mutate)
+  markReadRef.current = markRead.mutate
 
   const [offerOpen, setOfferOpen] = React.useState(false)
   const [draft, setDraft] = React.useState("")
@@ -64,15 +66,15 @@ export function useConversationThread(conversationId: string) {
   // Mark inbound messages read once on chat open, and on tab focus
   React.useEffect(() => {
     if (!conversationId || conversationId === "undefined") return
-    markRead.mutate()
-  }, [conversationId, markRead])
+    markReadRef.current()
+  }, [conversationId])
 
   React.useEffect(() => {
     if (!conversationId || conversationId === "undefined") return
-    const onFocus = () => markRead.mutate()
+    const onFocus = () => markReadRef.current()
     window.addEventListener("focus", onFocus)
     return () => window.removeEventListener("focus", onFocus)
-  }, [conversationId, markRead])
+  }, [conversationId])
 
   // Socket room lifecycle
   React.useEffect(() => {
