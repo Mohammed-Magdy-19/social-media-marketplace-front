@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
-import { Check, Copy, Trash2 } from "lucide-react"
+import { Copy, ShieldAlert, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { useReports } from "@/features/admin/queries"
 import { useDeleteReport } from "@/features/admin/mutations"
@@ -23,24 +23,10 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatRelativeTime } from "@/lib/utils"
-import type { UpdateReportFormValues } from "@/features/reports/schemas"
 import { ApiError, type Report, type ReportTargetType } from "@/types"
-
-const STATUS_OPTIONS: { value: UpdateReportFormValues["status"]; label: string }[] = [
-  { value: "reviewed", label: "Reviewed" },
-  { value: "dismissed", label: "Dismissed" },
-  { value: "resolved", label: "Resolved" },
-]
+import type { UpdateReportFormValues } from "../reports/schemas"
 
 const STATUS_PILLS = ["All", "pending", "reviewed", "dismissed", "resolved"]
 
@@ -239,41 +225,29 @@ export default function AdminReportsPage() {
         className: "w-36 text-right",
         cell: (r: Report) => (
           <div className="flex items-center justify-end gap-1">
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button variant="outline" size="xs" aria-label="Moderate report">
-                    <span className="text-[11px]">Moderate</span>
-                  </Button>
-                }
-              />
-              <DropdownMenuContent align="end" className="min-w-40">
-                <DropdownMenuLabel className="text-xs text-muted-foreground">
-                  Set report status
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {STATUS_OPTIONS.map((option) => (
-                  <DropdownMenuItem
-                    key={option.value}
-                    disabled={r.status === option.value}
-                    onClick={() =>
-                      setModerateTarget({ report: r, status: option.value })
-                    }
-                  >
-                    <span className="flex-1">{option.label}</span>
-                    {r.status === option.value && <Check className="size-3.5" />}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button
+              variant="outline"
+              size="xs"
+              aria-label="Moderate report"
+              className="h-7 text-xs font-medium gap-1 hover:bg-brand/10 hover:text-brand hover:border-brand/30"
+              onClick={() =>
+                setModerateTarget({
+                  report: r,
+                  status: r.status === "pending" ? "resolved" : r.status,
+                })
+              }
+            >
+              <ShieldAlert className="size-3.5" />
+              <span>Moderate</span>
+            </Button>
             <Button
               variant="ghost"
               size="icon-xs"
               aria-label="Delete report"
-              className="text-err hover:bg-err-soft"
+              className="text-err hover:bg-err-soft size-7"
               onClick={() => setDeleteTarget(r)}
             >
-              <Trash2 />
+              <Trash2 className="size-3.5" />
             </Button>
           </div>
         ),

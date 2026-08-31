@@ -272,3 +272,14 @@ export function useDeleteConversation() {
     },
   })
 }
+
+export function useDeleteComment() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => apiDelete<{ ok: true }>(`/comments/${id}`),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.posts.all })
+    },
+  })
+}
+
