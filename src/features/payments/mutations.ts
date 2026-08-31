@@ -30,7 +30,12 @@ export function useCreatePaymentIntent() {
       currency,
       postId,
     }: CreatePaymentIntentVariables) => {
-      const input = createPaymentIntentSchema.parse({ amount, currency, postId })
+      const cleanPostId = postId && /^[0-9a-fA-F]{24}$/.test(postId) ? postId : undefined
+      const input = createPaymentIntentSchema.parse({
+        amount: Math.round(amount),
+        currency: (currency ?? "usd").toLowerCase(),
+        postId: cleanPostId,
+      })
       const res = await apiPost<ApiResponse<CreatePaymentIntentResponse>>(
         "/payments/create-intent",
         input
@@ -47,6 +52,7 @@ export function useCreatePaymentIntent() {
       })
       void router.navigate(`/checkout/${payment.paymentId}`)
     },
+    onError: (error) => toast.error(getErrorMessage(error)),
   })
 }
 
