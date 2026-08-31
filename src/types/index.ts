@@ -265,9 +265,15 @@ export type UploadKind = "image" | "video" | "avatar" | "document"
 
 export interface Upload {
   id: string
+  _id?: string
   name: string
   kind: UploadKind
   size: number
+  fileSize?: number
+  mimeType?: string
+  publicId?: string
+  resourceType?: string
+  associatedEntity?: string
   url: string
   owner: PublicUser
   createdAt: string

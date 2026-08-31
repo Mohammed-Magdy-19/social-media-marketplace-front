@@ -24,21 +24,32 @@ import { cn, formatBytes, formatRelativeTime } from "@/lib/utils"
 import type { Upload } from "@/types"
 
 function MediaThumb({ upload }: { upload: Upload }) {
-  if (upload.kind === "video") {
+  const kind =
+    upload.kind ||
+    (upload.associatedEntity === "avatar"
+      ? "avatar"
+      : upload.resourceType === "video"
+      ? "video"
+      : "image")
+  const name =
+    upload.name ||
+    (upload.publicId ? upload.publicId.split("/").pop() : "Asset")
+
+  if (kind === "video") {
     return (
       <div className="grid size-full place-items-center bg-soft font-mono text-[10px] text-muted-foreground">
         MP4
       </div>
     )
   }
-  if (upload.kind === "avatar") {
+  if (kind === "avatar") {
     return (
       <div className="grid size-full place-items-center">
-        <AvatarWithFallback name={upload.name} src={upload.url} size="sm" />
+        <AvatarWithFallback name={name || "Avatar"} src={upload.url} size="sm" />
       </div>
     )
   }
-  if (upload.kind === "document") {
+  if (kind === "document") {
     return (
       <div className="grid size-full place-items-center bg-soft font-mono text-[10px] text-muted-foreground">
         DOC
@@ -50,7 +61,7 @@ function MediaThumb({ upload }: { upload: Upload }) {
       className="size-full bg-cover bg-center"
       style={{ backgroundImage: `url(${upload.url})` }}
       role="img"
-      aria-label={upload.name}
+      aria-label={name}
     />
   )
 }
@@ -73,7 +84,10 @@ export default function AdminUploadsPage() {
   })
 
   const uploads = data?.data ?? []
-  const totalBytes = uploads.reduce((sum, u) => sum + u.size, 0)
+  const totalBytes = uploads.reduce((sum, u) => {
+    const s = Number(u.size ?? u.fileSize ?? 0)
+    return sum + (Number.isFinite(s) ? s : 0)
+  }, 0)
 
   const COLUMNS = 4
   const rows = Math.ceil(uploads.length / COLUMNS)
@@ -130,47 +144,60 @@ export default function AdminUploadsPage() {
                       className="absolute top-0 left-0 grid w-full grid-cols-2 gap-2 p-2 sm:grid-cols-4"
                       style={{ transform: `translateY(${item.start}px)` }}
                     >
-                      {rowUploads.map((upload) => (
-                        <div
-                          key={upload.id}
-                          className={cn(
-                            "flex flex-col gap-1.5 rounded-lg border border-line-2 bg-soft p-2",
-                            deleteTarget?.id === upload.id && "ring-2 ring-err"
-                          )}
-                        >
-                          <div className="aspect-square w-full overflow-hidden rounded-md bg-background">
-                            <MediaThumb upload={upload} />
-                          </div>
-                          <p className="truncate text-xs font-medium text-foreground">
-                            {upload.name}
-                          </p>
-                          <div className="flex items-center justify-between gap-1">
-                            <span className="font-mono text-[10px] text-muted-foreground">
-                              {formatBytes(upload.size)}
-                            </span>
-                            <span className="font-mono text-[10px] text-muted-foreground">
-                              {formatRelativeTime(upload.createdAt)}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between gap-1">
-                            <span className="truncate text-[10px] text-muted-foreground">
-                              {upload.owner?.name || upload.owner?.username || "Unknown"}
-                            </span>
-                            <div className="flex items-center gap-1">
-                              <StatusPill status={upload.kind} />
-                              <Button
-                                variant="ghost"
-                                size="icon-xs"
-                                aria-label="Delete upload"
-                                className="text-err hover:bg-err-soft"
-                                onClick={() => setDeleteTarget(upload)}
-                              >
-                                <Trash2 />
-                              </Button>
+                      {rowUploads.map((upload) => {
+                        const uploadSize = Number(upload.size ?? upload.fileSize ?? 0)
+                        const uploadName =
+                          upload.name ||
+                          (upload.publicId ? upload.publicId.split("/").pop() : "Asset")
+                        const uploadKind =
+                          upload.kind ||
+                          (upload.associatedEntity === "avatar"
+                            ? "avatar"
+                            : upload.resourceType === "video"
+                            ? "video"
+                            : "image")
+                        return (
+                          <div
+                            key={upload.id || upload._id}
+                            className={cn(
+                              "flex flex-col gap-1.5 rounded-lg border border-line-2 bg-soft p-2",
+                              deleteTarget?.id === upload.id && "ring-2 ring-err"
+                            )}
+                          >
+                            <div className="aspect-square w-full overflow-hidden rounded-md bg-background">
+                              <MediaThumb upload={upload} />
+                            </div>
+                            <p className="truncate text-xs font-medium text-foreground">
+                              {uploadName}
+                            </p>
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="font-mono text-[10px] text-muted-foreground">
+                                {formatBytes(uploadSize)}
+                              </span>
+                              <span className="font-mono text-[10px] text-muted-foreground">
+                                {formatRelativeTime(upload.createdAt)}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="truncate text-[10px] text-muted-foreground">
+                                {upload.owner?.name || upload.owner?.username || "Unknown"}
+                              </span>
+                              <div className="flex items-center gap-1">
+                                <StatusPill status={uploadKind} />
+                                <Button
+                                  variant="ghost"
+                                  size="icon-xs"
+                                  aria-label="Delete upload"
+                                  className="text-err hover:bg-err-soft"
+                                  onClick={() => setDeleteTarget(upload)}
+                                >
+                                  <Trash2 />
+                                </Button>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   )
                 })}
