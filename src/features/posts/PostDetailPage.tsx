@@ -189,7 +189,7 @@ export default function PostDetailPage() {
             size="sm"
             onClick={() => hasToken && toggleLike.mutate({ postId: post.id, isLiked: post.isLiked })}
             className={cn(post.isLiked && "text-destructive")}
-            disabled={!hasToken}
+            disabled={!hasToken || toggleLike.isPending}
           >
             <Heart className={cn("size-4", post.isLiked && "fill-current")} />
             {post.likesCount}
@@ -203,7 +203,7 @@ export default function PostDetailPage() {
             size="sm"
             onClick={() => hasToken && savePost.mutate({ postId: post.id, isSaved: post.isSaved })}
             className={cn(post.isSaved && "text-brand")}
-            disabled={!hasToken}
+            disabled={!hasToken || savePost.isPending}
           >
             <Bookmark className={cn("size-4", post.isSaved && "fill-current")} />
             {post.saveCount}

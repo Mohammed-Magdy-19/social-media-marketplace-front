@@ -102,7 +102,7 @@ export function PostCard({ post }: { post: Post }) {
           variant="ghost"
           size="sm"
           onClick={onLike}
-          disabled={!hasToken}
+          disabled={!hasToken || toggleLike.isPending}
           className={cn("gap-1.5", post.isLiked && "text-destructive")}
           aria-pressed={post.isLiked}
         >
@@ -121,7 +121,7 @@ export function PostCard({ post }: { post: Post }) {
           variant="ghost"
           size="sm"
           onClick={onSave}
-          disabled={!hasToken}
+          disabled={!hasToken || savePost.isPending}
           className={cn("ml-auto gap-1.5", post.isSaved && "text-brand")}
           aria-pressed={post.isSaved}
         >

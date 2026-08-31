@@ -60,6 +60,7 @@ export function ProductCard({ post }: { post: Post }) {
             variant="secondary"
             size="icon-sm"
             onClick={() => hasToken && toggleLike.mutate({ postId: post.id, isLiked: post.isLiked })}
+            disabled={!hasToken || toggleLike.isPending}
             aria-label={post.isLiked ? "Unlike" : "Like"}
           >
             <Heart className={cn("size-4", post.isLiked && "fill-current text-destructive")} />
@@ -68,6 +69,7 @@ export function ProductCard({ post }: { post: Post }) {
             variant="secondary"
             size="icon-sm"
             onClick={() => hasToken && savePost.mutate({ postId: post.id, isSaved: post.isSaved })}
+            disabled={!hasToken || savePost.isPending}
             aria-label={post.isSaved ? "Unsave" : "Save"}
           >
             <Bookmark className={cn("size-4", post.isSaved && "fill-current text-brand")} />
