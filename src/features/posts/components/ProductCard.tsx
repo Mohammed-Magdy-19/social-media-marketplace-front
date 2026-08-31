@@ -21,13 +21,18 @@ export function ProductCard({ post }: { post: Post }) {
   const discount = price != null && (post?.saveCount ?? 0) > 0 ? "-15%" : undefined
   const mediaList = Array.isArray(post?.media) ? post.media : []
 
+  const user = useAuthStore((s) => s.user)
+  const authorId = post.author?.id || (post.author as unknown as { _id?: string })?._id
+  const userId = user?.id || (user as unknown as { _id?: string })?._id
+  const isOwner = Boolean(userId && authorId && userId === authorId)
+
   const onBuy = () => {
-    if (!hasToken || price == null || post.status !== "active") return
+    if (!hasToken || price == null || post.status !== "active" || isOwner) return
     createIntent.mutate({ postId: post.id, amount: price, currency: post.currency ?? "USD" })
   }
 
   const onNegotiate = () => {
-    if (!hasToken || price == null || post.status !== "active") return
+    if (!hasToken || price == null || post.status !== "active" || isOwner) return
     startNegotiation.mutate({ sellerId: post.author?.id ?? "", postId: post.id })
   }
 
@@ -94,23 +99,31 @@ export function ProductCard({ post }: { post: Post }) {
           )}
         </div>
         <div className="mt-auto flex flex-col gap-1.5 pt-1 sm:flex-row">
-          <Button
-            size="sm"
-            className="flex-1"
-            onClick={onBuy}
-            disabled={!hasToken || price == null || post.status !== "active"}
-          >
-            Instant Buy
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="flex-1"
-            onClick={onNegotiate}
-            disabled={!hasToken || price == null || post.status !== "active"}
-          >
-            Negotiate
-          </Button>
+          {isOwner ? (
+            <div className="w-full text-center py-1.5 px-3 rounded-lg bg-soft font-semibold text-xs text-muted-foreground border border-border/70">
+              Your Listing
+            </div>
+          ) : (
+            <>
+              <Button
+                size="sm"
+                className="flex-1 font-semibold"
+                onClick={onBuy}
+                disabled={!hasToken || price == null || post.status !== "active"}
+              >
+                Instant Buy
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 font-semibold"
+                onClick={onNegotiate}
+                disabled={!hasToken || price == null || post.status !== "active"}
+              >
+                Negotiate
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </article>

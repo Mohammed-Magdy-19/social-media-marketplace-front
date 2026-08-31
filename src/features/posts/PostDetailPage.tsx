@@ -43,6 +43,7 @@ export default function PostDetailPage() {
   const createComment = useCreateComment()
   const startNegotiation = useStartNegotiation()
   const createIntent = useCreatePaymentIntent()
+  const user = useAuthStore((s) => s.user)
   const hasToken = useAuthStore((s) => !!s.accessToken)
   const [reportOpen, setReportOpen] = React.useState(false)
   const [reportCommentTarget, setReportCommentTarget] = React.useState<string | null>(null)
@@ -216,33 +217,53 @@ export default function PostDetailPage() {
             <span className="font-mono text-xl font-bold text-brand">
               {formatCurrency(price, post.currency)}
             </span>
-            <div className="ml-auto flex gap-1.5">
-              <Button
-                size="sm"
-                onClick={() => {
-                  if (hasToken && post.status === "active") {
-                    createIntent.mutate({
-                      postId: post.id,
-                      amount: price,
-                      currency: post.currency ?? "USD",
-                    })
-                  }
-                }}
-                disabled={!hasToken || post.status !== "active"}
-              >
-                Instant Buy
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  if (hasToken && authorId)
-                    startNegotiation.mutate({ sellerId: authorId, postId: post.id })
-                }}
-                disabled={!hasToken || !authorId}
-              >
-                Negotiate
-              </Button>
+            <div className="ml-auto flex items-center gap-1.5">
+              {(() => {
+                const currentUserId = user?.id || (user as unknown as { _id?: string })?._id
+                const resolvedAuthorId = authorId || (post.author as unknown as { _id?: string })?._id
+                const isOwner = Boolean(currentUserId && resolvedAuthorId && currentUserId === resolvedAuthorId)
+
+                if (isOwner) {
+                  return (
+                    <Badge variant="secondary" className="px-3 py-1.5 font-semibold text-xs border border-border/60">
+                      Your Listing
+                    </Badge>
+                  )
+                }
+
+                return (
+                  <>
+                    <Button
+                      size="sm"
+                      className="font-semibold"
+                      onClick={() => {
+                        if (hasToken && post.status === "active") {
+                          createIntent.mutate({
+                            postId: post.id,
+                            amount: price,
+                            currency: post.currency ?? "USD",
+                          })
+                        }
+                      }}
+                      disabled={!hasToken || post.status !== "active"}
+                    >
+                      Instant Buy
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="font-semibold"
+                      onClick={() => {
+                        if (hasToken && authorId)
+                          startNegotiation.mutate({ sellerId: authorId, postId: post.id })
+                      }}
+                      disabled={!hasToken || !authorId}
+                    >
+                      Negotiate
+                    </Button>
+                  </>
+                )
+              })()}
             </div>
           </div>
         )}
