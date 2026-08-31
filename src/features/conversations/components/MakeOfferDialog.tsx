@@ -52,7 +52,8 @@ export function MakeOfferDialog({
 
   const applyDiscount = (percent: number) => {
     if (!originalPrice) return
-    const discounted = Math.max(1, Math.round(originalPrice * (1 - percent / 100) * 100) / 100)
+    const originalDollars = originalPrice / 100
+    const discounted = Math.max(1, Math.round(originalDollars * (1 - percent / 100) * 100) / 100)
     form.setValue("amount", discounted, { shouldValidate: true })
   }
 

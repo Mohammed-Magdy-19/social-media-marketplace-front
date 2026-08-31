@@ -223,7 +223,7 @@ export default function PostDetailPage() {
                   if (hasToken && post.status === "active") {
                     createIntent.mutate({
                       postId: post.id,
-                      amount: Math.round(price * 100),
+                      amount: price,
                       currency: post.currency ?? "USD",
                     })
                   }

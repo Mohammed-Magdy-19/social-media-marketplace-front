@@ -96,7 +96,7 @@ export default function AdminPaymentsPage() {
         header: "Amount",
         cell: (p: Payment) => (
           <span className="font-mono text-sm font-semibold text-foreground">
-            {formatCurrency(p.amount / 100, p.currency)}
+            {formatCurrency(p.amount, p.currency)}
           </span>
         ),
       },
@@ -187,7 +187,7 @@ export default function AdminPaymentsPage() {
             <AlertDialogDescription>
               Refund{" "}
               <span className="font-mono text-foreground">
-                {formatCurrency((refundTarget?.amount ?? 0) / 100, refundTarget?.currency)}
+                {formatCurrency(refundTarget?.amount ?? 0, refundTarget?.currency)}
               </span>{" "}
               to {refundTarget ? buyerLabel(refundTarget.buyer) : "the buyer"}? The
               money is returned via Stripe and the ledger is updated.
@@ -200,11 +200,12 @@ export default function AdminPaymentsPage() {
               disabled={refundPayment.isPending}
               onClick={() => {
                 if (!refundTarget) return
-                refundPayment.mutate(refundTarget.id)
-                setRefundTarget(null)
+                refundPayment.mutate(refundTarget.id, {
+                  onSuccess: () => setRefundTarget(null),
+                })
               }}
             >
-              Refund
+              Confirm Refund
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

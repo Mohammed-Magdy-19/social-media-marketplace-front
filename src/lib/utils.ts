@@ -33,10 +33,11 @@ export function formatRelativeTime(
   return new Date(iso!).toLocaleDateString(undefined, { month: "short", day: "numeric" })
 }
 
-export function formatCurrency(amount: number, currency = "USD"): string {
+export function formatCurrency(amountInCents: number, currency = "USD"): string {
+  const amount = (amountInCents ?? 0) / 100
   return new Intl.NumberFormat(undefined, {
     style: "currency",
-    currency,
+    currency: currency || "USD",
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount)

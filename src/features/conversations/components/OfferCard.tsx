@@ -71,7 +71,7 @@ export function OfferCard({ offer, meId, onAction }: OfferCardProps) {
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className="font-mono text-base font-bold tracking-tight text-foreground">
-                {formatCurrency(offer.amount / 100)}
+                {formatCurrency(offer.amount)}
               </span>
               <Badge
                 variant="outline"
@@ -143,14 +143,10 @@ export function OfferCard({ offer, meId, onAction }: OfferCardProps) {
       )}
 
       {isAccepted && isBuyer && currentOfferPostId && (
-        <div className="flex items-center justify-between gap-3 pt-2.5 border-t border-emerald-500/20">
-          <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-            <Check className="size-3.5" />
-            <span>Offer accepted! Proceed to checkout:</span>
-          </div>
+        <div className="pt-2.5 border-t border-emerald-500/20">
           <Button
             size="sm"
-            className="h-8 rounded-full px-4 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs font-semibold"
             onClick={() => {
               createIntent.mutate({
                 postId: currentOfferPostId,
@@ -160,7 +156,7 @@ export function OfferCard({ offer, meId, onAction }: OfferCardProps) {
             }}
             disabled={createIntent.isPending}
           >
-            Pay {formatCurrency(offer.amount / 100)}
+            Pay {formatCurrency(offer.amount)}
           </Button>
         </div>
       )}

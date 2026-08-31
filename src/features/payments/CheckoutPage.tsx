@@ -68,7 +68,7 @@ function PaymentHistory() {
               {p.id.slice(0, 12)}…
             </span>
             <span className="text-sm font-medium">
-              {formatCurrency(p.amount / 100, p.currency)}
+              {formatCurrency(p.amount, p.currency)}
             </span>
           </div>
           <PaymentStatusBadge status={p.status} />
@@ -454,14 +454,14 @@ function OrderSummary({
             </p>
           </div>
           <span className="font-mono text-lg font-semibold">
-            {formatCurrency(amount / 100, currency)}
+            {formatCurrency(amount, currency)}
           </span>
         </div>
         <Separator />
         <div className="flex flex-col gap-2 text-sm">
           <div className="flex justify-between text-muted-foreground">
             <span>Subtotal</span>
-            <span>{formatCurrency(amount / 100, currency)}</span>
+            <span>{formatCurrency(amount, currency)}</span>
           </div>
           <div className="flex justify-between text-muted-foreground">
             <span>Processing fee</span>
@@ -470,7 +470,7 @@ function OrderSummary({
           <div className="flex justify-between border-t border-border pt-2 font-semibold">
             <span>Total</span>
             <span className="font-mono">
-              {formatCurrency(amount / 100, currency)}
+              {formatCurrency(amount, currency)}
             </span>
           </div>
         </div>
@@ -560,7 +560,7 @@ export default function CheckoutPage() {
               Payment completed
             </h1>
             <p className="text-sm text-muted-foreground">
-              {formatCurrency(amount / 100, currency)} charged to your card.
+              {formatCurrency(amount, currency)} charged to your card.
               A receipt has been emailed to you.
             </p>
             <div className="flex gap-2 pt-2">

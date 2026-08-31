@@ -23,7 +23,7 @@ export function ProductCard({ post }: { post: Post }) {
 
   const onBuy = () => {
     if (!hasToken || price == null || post.status !== "active") return
-    createIntent.mutate({ postId: post.id, amount: Math.round(price * 100), currency: post.currency ?? "USD" })
+    createIntent.mutate({ postId: post.id, amount: price, currency: post.currency ?? "USD" })
   }
 
   const onNegotiate = () => {
