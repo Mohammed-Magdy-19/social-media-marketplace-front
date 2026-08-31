@@ -8,7 +8,7 @@ import {
   updatePostInCache,
 } from "./postCache"
 import { queryKeys } from "@/api/queryKeys"
-import type { ApiResponse, Post, PostComment } from "@/types"
+import type { ApiResponse, ApiError, Post, PostComment } from "@/types"
 
 export function useToggleLike() {
   const queryClient = useQueryClient()
@@ -28,7 +28,20 @@ export function useToggleLike() {
       }))
       return snapshot
     },
-    onError: (error, _vars, snapshot) => {
+    onError: (error, { postId, isLiked }, snapshot) => {
+      const is409 =
+        error instanceof Error &&
+        "status" in error &&
+        (error as ApiError).status === 409
+      if (is409) {
+        // 409 = already liked/unliked — sync cache to the true server state
+        // instead of rolling back, then let onSettled refetch
+        updatePostInCache(queryClient, postId, (post) => ({
+          ...post,
+          isLiked: !isLiked,
+        }))
+        return
+      }
       if (snapshot) restorePostsInCache(queryClient, snapshot)
       toast.error(getErrorMessage(error))
     },
@@ -56,7 +69,19 @@ export function useSavePost() {
       }))
       return snapshot
     },
-    onError: (error, _vars, snapshot) => {
+    onError: (error, { postId, isSaved }, snapshot) => {
+      const is409 =
+        error instanceof Error &&
+        "status" in error &&
+        (error as ApiError).status === 409
+      if (is409) {
+        // 409 = already saved/unsaved — sync cache to the true server state
+        updatePostInCache(queryClient, postId, (post) => ({
+          ...post,
+          isSaved: !isSaved,
+        }))
+        return
+      }
       if (snapshot) restorePostsInCache(queryClient, snapshot)
       toast.error(getErrorMessage(error))
     },
