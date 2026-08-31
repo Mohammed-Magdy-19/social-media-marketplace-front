@@ -9,7 +9,8 @@ export const createOfferFormSchema = z.object({
     .positive("Offer must be positive")
     .transform(toCents),
 })
-export type CreateOfferFormValues = z.infer<typeof createOfferFormSchema>
+export type CreateOfferInput = z.input<typeof createOfferFormSchema>
+export type CreateOfferFormValues = z.output<typeof createOfferFormSchema>
 
 export const respondOfferFormSchema = z
   .object({
@@ -24,4 +25,5 @@ export const respondOfferFormSchema = z
     message: "A counter offer requires an amount",
     path: ["amount"],
   })
-export type RespondOfferFormValues = z.infer<typeof respondOfferFormSchema>
+export type RespondOfferInput = z.input<typeof respondOfferFormSchema>
+export type RespondOfferFormValues = z.output<typeof respondOfferFormSchema>

@@ -68,7 +68,7 @@ export function useSendMessage(conversationId: string) {
         }
         const pages = old.pages.map((page, index) =>
           index === 0
-            ? { ...page, messages: [...(page?.messages ?? []), optimistic] }
+            ? { ...page, messages: [optimistic, ...(page?.messages ?? [])] }
             : page
         )
         return { ...old, pages }

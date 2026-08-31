@@ -230,7 +230,7 @@ function flushMessages() {
             )
             const seen = new Set(messages.map((m) => m.messageId))
             const added = matching.filter((m) => !seen.has(m.messageId))
-            if (added.length > 0) messages = [...messages, ...added]
+            if (added.length > 0) messages = [...added, ...messages]
           }
 
           return { ...page, messages }

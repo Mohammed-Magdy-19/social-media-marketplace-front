@@ -26,6 +26,9 @@ interface RawBackendMessage {
   createdAt: string
   clientMessageId?: string
   status?: "pending" | "failed"
+  replyTo?: { id?: string; messageId?: string; body?: string; senderId?: string; senderName?: string } | null
+  isEdited?: boolean
+  isDeleted?: boolean
 }
 
 export function normalizeMessage(raw: RawBackendMessage): Message {
@@ -49,6 +52,16 @@ export function normalizeMessage(raw: RawBackendMessage): Message {
     createdAt: raw.createdAt,
     clientMessageId: raw.clientMessageId,
     status: raw.status,
+    replyTo: raw.replyTo
+      ? {
+          id: raw.replyTo.id || raw.replyTo.messageId || "",
+          body: raw.replyTo.body || "",
+          senderId: raw.replyTo.senderId || "",
+          senderName: raw.replyTo.senderName || "User",
+        }
+      : null,
+    isEdited: raw.isEdited ?? false,
+    isDeleted: raw.isDeleted ?? false,
   }
 }
 
