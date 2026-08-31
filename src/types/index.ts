@@ -177,6 +177,7 @@ export interface Payment {
   seller?: PublicUser | string | null
   post?: { id: string; title: string; media?: string[] } | string | null
   metadata?: Record<string, unknown>
+  clientSecret?: string
   createdAt: string
   updatedAt: string
 }

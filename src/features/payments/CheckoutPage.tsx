@@ -494,7 +494,7 @@ export default function CheckoutPage() {
 
   const redirectClientSecret = searchParams.get("payment_intent_client_secret")
   const hasRedirectBack = !!redirectClientSecret || !!sessionId
-  const clientSecret = redirectClientSecret ?? intent?.clientSecret ?? null
+  const clientSecret = redirectClientSecret ?? intent?.clientSecret ?? payment?.clientSecret ?? null
   const amount = intent?.amount ?? payment?.amount ?? 0
   const currency = intent?.currency ?? payment?.currency ?? "USD"
 
