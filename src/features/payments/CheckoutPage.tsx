@@ -8,15 +8,17 @@ import {
   useCheckoutElements,
 } from "@stripe/react-stripe-js/checkout"
 import { toast } from "sonner"
-import { CheckCircle2, Loader2, XCircle } from "lucide-react"
+import { CheckCircle2, Loader2, MapPin, XCircle } from "lucide-react"
 import { stripePromise } from "@/lib/stripe-client"
 import { useCheckoutStore } from "@/stores/checkoutStore"
+import { useAuthStore } from "@/stores/authStore"
 import { useMyPayments, usePayment } from "@/features/payments/queries"
 import { checkoutSchema, type CheckoutValues } from "@/features/payments/schemas"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Input } from "@/components/ui/input"
 import {
   Form,
   FormControl,
@@ -90,11 +92,28 @@ function CheckoutForm({
   const checkoutResult = useCheckoutElements()
   const [isElementReady, setIsElementReady] = useState(false)
   const [loadTimedOut, setLoadTimedOut] = useState(false)
+  const [detectingLocation, setDetectingLocation] = useState(false)
+  const currentUser = useAuthStore((s) => s.user)
 
   const form = useForm<CheckoutValues>({
     resolver: zodResolver(checkoutSchema),
-    defaultValues: { termsAccepted: false as never },
+    defaultValues: {
+      phoneNumber: currentUser?.phoneNumber || "",
+      street: "",
+      city: "",
+      state: "",
+      postalCode: "",
+      country: "",
+      termsAccepted: false as never,
+    },
   })
+
+  // Sync phone number if user session loads asynchronously
+  useEffect(() => {
+    if (currentUser?.phoneNumber && !form.getValues("phoneNumber")) {
+      form.setValue("phoneNumber", currentUser.phoneNumber)
+    }
+  }, [currentUser?.phoneNumber, form])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -102,6 +121,57 @@ function CheckoutForm({
     }, 5000)
     return () => clearTimeout(timer)
   }, [isElementReady])
+
+  const handleDetectLocation = async () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported by your browser.")
+      return
+    }
+
+    setDetectingLocation(true)
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+          )
+          if (!response.ok) throw new Error("Could not reverse geocode location")
+          const data = await response.json()
+          const addr = data.address || {}
+
+          const road = addr.road || addr.pedestrian || addr.street || ""
+          const houseNumber = addr.house_number || ""
+          const street = [houseNumber, road].filter(Boolean).join(" ") || data.display_name?.split(",")[0] || ""
+          const city = addr.city || addr.town || addr.village || addr.suburb || ""
+          const state = addr.state || addr.province || addr.region || ""
+          const postalCode = addr.postcode || addr.postal_code || ""
+          const country = addr.country || ""
+
+          if (street) form.setValue("street", street, { shouldValidate: true })
+          if (city) form.setValue("city", city, { shouldValidate: true })
+          if (state) form.setValue("state", state, { shouldValidate: true })
+          if (postalCode) form.setValue("postalCode", postalCode, { shouldValidate: true })
+          if (country) form.setValue("country", country, { shouldValidate: true })
+
+          toast.success("Location auto-detected successfully! Please review details below.")
+        } catch {
+          toast.error("Could not fetch address from coordinates. Please enter manually.")
+        } finally {
+          setDetectingLocation(false)
+        }
+      },
+      (error) => {
+        setDetectingLocation(false)
+        if (error.code === error.PERMISSION_DENIED) {
+          toast.error("Location access denied. You can enter your address manually.")
+        } else {
+          toast.error("Unable to retrieve location. Please enter manually.")
+        }
+      },
+      { timeout: 10000, enableHighAccuracy: true }
+    )
+  }
 
   const handlePay = form.handleSubmit(async () => {
     if (checkoutResult.type !== "success") return
@@ -128,14 +198,175 @@ function CheckoutForm({
 
   return (
     <Form {...form}>
-      <form id="checkout-form" onSubmit={handlePay} className="flex flex-col gap-4">
-        <PaymentElement
-          onReady={() => {
-            setIsElementReady(true)
-            setLoadTimedOut(false)
-          }}
-          onLoaderStart={() => setIsElementReady(false)}
-        />
+      <form id="checkout-form" onSubmit={handlePay} className="flex flex-col gap-5">
+        {/* Contact & Delivery Address Section */}
+        <div className="rounded-xl border border-border bg-card p-4 shadow-2xs">
+          <div className="flex items-center justify-between pb-3">
+            <div>
+              <h3 className="text-sm font-semibold">Delivery & Contact Details</h3>
+              <p className="text-xs text-muted-foreground">Required for verified marketplace transaction records</p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={detectingLocation}
+              onClick={handleDetectLocation}
+              className="h-8 gap-1.5 rounded-full text-xs font-medium"
+            >
+              {detectingLocation ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-brand" />
+                  <span>Detecting…</span>
+                </>
+              ) : (
+                <>
+                  <MapPin className="h-3.5 w-3.5 text-brand" />
+                  <span>Detect My Location</span>
+                </>
+              )}
+            </Button>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <FormField
+              control={form.control}
+              name="phoneNumber"
+              render={({ field }) => (
+                <FormItem className="grid gap-1">
+                  <FormLabel className="text-xs font-medium">
+                    Phone Number <span className="text-destructive">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="tel"
+                      placeholder="+1 (555) 000-0000"
+                      autoComplete="tel"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="street"
+              render={({ field }) => (
+                <FormItem className="grid gap-1">
+                  <FormLabel className="text-xs font-medium">
+                    Street Address <span className="text-destructive">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="123 Market Street, Apt 4B"
+                      autoComplete="street-address"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="city"
+                render={({ field }) => (
+                  <FormItem className="grid gap-1">
+                    <FormLabel className="text-xs font-medium">
+                      City <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="San Francisco"
+                        autoComplete="address-level2"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="state"
+                render={({ field }) => (
+                  <FormItem className="grid gap-1">
+                    <FormLabel className="text-xs font-medium">
+                      State / Province <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="California"
+                        autoComplete="address-level1"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="postalCode"
+                render={({ field }) => (
+                  <FormItem className="grid gap-1">
+                    <FormLabel className="text-xs font-medium">
+                      ZIP / Postal Code <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="94103"
+                        autoComplete="postal-code"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="country"
+                render={({ field }) => (
+                  <FormItem className="grid gap-1">
+                    <FormLabel className="text-xs font-medium">
+                      Country <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="United States"
+                        autoComplete="country-name"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Stripe Payment Element */}
+        <div className="rounded-xl border border-border bg-card p-4 shadow-2xs">
+          <h3 className="mb-3 text-sm font-semibold">Payment Method</h3>
+          <PaymentElement
+            onReady={() => {
+              setIsElementReady(true)
+              setLoadTimedOut(false)
+            }}
+            onLoaderStart={() => setIsElementReady(false)}
+          />
+        </div>
 
         {loadTimedOut && !isElementReady && (
           <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-amber-700 dark:text-amber-300 flex flex-col gap-2">

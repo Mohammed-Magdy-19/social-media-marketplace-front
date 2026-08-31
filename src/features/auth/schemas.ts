@@ -26,7 +26,32 @@ export const usernameRules = z
   )
   .transform((val) => val.toLowerCase().trim())
 
+export const firstNameRules = z
+  .string({ required_error: "First name is required" })
+  .trim()
+  .min(1, "First name is required")
+  .max(50, "First name cannot exceed 50 characters")
+
+export const lastNameRules = z
+  .string({ required_error: "Last name is required" })
+  .trim()
+  .min(1, "Last name is required")
+  .max(50, "Last name cannot exceed 50 characters")
+
+export const phoneNumberRules = z
+  .string({ required_error: "Phone number is required" })
+  .trim()
+  .min(7, "Phone number must be at least 7 digits")
+  .max(20, "Phone number cannot exceed 20 characters")
+  .regex(
+    /^\+?[0-9\s\-()]{7,20}$/,
+    "Please provide a valid phone number"
+  )
+
 export const registerSchema = z.object({
+  firstName: firstNameRules,
+  lastName: lastNameRules,
+  phoneNumber: phoneNumberRules,
   username: usernameRules,
   email: emailRules,
   password: passwordRules,

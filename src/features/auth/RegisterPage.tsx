@@ -28,6 +28,9 @@ export default function RegisterPage() {
   const form = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
+      firstName: "",
+      lastName: "",
+      phoneNumber: "",
       username: "",
       email: "",
       password: "",
@@ -51,39 +54,110 @@ export default function RegisterPage() {
     })
   }
 
-
   return (
     <div className="flex min-h-svh items-center justify-center p-4">
-      <Card className="w-full max-w-sm rounded-card">
+      <Card className="w-full max-w-md rounded-card shadow-lg">
         <CardHeader className="items-center text-center">
           <Logo size={40} />
-          <CardTitle className="mt-2">Create your account</CardTitle>
+          <CardTitle className="mt-2 text-xl font-bold">Create your account</CardTitle>
+          <p className="text-xs text-muted-foreground">Join the community marketplace</p>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(onSubmit)}
-              className="flex flex-col gap-4"
+              className="flex flex-col gap-3.5"
             >
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="firstName"
+                  render={({ field }) => (
+                    <FormItem className="grid gap-1">
+                      <FormLabel className="text-xs font-semibold">
+                        First Name <span className="text-destructive">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="Jane"
+                          autoComplete="given-name"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem className="grid gap-1">
+                      <FormLabel className="text-xs font-semibold">
+                        Last Name <span className="text-destructive">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="Doe"
+                          autoComplete="family-name"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
               <FormField
                 control={form.control}
-                name="username"
+                name="phoneNumber"
                 render={({ field }) => (
-                  <FormItem className="grid">
-                    <FormLabel>Username</FormLabel>
+                  <FormItem className="grid gap-1">
+                    <FormLabel className="text-xs font-semibold">
+                      Phone Number <span className="text-destructive">*</span>
+                    </FormLabel>
                     <FormControl>
-                      <Input {...field} autoComplete="username" />
+                      <Input
+                        {...field}
+                        type="tel"
+                        placeholder="+1 (555) 000-0000"
+                        autoComplete="tel"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem className="grid gap-1">
+                    <FormLabel className="text-xs font-semibold">
+                      Username <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="janedoe"
+                        autoComplete="username"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={form.control}
                 name="email"
                 render={({ field }) => (
-                  <FormItem className="grid">
-                    <FormLabel>Email</FormLabel>
+                  <FormItem className="grid gap-1">
+                    <FormLabel className="text-xs font-semibold">
+                      Email <span className="text-destructive">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
@@ -96,25 +170,34 @@ export default function RegisterPage() {
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="password"
                 render={({ field }) => (
-                  <FormItem className="grid">
-                    <FormLabel>Password</FormLabel>
+                  <FormItem className="grid gap-1">
+                    <FormLabel className="text-xs font-semibold">
+                      Password <span className="text-destructive">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         type="password"
                         autoComplete="new-password"
+                        placeholder="••••••••"
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button type="submit" disabled={register.isPending}>
-                Sign up
+
+              <Button
+                type="submit"
+                disabled={register.isPending}
+                className="mt-2 w-full rounded-full font-semibold shadow-xs"
+              >
+                {register.isPending ? "Creating account…" : "Sign up"}
               </Button>
             </form>
           </Form>

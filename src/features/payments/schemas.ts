@@ -32,7 +32,28 @@ export type CreatePaymentIntentFormValues = z.infer<
   typeof createPaymentIntentSchema
 >
 
+export const shippingAddressSchema = z.object({
+  street: z.string().trim().min(1, "Street address is required"),
+  city: z.string().trim().min(1, "City is required"),
+  state: z.string().trim().min(1, "State/Province is required"),
+  postalCode: z.string().trim().min(1, "Postal/ZIP code is required"),
+  country: z.string().trim().min(1, "Country is required"),
+})
+
+export type ShippingAddressFormValues = z.infer<typeof shippingAddressSchema>
+
 export const checkoutSchema = z.object({
+  phoneNumber: z
+    .string({ required_error: "Phone number is required" })
+    .trim()
+    .min(7, "Phone number must be at least 7 digits")
+    .max(20, "Phone number cannot exceed 20 characters")
+    .regex(/^\+?[0-9\s\-()]{7,20}$/, "Please provide a valid phone number"),
+  street: z.string().trim().min(1, "Street address is required"),
+  city: z.string().trim().min(1, "City is required"),
+  state: z.string().trim().min(1, "State/Province is required"),
+  postalCode: z.string().trim().min(1, "Postal/ZIP code is required"),
+  country: z.string().trim().min(1, "Country is required"),
   termsAccepted: z.literal(true, {
     errorMap: () => ({ message: "You must accept the terms to continue" }),
   }),

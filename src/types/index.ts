@@ -10,6 +10,9 @@ export type PostSortOption = "newest" | "oldest" | "most_liked" | "most_commente
 
 export interface PublicUser {
   id: string
+  firstName?: string
+  lastName?: string
+  phoneNumber?: string
   name: string
   username: string
   email: string
@@ -149,6 +152,15 @@ export type PaymentStatus =
   | "failed"
   | "refunded"
 
+export interface ShippingAddress {
+  street?: string
+  city?: string
+  state?: string
+  postalCode?: string
+  country?: string
+  fullAddress?: string
+}
+
 export interface Payment {
   id: string
   /** Smallest currency unit (e.g. cents), matching Post.price / Payment.amount. */
@@ -160,6 +172,8 @@ export interface Payment {
   /** Stripe PaymentIntent id — opaque, display verbatim only, never parse. */
   transactionId: string
   buyer: PublicUser | string
+  buyerPhoneNumber?: string
+  shippingAddress?: ShippingAddress
   seller?: PublicUser | string | null
   post?: { id: string; title: string; media?: string[] } | string | null
   metadata?: Record<string, unknown>
