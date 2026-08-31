@@ -73,13 +73,22 @@ export function bridgeMessageDeleted(payload: {
   scheduleFlush()
 }
 
+/** Ensure incoming socket offers always have a consistent `id` field. */
+function normalizeOffer(raw: Offer & { _id?: string }): Offer {
+  if (!raw.id && raw._id) return { ...raw, id: String(raw._id) }
+  return raw
+}
+
 export function bridgeOfferCreated(offer: Offer) {
-  pendingOffers.push(offer)
+  pendingOffers.push(normalizeOffer(offer))
   scheduleFlush()
 }
 
 export function bridgeOfferUpdated(payload: { offer: Offer; newOffer?: Offer }) {
-  pendingOfferUpdates.push(payload)
+  pendingOfferUpdates.push({
+    offer: normalizeOffer(payload.offer),
+    newOffer: payload.newOffer ? normalizeOffer(payload.newOffer) : undefined,
+  })
   scheduleFlush()
 }
 
