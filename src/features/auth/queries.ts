@@ -35,13 +35,34 @@ export function useAuthBootstrap() {
   const setSession = useAuthStore((s) => s.setSession)
 
   useEffect(() => {
-    if (useAuthStore.getState().status !== "idle") return
+    const state = useAuthStore.getState()
 
-    // Gate the restore attempt on any signal that a session may exist: the
-    // readable `hasSession` cookie (top-level origins) OR the localStorage
-    // refresh-token fallback (cross-site preview iframes, where SameSite=Strict
-    // cookies are never stored). Absent both, skip the guaranteed 401s.
-    if (!hasSessionHint() && !getStoredRefreshToken()) {
+    // If we already have a valid accessToken and user in store from localStorage, mark authenticated
+    if (state.accessToken && state.user) {
+      setStatus("authenticated")
+      // Validate session with /auth/me in background
+      apiGet<ApiResponse<{ user: PublicUser }>>("/auth/me")
+        .then((me) => {
+          queryClient.setQueryData(queryKeys.auth.me(), me.data.user)
+          useAuthStore.getState().setUser(me.data.user)
+        })
+        .catch(() => {
+          // If token expired, attempt refresh
+          refreshAccessToken()
+            .then((token) => {
+              return apiGet<ApiResponse<{ user: PublicUser }>>("/auth/me").then((me) => {
+                queryClient.setQueryData(queryKeys.auth.me(), me.data.user)
+                setSession(me.data.user, token)
+              })
+            })
+            .catch(() => {
+              useAuthStore.getState().clear()
+            })
+        })
+      return
+    }
+
+    if (!hasSessionHint() && !getStoredRefreshToken() && !state.accessToken) {
       setStatus("unauthenticated")
       return
     }
@@ -58,7 +79,7 @@ export function useAuthBootstrap() {
         queryClient.setQueryData(queryKeys.auth.me(), me.data.user)
         setSession(me.data.user, token)
       } catch {
-        setStatus("unauthenticated")
+        useAuthStore.getState().clear()
       }
     }
 
