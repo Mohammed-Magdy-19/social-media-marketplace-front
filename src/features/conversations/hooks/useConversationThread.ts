@@ -37,10 +37,10 @@ export function useConversationThread(conversationId: string) {
   const me = useAuthStore((s) => s.user)
   const [searchParams] = useSearchParams()
 
-  const { data: meta } = useConversationMeta(conversationId)
+  const { data: meta, isError: isMetaError, isLoading: isMetaLoading } = useConversationMeta(conversationId)
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useMessagesInfinite(conversationId)
-  const { data: offers } = useOffers(conversationId)
+    useMessagesInfinite(conversationId, !isMetaError)
+  const { data: offers } = useOffers(conversationId, !isMetaError)
 
   const sendMessage = useSendMessage(conversationId)
   const editMessage = useEditMessage(conversationId)
@@ -65,20 +65,20 @@ export function useConversationThread(conversationId: string) {
 
   // Mark inbound messages read once on chat open, and on tab focus
   React.useEffect(() => {
-    if (!conversationId || conversationId === "undefined") return
+    if (!conversationId || conversationId === "undefined" || isMetaError || !meta) return
     markReadRef.current()
-  }, [conversationId])
+  }, [conversationId, isMetaError, meta])
 
   React.useEffect(() => {
-    if (!conversationId || conversationId === "undefined") return
+    if (!conversationId || conversationId === "undefined" || isMetaError || !meta) return
     const onFocus = () => markReadRef.current()
     window.addEventListener("focus", onFocus)
     return () => window.removeEventListener("focus", onFocus)
-  }, [conversationId])
+  }, [conversationId, isMetaError, meta])
 
   // Socket room lifecycle
   React.useEffect(() => {
-    if (!conversationId || conversationId === "undefined") return
+    if (!conversationId || conversationId === "undefined" || isMetaError || !meta) return
     setActiveConversation(conversationId)
     didInitialScroll.current = false
     stickToBottom.current = true
@@ -88,7 +88,7 @@ export function useConversationThread(conversationId: string) {
       setActiveConversation(null)
       socket.emit("leave_conversation", { conversationId })
     }
-  }, [conversationId, setActiveConversation])
+  }, [conversationId, isMetaError, meta, setActiveConversation])
 
   // Clean typing timeout on unmount
   React.useEffect(
@@ -255,6 +255,8 @@ export function useConversationThread(conversationId: string) {
     me,
     other,
     meta,
+    isNotFound: isMetaError,
+    isMetaLoading,
     activePost,
     offers: offers ?? [],
     messages,

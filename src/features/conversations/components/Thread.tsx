@@ -41,9 +41,35 @@ export function Thread({ conversationId }: ThreadProps) {
     isCreateOfferPending,
     handleCreateOffer,
     handleRespondOffer,
+    isNotFound,
     editMessage,
     deleteMessage,
   } = useConversationThread(conversationId)
+
+  if (isNotFound) {
+    return (
+      <div className="flex h-[calc(100svh-8.5rem)] flex-col items-center justify-center gap-3 rounded-card bg-card p-6 text-center shadow-xs md:h-[calc(100svh-6rem)] border border-border">
+        <div className="flex size-12 items-center justify-center rounded-2xl bg-soft text-muted-foreground">
+          <X className="size-6" />
+        </div>
+        <div className="flex flex-col gap-1 max-w-sm">
+          <p className="text-sm font-semibold text-foreground">Conversation Not Found</p>
+          <p className="text-xs text-muted-foreground">
+            This conversation does not exist or has been removed.
+          </p>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => void navigate("/messages")}
+          className="mt-2 rounded-full text-xs font-semibold"
+        >
+          <ArrowLeft className="mr-1.5 size-3.5" />
+          Back to all messages
+        </Button>
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-[calc(100svh-8.5rem)] flex-col overflow-hidden rounded-card bg-card/95 shadow-sm ring-1 ring-foreground/10 backdrop-blur-md md:h-[calc(100svh-6rem)]">

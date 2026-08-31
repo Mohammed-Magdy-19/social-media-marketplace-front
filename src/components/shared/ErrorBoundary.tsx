@@ -1,4 +1,5 @@
 import * as React from "react"
+import { RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface Props {
@@ -23,8 +24,22 @@ export class ErrorBoundary extends React.Component<Props, State> {
     return { error }
   }
 
-  componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error("ErrorBoundary caught an error:", error, info.componentStack)
+  componentDidCatch(error: Error, _info: React.ErrorInfo) {
+    const isChunkError =
+      error?.message?.includes("Failed to fetch dynamically imported module") ||
+      error?.message?.includes("Importing a module script failed") ||
+      error?.name === "ChunkLoadError"
+
+    if (isChunkError) {
+      const storageKey = "chunk_reload_retry"
+      const lastRetry = sessionStorage.getItem(storageKey)
+      const now = Date.now()
+      if (!lastRetry || now - Number(lastRetry) > 10000) {
+        sessionStorage.setItem(storageKey, String(now))
+        window.location.reload()
+        return
+      }
+    }
   }
 
   private handleReload = () => {
@@ -34,16 +49,31 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
   render() {
     if (this.state.error) {
-      if (this.props.fallback) {
+      const isChunkError =
+        this.state.error?.message?.includes("Failed to fetch dynamically imported module") ||
+        this.state.error?.message?.includes("Importing a module script failed")
+
+      if (this.props.fallback && !isChunkError) {
         return this.props.fallback
       }
       return (
-        <div className="flex min-h-svh w-full flex-col items-center justify-center gap-4 p-4 text-center">
-          <h1 className="text-lg font-semibold">Something went wrong</h1>
-          <p className="max-w-md text-sm text-muted-foreground">
-            An unexpected error occurred. Please reload the page to continue.
-          </p>
-          <Button onClick={this.handleReload}>Reload page</Button>
+        <div className="flex min-h-[50svh] w-full flex-col items-center justify-center gap-4 p-6 text-center">
+          <div className="flex size-12 items-center justify-center rounded-2xl bg-brand/10 text-brand">
+            <RefreshCw className="size-6" />
+          </div>
+          <div className="flex flex-col gap-1 max-w-md">
+            <h1 className="text-lg font-bold text-foreground">
+              {isChunkError ? "App Update Available" : "Something went wrong"}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {isChunkError
+                ? "A new version of the app was deployed. Please refresh to load the latest updates."
+                : "An unexpected error occurred. Please reload the page to continue."}
+            </p>
+          </div>
+          <Button onClick={this.handleReload} className="rounded-full px-5 font-semibold">
+            Reload page
+          </Button>
         </div>
       )
     }

@@ -5,7 +5,6 @@ import type {
   ApiResponse,
   Conversation,
   Message,
-  MessageCursorPage,
   Offer,
   PaginatedResponse,
   PublicUser,
@@ -89,40 +88,53 @@ export function useConversationMeta(conversationId: string) {
       return res.data.conversation
     },
     enabled: !!conversationId && conversationId !== "undefined",
+    retry: (failureCount, error: any) => error?.status !== 404 && failureCount < 1,
   })
 }
 
-export function useMessagesInfinite(conversationId: string) {
+export function useMessagesInfinite(conversationId: string, enabled = true) {
   return useInfiniteQuery({
     queryKey: queryKeys.conversations.messages(conversationId),
     queryFn: async ({ pageParam, signal }) => {
       const res = await apiGet<{
         status: string
-        results: number
-        data: RawBackendMessage[]
-        pagination?: {
-          limit?: number
-          hasMore?: boolean
-          nextCursor?: string | null
+        data: {
+          messages: RawBackendMessage[]
+          hasMore: boolean
+          nextCursor?: string
         }
       }>(
-        `/conversations/${conversationId}/messages`,
-        {
-          params: { limit: MESSAGES_PAGE_SIZE, cursor: pageParam ?? undefined },
-          signal,
-        }
+        `/conversations/${conversationId}/messages?limit=${MESSAGES_PAGE_SIZE}${
+          pageParam ? `&cursor=${pageParam}` : ""
+        }`,
+        { signal }
       )
-      const rawList = Array.isArray(res.data) ? res.data : []
-      const messages = rawList.map(normalizeMessage)
-      const nextCursor = res.pagination?.nextCursor ?? null
+      const list = (res.data?.messages ?? []).map(normalizeMessage)
+      const nextCursor = res.data?.nextCursor ?? (res.data?.hasMore ? list[list.length - 1]?.createdAt : undefined)
       return {
-        messages,
+        messages: list,
         nextCursor,
-      } as MessageCursorPage
+      }
     },
-    initialPageParam: null as string | null,
-    getNextPageParam: (lastPage) => lastPage?.nextCursor ?? null,
-    enabled: !!conversationId && conversationId !== "undefined",
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    enabled: !!conversationId && conversationId !== "undefined" && enabled,
+    retry: (failureCount, error: any) => error?.status !== 404 && failureCount < 1,
+  })
+}
+
+export function useOffers(conversationId: string, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.conversations.offers(conversationId),
+    queryFn: async ({ signal }) => {
+      const res = await apiGet<ApiResponse<{ offers: Offer[] }>>(
+        `/conversations/${conversationId}/offers`,
+        { signal }
+      )
+      return res.data?.offers ?? []
+    },
+    enabled: !!conversationId && conversationId !== "undefined" && enabled,
+    retry: (failureCount, error: any) => error?.status !== 404 && failureCount < 1,
   })
 }
 
@@ -152,18 +164,4 @@ export function offerBuyerId(offer: Offer): string {
   return (offer.buyer as unknown as { id?: string; _id?: string })?.id ||
     (offer.buyer as unknown as { id?: string; _id?: string })?._id ||
     ""
-}
-
-export function useOffers(conversationId: string) {
-  return useQuery({
-    queryKey: queryKeys.conversations.offers(conversationId),
-    queryFn: async ({ signal }) => {
-      const res = await apiGet<ApiResponse<{ offers: Offer[] }>>(
-        `/conversations/${conversationId}/offers`,
-        { signal }
-      )
-      return res.data.offers ?? []
-    },
-    enabled: !!conversationId && conversationId !== "undefined",
-  })
 }
