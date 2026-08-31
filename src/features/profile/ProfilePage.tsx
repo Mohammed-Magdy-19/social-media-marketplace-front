@@ -59,7 +59,7 @@ function MyPostsGrid({ author }: { author: string }) {
 
   return (
     <div ref={parentRef} className="max-h-96 overflow-y-auto no-scrollbar">
-      <div className="relative" style={{ height: virtualizer.getTotalSize() }}>
+      <div className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
         {virtualizer.getVirtualItems().map((item) => {
           const rowStart = item.index * COLUMNS
           const rowPosts = posts.slice(rowStart, rowStart + COLUMNS)
@@ -68,7 +68,8 @@ function MyPostsGrid({ author }: { author: string }) {
               key={`row-${item.index}`}
               ref={virtualizer.measureElement}
               data-index={item.index}
-              className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3"
+              className="absolute top-0 left-0 grid w-full grid-cols-1 gap-3 pb-3 sm:grid-cols-2 xl:grid-cols-3"
+              style={{ transform: `translateY(${item.start}px)` }}
             >
               {rowPosts.map((post) => (
                 <ProductCard key={post.id} post={post} />

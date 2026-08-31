@@ -393,7 +393,7 @@ function FeedColumn() {
 
           <ErrorBoundary fallback={<SectionFallback />}>
             <div
-              className="relative flex flex-col gap-3"
+              className="relative w-full"
               style={{ height: virtualizer.getTotalSize() }}
             >
               {virtualizer.getVirtualItems().map((item) => {
@@ -404,7 +404,8 @@ function FeedColumn() {
                       key={`load-${item.index}`}
                       ref={virtualizer.measureElement}
                       data-index={item.index}
-                      className="flex justify-center py-4"
+                      className="absolute top-0 left-0 w-full flex justify-center py-4"
+                      style={{ transform: `translateY(${item.start}px)` }}
                     >
                       <Button
                         variant="outline"
@@ -412,7 +413,14 @@ function FeedColumn() {
                         onClick={() => void fetchNextPage()}
                         disabled={isFetchingNextPage}
                       >
-                        Load more
+                        {isFetchingNextPage ? (
+                          <>
+                            <Loader2 className="mr-2 size-3.5 animate-spin" />
+                            Loading more…
+                          </>
+                        ) : (
+                          "Load more"
+                        )}
                       </Button>
                     </div>
                   )
@@ -422,6 +430,8 @@ function FeedColumn() {
                     key={post.id || (post as unknown as { _id?: string })._id || item.index}
                     ref={virtualizer.measureElement}
                     data-index={item.index}
+                    className="absolute top-0 left-0 w-full pb-3"
+                    style={{ transform: `translateY(${item.start}px)` }}
                   >
                     <PostCard post={post} />
                   </div>

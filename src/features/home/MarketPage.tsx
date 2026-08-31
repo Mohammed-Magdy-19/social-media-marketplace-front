@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { useVirtualizer } from "@tanstack/react-virtual"
-import { ArrowUp, ShoppingBag, Sparkles, Tag } from "lucide-react"
+import { ArrowUp, Loader2, ShoppingBag, Sparkles, Tag } from "lucide-react"
 import { useFilterStore } from "@/stores/filterStore"
 import { useCategories } from "@/features/categories/queries"
 import { usePostsInfinite } from "@/features/posts/queries"
@@ -150,7 +150,7 @@ function MarketplaceColumn() {
             </div>
           ) : (
             <ErrorBoundary fallback={<SectionFallback />}>
-              <div className="relative" style={{ height: virtualizer.getTotalSize() }}>
+              <div className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
                 {virtualizer.getVirtualItems().map((item) => {
                   const rowStart = item.index * COLUMNS
                   const rowPosts = posts.slice(rowStart, rowStart + COLUMNS)
@@ -160,7 +160,8 @@ function MarketplaceColumn() {
                         key={`load-${item.index}`}
                         ref={virtualizer.measureElement}
                         data-index={item.index}
-                        className="flex justify-center py-4"
+                        className="absolute top-0 left-0 w-full flex justify-center py-4"
+                        style={{ transform: `translateY(${item.start}px)` }}
                       >
                         <Button
                           variant="outline"
@@ -168,7 +169,14 @@ function MarketplaceColumn() {
                           onClick={() => void fetchNextPage()}
                           disabled={isFetchingNextPage}
                         >
-                          Load more
+                          {isFetchingNextPage ? (
+                            <>
+                              <Loader2 className="mr-2 size-3.5 animate-spin" />
+                              Loading more…
+                            </>
+                          ) : (
+                            "Load more"
+                          )}
                         </Button>
                       </div>
                     )
@@ -178,7 +186,8 @@ function MarketplaceColumn() {
                       key={`row-${item.index}`}
                       ref={virtualizer.measureElement}
                       data-index={item.index}
-                      className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
+                      className="absolute top-0 left-0 grid w-full grid-cols-1 gap-3 pb-3 sm:grid-cols-2 lg:grid-cols-3"
+                      style={{ transform: `translateY(${item.start}px)` }}
                     >
                       {rowPosts.map((post) => (
                         <ProductCard key={post.id} post={post} />
