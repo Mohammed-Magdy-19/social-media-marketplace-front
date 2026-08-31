@@ -1,6 +1,19 @@
+import * as React from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Bell, LayoutDashboard, LogOut, Menu, MessageCircle, Moon, Sun } from "lucide-react"
+import {
+  Bell,
+  Hash,
+  LayoutDashboard,
+  Loader2,
+  LogOut,
+  Menu,
+  MessageCircle,
+  Moon,
+  Search,
+  Sun,
+  X,
+} from "lucide-react"
 import { useTheme } from "next-themes"
 import { useNavigate } from "react-router-dom"
 import { Logo } from "@/components/shared/Logo"
@@ -33,6 +46,7 @@ import { useLayoutStore } from "@/stores/layoutStore"
 import { useCurrentUser } from "@/features/auth/queries"
 import { useLogoutMutation } from "@/features/auth/mutations"
 import { useNotifications } from "@/features/notifications/queries"
+import { useSearchUsers } from "@/features/users/queries"
 import { searchSchema } from "@/features/search/schemas"
 import type { z } from "zod"
 
@@ -55,9 +69,80 @@ export function Header() {
     defaultValues: { query: "" },
   })
 
+  const [isDropdownOpen, setIsDropdownOpen] = React.useState(false)
+  const searchContainerRef = React.useRef<HTMLDivElement>(null)
+
+  const rawQuery = form.watch("query") ?? ""
+  const isTagSearch = rawQuery.trim().startsWith("#")
+  const isUserSearch = rawQuery.trim().startsWith("@")
+  const cleanQuery = rawQuery.trim().replace(/^[#@]+/, "").trim()
+
+  const { data: userResults = [], isFetching: isSearchingUsers } = useSearchUsers(
+    isTagSearch ? "" : cleanQuery
+  )
+
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(e.target as Node)
+      ) {
+        setIsDropdownOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
+  const handleSelectTag = (tag: string) => {
+    setIsDropdownOpen(false)
+    form.setValue("query", `#${tag}`)
+    void navigate(`/market?tag=${encodeURIComponent(tag)}`)
+  }
+
+  const handleSelectUser = (userId: string) => {
+    setIsDropdownOpen(false)
+    form.setValue("query", "")
+    void navigate(`/users/${userId}`)
+  }
+
+  const handleSearchListings = (q: string) => {
+    setIsDropdownOpen(false)
+    void navigate(`/market?q=${encodeURIComponent(q)}`)
+  }
+
   const onSearch = (values: SearchValues) => {
-    const query = values.query.trim()
-    void navigate(query ? `/home?q=${encodeURIComponent(query)}` : "/home")
+    const raw = values.query.trim()
+    if (!raw) return
+    setIsDropdownOpen(false)
+
+    // Tag search: #minimalist or ##minimalist
+    if (raw.startsWith("#")) {
+      const tag = raw.replace(/^#+/, "").trim()
+      if (tag) {
+        void navigate(`/market?tag=${encodeURIComponent(tag)}`)
+        return
+      }
+    }
+
+    // User search: @username
+    if (raw.startsWith("@")) {
+      const username = raw.replace(/^@+/, "").trim().toLowerCase()
+      const exactMatch = userResults.find(
+        (u) => u.username.toLowerCase() === username
+      )
+      if (exactMatch) {
+        void navigate(`/users/${exactMatch.id}`)
+        return
+      }
+      if (username) {
+        void navigate(`/market?q=${encodeURIComponent(username)}`)
+        return
+      }
+    }
+
+    // Default search across listings
+    void navigate(`/market?q=${encodeURIComponent(raw)}`)
   }
 
   return (
@@ -82,31 +167,149 @@ export function Header() {
         <Logo size={28} className="sm:hidden" />
       </button>
 
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSearch)}
-          className="mx-auto min-w-0 max-w-xl flex-1 px-2"
-          role="search"
-        >
-          <FormField
-            control={form.control}
-            name="query"
-            render={({ field }) => (
-              <FormItem className="grid">
-                <FormControl>
-                  <Input
-                    {...field}
-                    type="search"
-                    placeholder="Search posts, tags, categories..."
-                    aria-label="Search posts, tags, categories"
-                    className="h-9 rounded-pill bg-soft"
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-        </form>
-      </Form>
+      <div ref={searchContainerRef} className="relative mx-auto min-w-0 max-w-xl flex-1 px-2">
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSearch)}
+            role="search"
+            className="relative"
+          >
+            <FormField
+              control={form.control}
+              name="query"
+              render={({ field }) => (
+                <FormItem className="grid">
+                  <FormControl>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+                      <Input
+                        {...field}
+                        type="search"
+                        placeholder="Search users (@alex), tags (#minimalist), listings..."
+                        aria-label="Search users, tags, or listings"
+                        className="h-9 pl-9 pr-8 rounded-pill bg-soft text-xs transition-all focus:bg-background"
+                        onFocus={() => {
+                          if (rawQuery.trim()) setIsDropdownOpen(true)
+                        }}
+                        onChange={(e) => {
+                          field.onChange(e)
+                          setIsDropdownOpen(Boolean(e.target.value.trim()))
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") {
+                            setIsDropdownOpen(false)
+                          }
+                        }}
+                      />
+                      {rawQuery.trim() && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            form.setValue("query", "")
+                            setIsDropdownOpen(false)
+                          }}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-muted-foreground hover:text-foreground"
+                          aria-label="Clear search"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          </form>
+        </Form>
+
+        {/* Live Search Autocomplete Dropdown */}
+        {isDropdownOpen && cleanQuery && (
+          <div className="absolute left-2 right-2 top-full mt-1.5 z-50 overflow-hidden rounded-2xl bg-card border border-border shadow-xl ring-1 ring-black/5 animate-in fade-in-0 zoom-in-95 duration-100">
+            <div className="p-1.5 flex flex-col gap-1 max-h-80 overflow-y-auto no-scrollbar">
+              {/* Tag Search Action */}
+              <button
+                type="button"
+                onClick={() => handleSelectTag(cleanQuery)}
+                className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs transition-colors hover:bg-brand/10 hover:text-brand cursor-pointer"
+              >
+                <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-brand/10 text-brand">
+                  <Hash className="size-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <span className="font-semibold text-foreground">Filter by tag: </span>
+                  <span className="font-mono text-brand font-bold">#{cleanQuery}</span>
+                </div>
+                <span className="text-[10px] text-muted-foreground">Marketplace</span>
+              </button>
+
+              {/* General Listings Search Action */}
+              {!isTagSearch && !isUserSearch && (
+                <button
+                  type="button"
+                  onClick={() => handleSearchListings(cleanQuery)}
+                  className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs transition-colors hover:bg-muted cursor-pointer"
+                >
+                  <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                    <Search className="size-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <span className="text-muted-foreground">Search listings for </span>
+                    <span className="font-semibold text-foreground">&ldquo;{cleanQuery}&rdquo;</span>
+                  </div>
+                </button>
+              )}
+
+              {/* User Results Section */}
+              {!isTagSearch && (
+                <div className="pt-1">
+                  <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    People & Creators
+                  </div>
+                  {isSearchingUsers ? (
+                    <div className="flex items-center justify-center gap-2 py-3 text-xs text-muted-foreground">
+                      <Loader2 className="size-3.5 animate-spin text-brand" />
+                      <span>Searching users…</span>
+                    </div>
+                  ) : userResults.length > 0 ? (
+                    userResults.map((u) => (
+                      <button
+                        key={u.id}
+                        type="button"
+                        onClick={() => handleSelectUser(u.id)}
+                        className="flex items-center gap-2.5 w-full rounded-xl px-3 py-2 text-left text-xs transition-colors hover:bg-muted cursor-pointer"
+                      >
+                        <AvatarWithFallback
+                          name={u.name || u.username}
+                          src={u.avatar}
+                          size="sm"
+                          className="size-7"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-semibold text-foreground leading-tight">
+                            {u.name || u.username}
+                          </p>
+                          <p className="truncate text-[11px] text-muted-foreground">
+                            @{u.username}
+                          </p>
+                        </div>
+                        {u.role === "admin" && (
+                          <Badge variant="destructive" className="text-[9px] px-1.5 py-0">
+                            Admin
+                          </Badge>
+                        )}
+                      </button>
+                    ))
+                  ) : isUserSearch ? (
+                    <div className="px-3 py-2 text-xs text-muted-foreground">
+                      No users found matching @{cleanQuery}
+                    </div>
+                  ) : null}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="flex items-center gap-1">
         <Tooltip>

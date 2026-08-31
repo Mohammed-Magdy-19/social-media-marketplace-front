@@ -1,11 +1,26 @@
 import { useQuery } from "@tanstack/react-query"
 import { apiGet } from "@/lib/api/client"
 import { queryKeys } from "@/api/queryKeys"
-import type { ApiResponse, PublicUser } from "@/types"
+import type { ApiResponse, PaginatedResponse, PublicUser } from "@/types"
 
 export interface UserProfile extends PublicUser {
   followerCount?: number
   followingCount?: number
+}
+
+export function useSearchUsers(search: string) {
+  return useQuery({
+    queryKey: queryKeys.users.list({ search: search.trim() }),
+    queryFn: async ({ signal }) => {
+      const res = await apiGet<PaginatedResponse<PublicUser>>("/users", {
+        params: { search: search.trim(), limit: 5 },
+        signal,
+      })
+      return res.data ?? []
+    },
+    enabled: Boolean(search && search.trim().length > 0),
+    staleTime: 30_000,
+  })
 }
 
 export function usePublicUser(userId: string) {

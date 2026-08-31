@@ -8,9 +8,10 @@ import type { ApiResponse, PaginatedResponse, Post, PostComment } from "@/types"
 export const POSTS_PAGE_SIZE = 12
 
 export interface PostFilters {
-  category: string | null
-  tag: string | null
-  author: string | null
+  category?: string | null
+  tag?: string | null
+  author?: string | null
+  search?: string | null
   sort: FeedSort
 }
 
@@ -25,6 +26,7 @@ export function usePostsInfinite(filters: PostFilters) {
           category: filters.category ?? undefined,
           tag: filters.tag ?? undefined,
           author: filters.author ?? undefined,
+          search: filters.search ?? undefined,
           sort: filters.sort,
         },
         signal,

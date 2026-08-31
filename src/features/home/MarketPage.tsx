@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from "react"
+import { useSearchParams } from "react-router-dom"
 import { useVirtualizer } from "@tanstack/react-virtual"
-import { ArrowUp, Loader2, ShoppingBag, Sparkles, Tag } from "lucide-react"
+import { ArrowUp, Hash, Loader2, Search, ShoppingBag, Sparkles, Tag, X } from "lucide-react"
 import { useFilterStore } from "@/stores/filterStore"
 import { useCategories } from "@/features/categories/queries"
 import { usePostsInfinite } from "@/features/posts/queries"
 import { ProductCard } from "@/features/posts/components/ProductCard"
 import { useResponsiveColumns } from "@/hooks/use-responsive-columns"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ErrorBoundary, SectionFallback } from "@/components/shared/ErrorBoundary"
 import { cn } from "@/lib/utils"
@@ -62,14 +64,51 @@ function CategoryPills() {
 }
 
 function MarketplaceColumn() {
-  const category = useFilterStore((s) => s.category)
-  const setCategory = useFilterStore((s) => s.setCategory)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const storeCategory = useFilterStore((s) => s.category)
+  const setStoreCategory = useFilterStore((s) => s.setCategory)
+  const storeTag = useFilterStore((s) => s.tag)
+  const setStoreTag = useFilterStore((s) => s.setTag)
   const sort = useFilterStore((s) => s.sort)
+
+  const urlTag = searchParams.get("tag")?.trim() || null
+  const urlSearch = (searchParams.get("q") || searchParams.get("search"))?.trim() || null
+  const activeCategory = storeCategory
+  const activeTag = urlTag || storeTag
+  const activeSearch = urlSearch
+
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
-    usePostsInfinite({ category, tag: null, author: null, sort })
+    usePostsInfinite({
+      category: activeCategory,
+      tag: activeTag,
+      search: activeSearch,
+      sort,
+    })
 
   const parentRef = useRef<HTMLDivElement>(null)
   const [showScrollTop, setShowScrollTop] = useState(false)
+
+  const clearTagFilter = () => {
+    setStoreTag(null)
+    if (searchParams.has("tag")) {
+      const next = new URLSearchParams(searchParams)
+      next.delete("tag")
+      setSearchParams(next, { replace: true })
+    }
+  }
+
+  const clearSearchFilter = () => {
+    const next = new URLSearchParams(searchParams)
+    next.delete("q")
+    next.delete("search")
+    setSearchParams(next, { replace: true })
+  }
+
+  const clearAllFilters = () => {
+    setStoreCategory(null)
+    clearTagFilter()
+    clearSearchFilter()
+  }
 
   const posts = data?.pages.flatMap((p) => p.data) ?? []
   const COLUMNS = useResponsiveColumns()
@@ -111,6 +150,55 @@ function MarketplaceColumn() {
             <CategoryPills />
           </ErrorBoundary>
 
+          {/* Active Search / Tag Filters Bar */}
+          {(activeTag || activeSearch) && (
+            <div className="flex flex-wrap items-center gap-2 rounded-xl bg-muted/40 p-2.5 ring-1 ring-border/50 text-xs">
+              <span className="text-muted-foreground font-medium">Filtering by:</span>
+              {activeTag && (
+                <Badge
+                  variant="secondary"
+                  className="flex items-center gap-1.5 rounded-full bg-brand/10 text-brand border border-brand/20 py-0.5 px-2.5"
+                >
+                  <Hash className="size-3" />
+                  <span>{activeTag}</span>
+                  <button
+                    type="button"
+                    onClick={clearTagFilter}
+                    className="ml-1 rounded-full p-0.5 hover:bg-brand/20"
+                    aria-label="Remove tag filter"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </Badge>
+              )}
+              {activeSearch && (
+                <Badge
+                  variant="secondary"
+                  className="flex items-center gap-1.5 rounded-full bg-soft text-foreground border border-border/80 py-0.5 px-2.5"
+                >
+                  <Search className="size-3" />
+                  <span>&ldquo;{activeSearch}&rdquo;</span>
+                  <button
+                    type="button"
+                    onClick={clearSearchFilter}
+                    className="ml-1 rounded-full p-0.5 hover:bg-muted"
+                    aria-label="Remove search query"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </Badge>
+              )}
+              <Button
+                variant="ghost"
+                size="xs"
+                onClick={clearAllFilters}
+                className="ml-auto text-xs text-muted-foreground hover:text-foreground"
+              >
+                Clear all
+              </Button>
+            </div>
+          )}
+
           {isLoading ? (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: 6 }).map((_, i) => (
@@ -132,19 +220,23 @@ function MarketplaceColumn() {
               <div className="flex flex-col gap-1">
                 <p className="text-sm font-semibold text-foreground">No listings found</p>
                 <p className="text-xs text-muted-foreground">
-                  {category
+                  {activeTag
+                    ? `No listings matching tag #${activeTag}.`
+                    : activeSearch
+                    ? `No listings matching "${activeSearch}".`
+                    : activeCategory
                     ? "There are no listings in this category yet."
                     : "No listings are currently available in the marketplace."}
                 </p>
               </div>
-              {category && (
+              {(activeCategory || activeTag || activeSearch) && (
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCategory(null)}
-                  className="mt-1"
+                  onClick={clearAllFilters}
+                  className="mt-1 rounded-full"
                 >
-                  View all categories
+                  Clear filters & view all
                 </Button>
               )}
             </div>
