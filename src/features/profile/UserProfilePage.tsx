@@ -2,7 +2,7 @@ import * as React from "react"
 import { useRef } from "react"
 import { useParams, Link, Navigate } from "react-router-dom"
 import { useVirtualizer } from "@tanstack/react-virtual"
-import { ArrowLeft, UserPlus, UserMinus, MessageCircle, Calendar } from "lucide-react"
+import { ArrowLeft, UserPlus, UserMinus, MessageCircle } from "lucide-react"
 import { usePublicUser, useUserFollowers } from "@/features/users/queries"
 import { useFollowUser, useUnfollowUser } from "@/features/users/mutations"
 import { useStartNegotiation } from "@/features/conversations/mutations"
@@ -103,11 +103,23 @@ export default function UserProfilePage() {
   const unfollowUser = useUnfollowUser()
   const startNegotiation = useStartNegotiation()
 
+  const { data: userPostsData } = usePostsInfinite({
+    category: null,
+    tag: null,
+    author: userId,
+    sort: "newest",
+  })
+
   // Check if currentUser is in the followers list
   const isFollowing = React.useMemo(() => {
     if (!currentUser) return false
     return followers.some((f) => f.id === currentUser.id || (f as unknown as { _id?: string })._id === currentUser.id)
   }, [followers, currentUser])
+
+  const listingsCount = React.useMemo(
+    () => userPostsData?.pages.flatMap((p) => p.data).length ?? 0,
+    [userPostsData]
+  )
 
   const isSelf = currentUser && (currentUser.id === userId || (currentUser as unknown as { _id?: string })._id === userId)
 
@@ -226,13 +238,11 @@ export default function UserProfilePage() {
               </p>
             )}
 
-            <div className="flex flex-wrap items-center gap-2 pt-1">
+            <div className="grid grid-cols-2 gap-2 pt-1 sm:grid-cols-4">
               <StatTile label="Followers" value={followerCount} />
               <StatTile label="Following" value={followingCount} />
-              <div className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Calendar className="size-3.5" />
-                <span>Joined {formatDate(user.createdAt)}</span>
-              </div>
+              <StatTile label="Listings" value={listingsCount} />
+              <StatTile label="Joined" value={formatDate(user.createdAt)} />
             </div>
           </CardContent>
         </Card>

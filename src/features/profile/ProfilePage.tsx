@@ -284,7 +284,7 @@ export default function ProfilePage() {
         </Card>
       </ErrorBoundary>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <StatTile
           label="Listings"
           value={listingsCount}
@@ -306,13 +306,11 @@ export default function ProfilePage() {
           value={followingCount}
           icon={<UserCheck className="size-3.5" />}
         />
-        <div className="col-span-2 sm:col-span-4 lg:col-span-1">
-          <StatTile
-            label="Joined"
-            value={formatDate(profile.createdAt)}
-            icon={<Calendar className="size-3.5" />}
-          />
-        </div>
+        <StatTile
+          label="Joined"
+          value={formatDate(profile.createdAt)}
+          icon={<Calendar className="size-3.5" />}
+        />
       </div>
 
       <ErrorBoundary fallback={<SectionFallback />}>
