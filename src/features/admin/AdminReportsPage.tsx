@@ -46,6 +46,7 @@ const STATUS_PILLS = ["All", "pending", "reviewed", "dismissed", "resolved"]
 
 const TARGET_ROUTES: Partial<Record<ReportTargetType, (id: string) => string>> = {
   post: (id) => `/posts/${id}`,
+  user: (id) => `/users/${id}`,
 }
 
 function isForbidden(error: unknown): boolean {

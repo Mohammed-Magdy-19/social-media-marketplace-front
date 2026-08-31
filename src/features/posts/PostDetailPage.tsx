@@ -45,6 +45,7 @@ export default function PostDetailPage() {
   const createIntent = useCreatePaymentIntent()
   const hasToken = useAuthStore((s) => !!s.accessToken)
   const [reportOpen, setReportOpen] = React.useState(false)
+  const [reportCommentTarget, setReportCommentTarget] = React.useState<string | null>(null)
 
   const form = useForm<CommentValues>({
     resolver: zodResolver(commentSchema),
@@ -272,7 +273,7 @@ export default function PostDetailPage() {
                   return (
                     <div
                       key={c.id || (c as unknown as { _id?: string })._id}
-                      className="flex items-start gap-2.5 rounded-lg bg-soft/60 p-3 ring-1 ring-foreground/5"
+                      className="group flex items-start gap-2.5 rounded-lg bg-soft/60 p-3 ring-1 ring-foreground/5"
                     >
                       {commentAuthorLink ? (
                         <Link to={commentAuthorLink} className="transition-opacity hover:opacity-85">
@@ -282,20 +283,39 @@ export default function PostDetailPage() {
                         <AvatarWithFallback name={commentAuthorName} src={c.author?.avatar} size="sm" />
                       )}
                       <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          {commentAuthorLink ? (
-                            <Link
-                              to={commentAuthorLink}
-                              className="text-xs font-semibold text-foreground hover:underline hover:text-brand"
-                            >
-                              {commentAuthorName}
-                            </Link>
-                          ) : (
-                            <span className="text-xs font-semibold text-foreground">{commentAuthorName}</span>
-                          )}
-                          <span className="text-[10px] text-muted-foreground">
-                            {formatRelativeTime(c.createdAt)}
-                          </span>
+                        <div className="flex items-center justify-between gap-1.5">
+                          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                            {commentAuthorLink ? (
+                              <Link
+                                to={commentAuthorLink}
+                                className="text-xs font-semibold text-foreground hover:underline hover:text-brand"
+                              >
+                                {commentAuthorName}
+                              </Link>
+                            ) : (
+                              <span className="text-xs font-semibold text-foreground">{commentAuthorName}</span>
+                            )}
+                            <span className="text-[10px] text-muted-foreground">
+                              {formatRelativeTime(c.createdAt)}
+                            </span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            onClick={() => {
+                              if (!hasToken) {
+                                toast.error("Please log in to report comments")
+                                return
+                              }
+                              const cId = c.id || (c as unknown as { _id?: string })._id
+                              if (cId) setReportCommentTarget(cId)
+                            }}
+                            aria-label="Report comment"
+                            title="Report comment"
+                            className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-opacity size-6"
+                          >
+                            <Flag className="size-3" />
+                          </Button>
                         </div>
                         <p className="mt-1 text-sm text-foreground/90 whitespace-pre-wrap break-words">
                           {c.text}
@@ -355,6 +375,15 @@ export default function PostDetailPage() {
         onOpenChange={setReportOpen}
         targetType="post"
         targetId={post.id}
+      />
+
+      <ReportDialog
+        open={Boolean(reportCommentTarget)}
+        onOpenChange={(open) => {
+          if (!open) setReportCommentTarget(null)
+        }}
+        targetType="comment"
+        targetId={reportCommentTarget ?? ""}
       />
     </div>
   )

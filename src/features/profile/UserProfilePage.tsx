@@ -2,11 +2,12 @@ import * as React from "react"
 import { useRef } from "react"
 import { useParams, Link, Navigate } from "react-router-dom"
 import { useVirtualizer } from "@tanstack/react-virtual"
-import { ArrowLeft, UserPlus, UserMinus, MessageCircle } from "lucide-react"
+import { ArrowLeft, UserPlus, UserMinus, MessageCircle, Flag } from "lucide-react"
 import { usePublicUser, useUserFollowers } from "@/features/users/queries"
 import { useFollowUser, useUnfollowUser } from "@/features/users/mutations"
 import { useStartNegotiation } from "@/features/conversations/mutations"
 import { usePostsInfinite } from "@/features/posts/queries"
+import { ReportDialog } from "@/features/reports/ReportDialog"
 import { ProductCard } from "@/features/posts/components/ProductCard"
 import { AvatarWithFallback } from "@/components/shared/AvatarWithFallback"
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -16,6 +17,7 @@ import { ErrorBoundary, SectionFallback } from "@/components/shared/ErrorBoundar
 import { formatDate } from "@/lib/utils"
 import { useAuthStore } from "@/stores/authStore"
 import { useResponsiveColumns } from "@/hooks/use-responsive-columns"
+import { toast } from "sonner"
 
 function UserPostsGrid({ authorId }: { authorId: string }) {
   const { data, isLoading } = usePostsInfinite({
@@ -102,6 +104,7 @@ export default function UserProfilePage() {
   const followUser = useFollowUser()
   const unfollowUser = useUnfollowUser()
   const startNegotiation = useStartNegotiation()
+  const [reportOpen, setReportOpen] = React.useState(false)
 
   const { data: userPostsData } = usePostsInfinite({
     category: null,
@@ -228,6 +231,22 @@ export default function UserProfilePage() {
                     <MessageCircle className="size-4" />
                     Message / Negotiate
                   </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => {
+                      if (!hasToken) {
+                        toast.error("Please log in to report users")
+                        return
+                      }
+                      setReportOpen(true)
+                    }}
+                    aria-label="Report user"
+                    title="Report user"
+                    className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <Flag className="size-4" />
+                  </Button>
                 </div>
               )}
             </div>
@@ -258,6 +277,13 @@ export default function UserProfilePage() {
           </CardContent>
         </Card>
       </ErrorBoundary>
+
+      <ReportDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        targetType="user"
+        targetId={userId}
+      />
     </div>
   )
 }

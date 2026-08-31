@@ -1,6 +1,8 @@
+import * as React from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
+import { Flag, Loader2 } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import {
@@ -19,7 +21,24 @@ import { ApiError, type ReportTargetType } from "@/types"
 
 const REASON_MAX = 1000
 
-const QUICK_REASONS = ["Spam", "Harassment", "Fake listing", "Prohibited item"]
+const QUICK_REASONS_BY_TYPE: Record<ReportTargetType, string[]> = {
+  post: ["Spam / Fraud", "Fake or Counterfeit", "Prohibited item", "Harassment", "Inappropriate content"],
+  comment: ["Spam", "Harassment / Bullying", "Hate speech", "Offensive language"],
+  user: ["Impersonation", "Scam / Fraudulent activity", "Harassment", "Inappropriate profile"],
+}
+
+function targetTypeLabel(type: ReportTargetType): string {
+  switch (type) {
+    case "post":
+      return "Listing"
+    case "comment":
+      return "Comment"
+    case "user":
+      return "User"
+    default:
+      return "Content"
+  }
+}
 
 /**
  * §4.3 — the backend's two distinct 400/404 responses are user-legible and
@@ -60,12 +79,20 @@ export function ReportDialog({
     defaultValues: { targetType, targetId, reason: "" },
   })
 
+  React.useEffect(() => {
+    if (open) {
+      form.reset({ targetType, targetId, reason: "" })
+    }
+  }, [open, targetType, targetId, form])
+
   const reason = form.watch("reason") ?? ""
+  const quickReasons = QUICK_REASONS_BY_TYPE[targetType] ?? QUICK_REASONS_BY_TYPE.post
+  const label = targetTypeLabel(targetType)
 
   const onSubmit = (values: CreateReportFormValues) => {
     report.mutate(values, {
       onSuccess: () => {
-        toast.success("Thanks, our team will review this")
+        toast.success("Thanks, our team will review this report")
         onOpenChange(false)
       },
       onError: (error) => {
@@ -78,16 +105,22 @@ export function ReportDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Report {targetType}</DialogTitle>
-          <DialogDescription>
-            Flag content that breaks the community rules. Our team will review
-            this.
-          </DialogDescription>
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
+              <Flag className="size-4" />
+            </div>
+            <div>
+              <DialogTitle className="text-base font-bold">Report {label}</DialogTitle>
+              <DialogDescription className="text-xs">
+                Flag {label.toLowerCase()} that breaks community rules. Our team will review this promptly.
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="flex flex-col gap-4"
+            className="flex flex-col gap-4 pt-1"
             id="report-form"
           >
             <FormField
@@ -95,31 +128,35 @@ export function ReportDialog({
               name="reason"
               render={({ field }) => (
                 <FormItem className="grid gap-2">
-                  <FormLabel>Reason</FormLabel>
+                  <FormLabel className="text-xs font-semibold">Reason for Report</FormLabel>
                   <FormControl>
                     <Textarea
                       {...field}
                       rows={4}
                       maxLength={REASON_MAX}
-                      placeholder={`What's wrong with this ${targetType}?`}
+                      placeholder={`Describe what's wrong with this ${label.toLowerCase()}…`}
+                      className="resize-none text-xs"
+                      autoFocus
                     />
                   </FormControl>
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-col gap-2">
                     <div className="flex flex-wrap gap-1">
-                      {QUICK_REASONS.map((r) => (
+                      {quickReasons.map((r) => (
                         <button
                           key={r}
                           type="button"
                           onClick={() => field.onChange(r)}
-                          className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-soft hover:text-foreground"
+                          className="rounded-full border border-border/80 bg-background/50 px-2 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
                         >
                           {r}
                         </button>
                       ))}
                     </div>
-                    <span className="ml-auto shrink-0 font-mono text-[10px] text-muted-foreground">
-                      {reason.length}/{REASON_MAX}
-                    </span>
+                    <div className="flex justify-end">
+                      <span className="font-mono text-[10px] text-muted-foreground">
+                        {reason.length}/{REASON_MAX}
+                      </span>
+                    </div>
                   </div>
                   <FormMessage />
                 </FormItem>
@@ -127,15 +164,30 @@ export function ReportDialog({
             />
           </form>
         </Form>
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <div className="flex justify-end gap-2 pt-2">
+          <Button variant="outline" size="sm" className="rounded-full text-xs" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button type="submit" form="report-form" disabled={report.isPending}>
-            Submit report
+          <Button
+            type="submit"
+            variant="destructive"
+            size="sm"
+            form="report-form"
+            className="rounded-full text-xs font-medium"
+            disabled={report.isPending || !reason.trim()}
+          >
+            {report.isPending ? (
+              <>
+                <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                Submitting…
+              </>
+            ) : (
+              "Submit report"
+            )}
           </Button>
         </div>
       </DialogContent>
     </Dialog>
   )
 }
+
