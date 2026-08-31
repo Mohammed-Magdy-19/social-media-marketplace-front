@@ -1,11 +1,13 @@
 import * as React from "react"
 import { useRef } from "react"
+import { Link } from "react-router-dom"
 import { useVirtualizer } from "@tanstack/react-virtual"
-import { Camera } from "lucide-react"
+import { Bookmark, Calendar, Camera, Loader2, Package, UserCheck, Users } from "lucide-react"
 import { toast } from "sonner"
 import { useCurrentUser } from "@/features/auth/queries"
 import { useLogoutMutation } from "@/features/auth/mutations"
-import { usePostsInfinite } from "@/features/posts/queries"
+import { usePostsInfinite, useSavedPosts } from "@/features/posts/queries"
+import { usePublicUser } from "@/features/users/queries"
 import { ProductCard } from "@/features/posts/components/ProductCard"
 import { AvatarWithFallback } from "@/components/shared/AvatarWithFallback"
 import { Badge } from "@/components/ui/badge"
@@ -21,8 +23,19 @@ import { cn, formatDate } from "@/lib/utils"
 import { useAuthStore } from "@/stores/authStore"
 import { useResponsiveColumns } from "@/hooks/use-responsive-columns"
 
-function MyPostsGrid({ author }: { author: string }) {
-  const { data, isLoading } = usePostsInfinite({ category: null, tag: null, author, sort: "newest" })
+interface MyPostsGridProps {
+  author: string
+  onPostsCountChange?: (count: number) => void
+}
+
+function MyPostsGrid({ author }: MyPostsGridProps) {
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = usePostsInfinite({ category: null, tag: null, author, sort: "newest" })
   const parentRef = useRef<HTMLDivElement>(null)
 
   const posts = React.useMemo(
@@ -31,9 +44,10 @@ function MyPostsGrid({ author }: { author: string }) {
   )
   const COLUMNS = useResponsiveColumns()
   const rows = Math.ceil(posts.length / COLUMNS)
+  const totalVirtualRows = rows + (hasNextPage ? 1 : 0)
 
   const virtualizer = useVirtualizer({
-    count: rows,
+    count: totalVirtualRows,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 320,
     overscan: 4,
@@ -51,16 +65,49 @@ function MyPostsGrid({ author }: { author: string }) {
 
   if (posts.length === 0) {
     return (
-      <p className="rounded-card bg-card p-6 text-center text-sm text-muted-foreground ring-1 ring-foreground/10">
-        No listings yet.
-      </p>
+      <div className="flex flex-col items-center gap-2 rounded-card bg-card p-10 text-center ring-1 ring-foreground/10">
+        <Package className="size-8 text-muted-foreground" />
+        <p className="text-sm font-medium">No listings yet</p>
+        <p className="text-xs text-muted-foreground">
+          Items and posts you publish will show up here.
+        </p>
+      </div>
     )
   }
 
   return (
-    <div ref={parentRef} className="max-h-96 overflow-y-auto no-scrollbar">
+    <div ref={parentRef} className="max-h-[600px] overflow-y-auto no-scrollbar">
       <div className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
         {virtualizer.getVirtualItems().map((item) => {
+          const isLoaderRow = item.index >= rows
+          if (isLoaderRow) {
+            return (
+              <div
+                key={`loader-${item.index}`}
+                ref={virtualizer.measureElement}
+                data-index={item.index}
+                className="absolute top-0 left-0 flex w-full justify-center py-4"
+                style={{ transform: `translateY(${item.start}px)` }}
+              >
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                >
+                  {isFetchingNextPage ? (
+                    <>
+                      <Loader2 className="mr-2 size-3.5 animate-spin" />
+                      Loading more…
+                    </>
+                  ) : (
+                    "Load more listings"
+                  )}
+                </Button>
+              </div>
+            )
+          }
+
           const rowStart = item.index * COLUMNS
           const rowPosts = posts.slice(rowStart, rowStart + COLUMNS)
           return (
@@ -82,13 +129,38 @@ function MyPostsGrid({ author }: { author: string }) {
   )
 }
 
-function StatTile({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="flex flex-col items-center gap-0.5 rounded-card bg-card px-4 py-3 ring-1 ring-foreground/10">
-      <span className="font-mono text-lg font-semibold tabular-nums">{value}</span>
-      <span className="text-[11px] text-muted-foreground">{label}</span>
+interface StatTileProps {
+  label: string
+  value: string | number
+  icon?: React.ReactNode
+  to?: string
+}
+
+function StatTile({ label, value, icon, to }: StatTileProps) {
+  const content = (
+    <div
+      className={cn(
+        "flex flex-col items-center justify-center gap-1 rounded-card bg-card px-4 py-3 ring-1 ring-foreground/10 transition-all duration-200",
+        to && "hover:bg-soft hover:ring-brand/30 cursor-pointer"
+      )}
+    >
+      <div className="flex items-center gap-1.5 text-muted-foreground">
+        {icon}
+        <span className="text-xs font-medium">{label}</span>
+      </div>
+      <span className="font-mono text-xl font-bold tabular-nums text-foreground">{value}</span>
     </div>
   )
+
+  if (to) {
+    return (
+      <Link to={to} className="block group">
+        {content}
+      </Link>
+    )
+  }
+
+  return content
 }
 
 export default function ProfilePage() {
@@ -99,6 +171,25 @@ export default function ProfilePage() {
   const [uploading, setUploading] = React.useState(false)
 
   const profile = fresh ?? user
+  const authorId = profile?.id || (profile as unknown as { _id?: string })?._id || ""
+
+  // Queries for real profile metrics
+  const { data: publicProfile } = usePublicUser(authorId)
+  const { data: savedPostsData } = useSavedPosts()
+  const { data: userPostsData } = usePostsInfinite({
+    category: null,
+    tag: null,
+    author: authorId,
+    sort: "newest",
+  })
+
+  const savedCount = savedPostsData?.data?.length ?? 0
+  const listingsCount = React.useMemo(
+    () => userPostsData?.pages.flatMap((p) => p.data).length ?? 0,
+    [userPostsData]
+  )
+  const followerCount = publicProfile?.followerCount ?? 0
+  const followingCount = publicProfile?.followingCount ?? 0
 
   const onPickAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -108,7 +199,10 @@ export default function ProfilePage() {
     try {
       const { url } = await uploadAvatar(file)
       useAuthStore.getState().setUser({ ...profile, avatar: url })
-      await queryClient.invalidateQueries({ queryKey: queryKeys.auth.me() })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.auth.me() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.users.detail(authorId) }),
+      ])
       toast.success("Avatar updated")
     } catch (err) {
       toast.error(getErrorMessage(err))
@@ -120,8 +214,8 @@ export default function ProfilePage() {
   if (!profile) {
     return (
       <div className="flex flex-col gap-4">
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-64 w-full" />
+        <Skeleton className="h-24 w-full rounded-card" />
+        <Skeleton className="h-64 w-full rounded-card" />
       </div>
     )
   }
@@ -136,7 +230,7 @@ export default function ProfilePage() {
                 name={profile.name}
                 src={profile.avatar ?? null}
                 size="lg"
-                className="size-20"
+                className="size-20 ring-2 ring-background"
               />
               <button
                 type="button"
@@ -145,7 +239,11 @@ export default function ProfilePage() {
                 className="absolute inset-0 grid cursor-pointer place-items-center rounded-full bg-black/40 opacity-0 transition-opacity duration-200 group-hover:opacity-100 disabled:opacity-0"
                 aria-label="Upload avatar"
               >
-                <Camera className="size-6" />
+                {uploading ? (
+                  <Loader2 className="size-6 animate-spin text-white" />
+                ) : (
+                  <Camera className="size-6 text-white" />
+                )}
               </button>
               <input
                 ref={fileInput}
@@ -164,7 +262,7 @@ export default function ProfilePage() {
                   {profile.role}
                 </Badge>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 mt-0.5">
                 <p className="text-sm text-muted-foreground">@{profile.username}</p>
                 <Badge
                   variant="outline"
@@ -177,7 +275,7 @@ export default function ProfilePage() {
                   {profile.status}
                 </Badge>
               </div>
-              {profile.bio && <p className="mt-1 text-sm">{profile.bio}</p>}
+              {profile.bio && <p className="mt-2 text-sm text-foreground/90">{profile.bio}</p>}
             </div>
             <Button variant="outline" onClick={() => logout.mutate()}>
               Log out
@@ -186,22 +284,50 @@ export default function ProfilePage() {
         </Card>
       </ErrorBoundary>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <StatTile label="Listings" value="0" />
-        <StatTile label="Saved" value="0" />
-        <StatTile label="Member since" value={formatDate(profile.createdAt)} />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
+        <StatTile
+          label="Listings"
+          value={listingsCount}
+          icon={<Package className="size-3.5" />}
+        />
+        <StatTile
+          label="Saved"
+          value={savedCount}
+          icon={<Bookmark className="size-3.5" />}
+          to="/saved"
+        />
+        <StatTile
+          label="Followers"
+          value={followerCount}
+          icon={<Users className="size-3.5" />}
+        />
+        <StatTile
+          label="Following"
+          value={followingCount}
+          icon={<UserCheck className="size-3.5" />}
+        />
+        <div className="col-span-2 sm:col-span-4 lg:col-span-1">
+          <StatTile
+            label="Joined"
+            value={formatDate(profile.createdAt)}
+            icon={<Calendar className="size-3.5" />}
+          />
+        </div>
       </div>
 
       <ErrorBoundary fallback={<SectionFallback />}>
         <Card className="rounded-card">
-          <CardHeader>
-            <CardTitle className="font-display text-base">My listings</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="font-display text-base">
+              My listings {listingsCount > 0 && `(${listingsCount})`}
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <MyPostsGrid author={profile.id} />
+          <CardContent className="p-4 pt-0">
+            <MyPostsGrid author={authorId} />
           </CardContent>
         </Card>
       </ErrorBoundary>
     </div>
   )
 }
+
