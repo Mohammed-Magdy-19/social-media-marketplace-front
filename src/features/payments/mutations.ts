@@ -31,10 +31,12 @@ export function useCreatePaymentIntent() {
       postId,
     }: CreatePaymentIntentVariables) => {
       const cleanPostId = postId && /^[0-9a-fA-F]{24}$/.test(postId) ? postId : undefined
+      const clientUrl = import.meta.env.VITE_CLIENT_URL || "https://social-media-marketplace-five.vercel.app"
       const input = createPaymentIntentSchema.parse({
         amount: Math.round(amount),
         currency: (currency ?? "usd").toLowerCase(),
         postId: cleanPostId,
+        clientUrl,
       })
       const res = await apiPost<ApiResponse<CreatePaymentIntentResponse>>(
         "/payments/create-intent",

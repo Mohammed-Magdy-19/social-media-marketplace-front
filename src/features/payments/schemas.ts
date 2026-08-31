@@ -26,6 +26,7 @@ export const createPaymentIntentSchema = z.object({
     .string()
     .regex(objectIdRegex, "postId must be a valid post ID.")
     .optional(),
+  clientUrl: z.string().url().optional(),
 })
 
 export type CreatePaymentIntentFormValues = z.infer<
