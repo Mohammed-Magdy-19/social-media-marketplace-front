@@ -27,9 +27,30 @@ function toApiError(error: unknown): ApiError {
   return new ApiError(0, error instanceof Error ? error.message : "")
 }
 
+export function getAccessToken(): string | null {
+  const storeToken = useAuthStore.getState().accessToken
+  if (storeToken) return storeToken
+  try {
+    const raw = localStorage.getItem("vendo-auth-store")
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      return parsed?.state?.accessToken ?? null
+    }
+  } catch {
+    // Storage unavailable
+  }
+  return null
+}
+
 function attachToken(config: InternalAxiosRequestConfig) {
-  const token = useAuthStore.getState().accessToken
-  if (token) config.headers.Authorization = `Bearer ${token}`
+  const token = getAccessToken()
+  if (token) {
+    if (config.headers && typeof config.headers.set === "function") {
+      config.headers.set("Authorization", `Bearer ${token}`)
+    } else if (config.headers) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+  }
   return config
 }
 
@@ -144,7 +165,7 @@ api.interceptors.response.use(
     // login response (401) must not trigger a refresh-and-retry, and the
     // boot-time restore handles `/auth/me` explicitly (§4.2).
     const isAuthRequest = original?.url?.includes("/auth/")
-    const wasAuthenticated = !!original?.headers?.Authorization
+    const wasAuthenticated = !!original?.headers?.Authorization || !!getAccessToken()
     if (
       status === 401 &&
       original &&
@@ -155,7 +176,11 @@ api.interceptors.response.use(
       original._retried = true
       try {
         const token = await refreshAccessToken()
-        original.headers.Authorization = `Bearer ${token}`
+        if (original.headers && typeof original.headers.set === "function") {
+          original.headers.set("Authorization", `Bearer ${token}`)
+        } else if (original.headers) {
+          original.headers.Authorization = `Bearer ${token}`
+        }
         return await api(original)
       } catch (refreshError) {
         hardLogout(
