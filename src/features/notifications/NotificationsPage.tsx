@@ -29,6 +29,7 @@ type FilterType = "all" | "unread" | NotificationType
 const FILTER_TABS: { key: FilterType; label: string }[] = [
   { key: "all", label: "All" },
   { key: "unread", label: "Unread" },
+  { key: "moderation", label: "Moderation & Reports" },
   { key: "like", label: "Likes" },
   { key: "comment", label: "Comments" },
   { key: "follow", label: "Follows" },
@@ -92,6 +93,19 @@ export default function NotificationsPage() {
   const handleNotificationClick = (n: AppNotification) => {
     if (!n.read) {
       markRead.mutate(n.id)
+    }
+
+    if (n.type === "moderation") {
+      const metaTargetType = n.metadata?.targetType
+      const metaTargetId = n.metadata?.targetId
+      if (metaTargetType === "post" && metaTargetId) {
+        void navigate(`/posts/${metaTargetId}`)
+        return
+      }
+      if (metaTargetType === "user" && metaTargetId) {
+        void navigate(`/users/${metaTargetId}`)
+        return
+      }
     }
 
     if (n.targetId) {
@@ -247,7 +261,20 @@ export default function NotificationsPage() {
                     <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
                       {n.body}
                     </p>
-                    <p className="font-mono text-[10px] text-muted-foreground/80 mt-1">
+
+                    {n.type === "moderation" && typeof n.metadata?.resolutionNotes === "string" && n.metadata.resolutionNotes.trim().length > 0 && (
+                      <div className="mt-2 rounded-xl bg-amber-500/10 border border-amber-500/20 p-2.5 text-xs text-foreground/90">
+                        <div className="flex items-center gap-1.5 font-bold text-amber-600 dark:text-amber-400 text-[11px] mb-1">
+                          <ShieldAlert className="size-3.5" />
+                          <span>Admin Resolution Response</span>
+                        </div>
+                        <p className="font-sans italic text-xs leading-relaxed">
+                          &ldquo;{n.metadata.resolutionNotes}&rdquo;
+                        </p>
+                      </div>
+                    )}
+
+                    <p className="font-mono text-[10px] text-muted-foreground/80 mt-1.5">
                       {formatRelativeTime(n.createdAt)}
                     </p>
                   </div>

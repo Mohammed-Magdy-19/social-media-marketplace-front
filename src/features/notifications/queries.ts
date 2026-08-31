@@ -77,6 +77,28 @@ export function normalizeNotification(raw: RawBackendNotification): AppNotificat
     type = "system"
     if (!title) title = `${senderName} shared a new post`
     if (!body) body = "A creator you follow just published new content."
+  } else if (rawType === "REPORT_RESOLVED") {
+    type = "moderation"
+    if (!title) title = "Report Resolved"
+    const note = raw.metadata?.resolutionNotes
+      ? `Admin note: "${raw.metadata.resolutionNotes}"`
+      : "The moderation team has reviewed and resolved your report."
+    if (!body) body = note
+  } else if (rawType === "REPORT_DISMISSED") {
+    type = "moderation"
+    if (!title) title = "Report Update"
+    const note = raw.metadata?.resolutionNotes
+      ? `Admin note: "${raw.metadata.resolutionNotes}"`
+      : "The moderation team reviewed your report and found no violation."
+    if (!body) body = note
+  } else if (rawType === "MODERATION" || rawType === "MODERATION_ACTION") {
+    type = "moderation"
+    if (!title) title = "Moderation Notice"
+    if (!body)
+      body =
+        (raw.metadata?.resolutionNotes as string) ||
+        raw.message ||
+        "A moderation action was taken on your reported content."
   } else {
     if (!title) title = "Notification"
     if (!body) body = raw.message || "You have a new update."
