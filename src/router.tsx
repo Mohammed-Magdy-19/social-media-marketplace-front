@@ -28,6 +28,9 @@ const LoginPage = lazy(() => import("@/features/auth/LoginPage"))
 const RegisterPage = lazy(() => import("@/features/auth/RegisterPage"))
 const ProfilePage = lazy(() => import("@/features/profile/ProfilePage"))
 const UserProfilePage = lazy(() => import("@/features/profile/UserProfilePage"))
+const NotificationsPage = lazy(
+  () => import("@/features/notifications/NotificationsPage")
+)
 
 const AdminRoot = lazy(() => import("@/features/admin/AdminRoot"))
 const AdminOverviewPage = lazy(() => import("@/features/admin/AdminOverviewPage"))
@@ -123,6 +126,14 @@ export const router = createBrowserRouter([
             element: (
               <PageBoundary>
                 <SavedPage />
+              </PageBoundary>
+            ),
+          },
+          {
+            path: "notifications",
+            element: (
+              <PageBoundary>
+                <NotificationsPage />
               </PageBoundary>
             ),
           },

@@ -32,7 +32,7 @@ function NotificationRow({
   notification: AppNotification
   onDelete: (n: AppNotification) => void
 }) {
-  const [unread] = React.useState(!notification.read)
+  const unread = !notification.read
   return (
     <div
       className={cn(

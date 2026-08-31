@@ -36,6 +36,8 @@ interface RawBackendNotification {
   title?: string
   body?: string
   message?: string
+  targetId?: string
+  metadata?: Record<string, unknown>
   isRead?: boolean
   read?: boolean
   createdAt?: string
@@ -100,6 +102,8 @@ export function normalizeNotification(raw: RawBackendNotification): AppNotificat
     actor,
     title,
     body,
+    targetId: raw.targetId ? String(raw.targetId) : undefined,
+    metadata: raw.metadata,
     read: Boolean(raw.read ?? raw.isRead ?? false),
     createdAt: raw.createdAt || new Date().toISOString(),
     transport: raw.transport || "hybrid",
@@ -118,5 +122,19 @@ export function useNotifications() {
       return list.map(normalizeNotification)
     },
     staleTime: 15_000,
+  })
+}
+
+export function useUnreadNotificationCount() {
+  return useQuery({
+    queryKey: queryKeys.notifications.unreadCount(),
+    queryFn: async ({ signal }) => {
+      const res = await apiGet<{ status: string; data: { count: number } }>(
+        "/notifications/unread-count",
+        { signal }
+      )
+      return res.data
+    },
+    staleTime: 10_000,
   })
 }

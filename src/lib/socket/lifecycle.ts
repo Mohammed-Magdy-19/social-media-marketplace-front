@@ -1,9 +1,11 @@
 import { useEffect } from "react"
+import { toast } from "sonner"
 import { socket } from "@/lib/socket/client"
 import { useAuthStore } from "@/stores/authStore"
 import { useNegotiationUiStore } from "@/stores/negotiationUiStore"
 import { queryClient } from "@/lib/queryClient"
 import { queryKeys, queryKeyPrefixes } from "@/api/queryKeys"
+import { normalizeNotification } from "@/features/notifications/queries"
 import {
   bridgeCommentDeleted,
   bridgeCommentDelta,
@@ -61,8 +63,27 @@ export function useSocketLifecycle() {
       useNegotiationUiStore
         .getState()
         .setTyping(payload.conversationId, payload.userId, false)
-    const onNotification = (notification: AppNotification) =>
-      bridgeNotification(notification)
+    const onNotification = (rawNotification: unknown) => {
+      const normalized = normalizeNotification(rawNotification as Parameters<typeof normalizeNotification>[0])
+      bridgeNotification(normalized)
+      queryClient.setQueryData<{ count: number }>(
+        queryKeys.notifications.unreadCount(),
+        (old) => ({ count: (old?.count ?? 0) + 1 })
+      )
+      toast.info(normalized.title, {
+        description: normalized.body,
+      })
+    }
+    const onNotificationsReadAll = () => {
+      queryClient.setQueryData<AppNotification[]>(
+        queryKeys.notifications.all(),
+        (old) => old?.map((n) => ({ ...n, read: true })) ?? []
+      )
+      queryClient.setQueryData<{ count: number }>(
+        queryKeys.notifications.unreadCount(),
+        { count: 0 }
+      )
+    }
     const onLikeBroadcast = (payload: {
       postId: string
       likesCount: number
@@ -123,7 +144,9 @@ export function useSocketLifecycle() {
     socket.on("message_deleted", onMessageDeleted)
     socket.on("typing_message", onTyping)
     socket.on("stop_typing_message", onStopTyping)
+    socket.on("new_notification", onNotification)
     socket.on("notification_created", onNotification)
+    socket.on("notifications_read_all", onNotificationsReadAll)
     socket.on("like_broadcast", onLikeBroadcast)
     socket.on("comment_broadcast", onCommentBroadcast)
     socket.on("new_comment", onNewComment)
@@ -142,7 +165,9 @@ export function useSocketLifecycle() {
       socket.off("message_deleted", onMessageDeleted)
       socket.off("typing_message", onTyping)
       socket.off("stop_typing_message", onStopTyping)
+      socket.off("new_notification", onNotification)
       socket.off("notification_created", onNotification)
+      socket.off("notifications_read_all", onNotificationsReadAll)
       socket.off("like_broadcast", onLikeBroadcast)
       socket.off("comment_broadcast", onCommentBroadcast)
       socket.off("new_comment", onNewComment)

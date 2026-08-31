@@ -219,6 +219,8 @@ export interface AppNotification {
   actor?: PublicUser | null
   title: string
   body: string
+  targetId?: string
+  metadata?: Record<string, unknown>
   read: boolean
   createdAt: string
   transport: "socket" | "hybrid"

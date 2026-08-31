@@ -45,9 +45,11 @@ import { useAuthStore } from "@/stores/authStore"
 import { useLayoutStore } from "@/stores/layoutStore"
 import { useCurrentUser } from "@/features/auth/queries"
 import { useLogoutMutation } from "@/features/auth/mutations"
-import { useNotifications } from "@/features/notifications/queries"
+import { useNotifications, useUnreadNotificationCount } from "@/features/notifications/queries"
+import { useMarkNotificationRead, useMarkAllNotificationsRead } from "@/features/notifications/mutations"
 import { useSearchUsers } from "@/features/users/queries"
 import { searchSchema } from "@/features/search/schemas"
+import { cn, formatRelativeTime } from "@/lib/utils"
 import type { z } from "zod"
 
 type SearchValues = z.infer<typeof searchSchema>
@@ -59,10 +61,14 @@ export function Header() {
   const { theme, setTheme } = useTheme()
   const logout = useLogoutMutation()
   const { data: notifications } = useNotifications()
+  const { data: unreadData } = useUnreadNotificationCount()
+  const markNotificationRead = useMarkNotificationRead()
+  const markAllNotificationsRead = useMarkAllNotificationsRead()
 
   useCurrentUser()
 
-  const unreadCount = notifications?.filter((n) => !n.read).length ?? 0
+  const unreadCount =
+    unreadData?.count ?? notifications?.filter((n) => !n.read).length ?? 0
 
   const form = useForm<SearchValues>({
     resolver: zodResolver(searchSchema),
@@ -361,52 +367,90 @@ export function Header() {
                 </Badge>
               )}
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80">
-              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {notifications && notifications.length > 0 ? (
-                notifications.slice(0, 5).map((n, idx) => (
-                  <DropdownMenuItem
-                    key={n.id || `${idx}-${n.createdAt}`}
-                    className="flex items-start gap-2 whitespace-normal py-2 cursor-pointer"
-                    onClick={() =>
-                      void navigate(
-                        user.role === "admin" ? "/admin/notifications" : "/profile"
-                      )
-                    }
+            <DropdownMenuContent align="end" className="w-84 p-1.5 shadow-xl">
+              <div className="flex items-center justify-between px-2 py-1.5">
+                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Notifications
+                </span>
+                {unreadCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      markAllNotificationsRead.mutate()
+                    }}
+                    className="text-[11px] font-medium text-brand hover:underline cursor-pointer"
                   >
-                    <span className="flex min-w-0 flex-col gap-0.5">
-                      <span className="text-sm font-medium text-foreground">
-                        {n.title}
-                      </span>
-                      <span className="line-clamp-2 text-xs text-muted-foreground">
-                        {n.body}
-                      </span>
-                    </span>
-                    {!n.read && (
-                      <span className="mt-1.5 ml-auto size-2 shrink-0 rounded-full bg-brand" />
-                    )}
-                  </DropdownMenuItem>
-                ))
+                    Mark all read
+                  </button>
+                )}
+              </div>
+              <DropdownMenuSeparator className="my-1" />
+              {notifications && notifications.length > 0 ? (
+                <div className="flex flex-col gap-0.5 max-h-72 overflow-y-auto no-scrollbar">
+                  {notifications.slice(0, 5).map((n) => (
+                    <DropdownMenuItem
+                      key={n.id}
+                      className={cn(
+                        "flex items-start gap-2.5 rounded-xl px-2.5 py-2 cursor-pointer transition-colors",
+                        !n.read && "bg-brand/5 dark:bg-brand/10 font-medium"
+                      )}
+                      onClick={() => {
+                        if (!n.read) markNotificationRead.mutate(n.id)
+                        if (n.targetId && (n.type === "like" || n.type === "comment")) {
+                          void navigate(`/posts/${n.targetId}`)
+                          return
+                        }
+                        if (n.targetId && n.type === "message") {
+                          void navigate(`/messages/${n.targetId}`)
+                          return
+                        }
+                        if (n.actor?.id && n.type === "follow") {
+                          void navigate(`/users/${n.actor.id}`)
+                          return
+                        }
+                        void navigate(user.role === "admin" ? "/admin/notifications" : "/notifications")
+                      }}
+                    >
+                      <AvatarWithFallback
+                        name={n.actor?.name || n.actor?.username || "User"}
+                        src={n.actor?.avatar ?? null}
+                        size="sm"
+                        className="size-7 shrink-0 mt-0.5"
+                      />
+                      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                        <span className="text-xs font-semibold text-foreground leading-tight">
+                          {n.title}
+                        </span>
+                        <span className="line-clamp-1 text-[11px] text-muted-foreground">
+                          {n.body}
+                        </span>
+                        <span className="font-mono text-[9px] text-muted-foreground/75">
+                          {formatRelativeTime(n.createdAt)}
+                        </span>
+                      </div>
+                      {!n.read && (
+                        <span className="mt-1 size-2 shrink-0 rounded-full bg-brand" />
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+                </div>
               ) : (
-                <div className="p-4 text-center text-xs text-muted-foreground">
+                <div className="p-6 text-center text-xs text-muted-foreground">
                   No notifications yet
                 </div>
               )}
-              {notifications && notifications.length > 0 && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() =>
-                      void navigate(
-                        user.role === "admin" ? "/admin/notifications" : "/profile"
-                      )
-                    }
-                  >
-                    View all
-                  </DropdownMenuItem>
-                </>
-              )}
+              <DropdownMenuSeparator className="my-1" />
+              <DropdownMenuItem
+                className="justify-center text-xs font-semibold text-brand cursor-pointer py-1.5 rounded-lg"
+                onClick={() =>
+                  void navigate(
+                    user.role === "admin" ? "/admin/notifications" : "/notifications"
+                  )
+                }
+              >
+                View all notifications
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
